@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 use clap::Parser;
 use lua_def_parser::lua_parser::parse_lua;
@@ -30,7 +30,20 @@ fn main() -> anyhow::Result<()> {
 
     let args = Args::parse();
     let parsed = parse_lua(std::fs::read_to_string(args.lua)?)?;
-    println!("{parsed:#?}");
+
+    let mut types = HashSet::new();
+
+    for def in &parsed {
+        let def = def.as_ref().unwrap();
+        let Some(ret) = &def.ret else {
+            continue;
+        };
+        for param in &def.params {
+            types.insert(&*param.ty);
+        }
+        types.extend(ret.breakdown());
+    }
+    println!("{:#?}", types);
 
     Ok(())
 }
