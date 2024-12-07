@@ -145,9 +145,8 @@ fn strip_balanced_outer_parens(s: &str, open: char, close: char) -> Option<&str>
             depth -= 1;
         }
     }
-    // from above we know that first and last chars are 1 byte
-    // and there's >=2 chars in the string
-    Some(&s[1..s.len() - 1])
+    // from above we know that there's >=2 chars in the string
+    Some(&s[open.len_utf8()..s.len() - close.len_utf8()])
 }
 
 impl LuaReturnType {
