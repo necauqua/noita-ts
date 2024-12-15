@@ -6,7 +6,9 @@ use std::{
 
 use anyhow::Context;
 
-pub fn parse_lua(input: String) -> anyhow::Result<Vec<Result<LuaApiDef, String>>> {
+use crate::parsing::StringExt as _;
+
+pub fn parse_lua(input: &str) -> anyhow::Result<Vec<Result<LuaApiDef, String>>> {
     let mut lines = input.lines();
 
     let header = lines.next().context("Lua doc input file is empty")?;
@@ -28,7 +30,7 @@ pub fn parse_lua(input: String) -> anyhow::Result<Vec<Result<LuaApiDef, String>>
 pub struct LuaApiDef {
     pub name: String,
     pub params: Vec<LuaApiParam>,
-    pub ret: Option<LuaReturnType>,
+    pub ret: Option<LuaType>,
     pub doc: Option<String>,
 }
 
@@ -49,13 +51,10 @@ impl FromStr for LuaApiDef {
 
         let (maybe_ret, maybe_doc) = rest
             .split_once("[")
-            .or_else(|| rest.split_once('(')) // "Debugist function" ones
+            .or_else(|| rest.split_once('(')) // "Debugish function" ones
             .unwrap_or((rest, ""));
 
-        let ret = maybe_ret
-            .trim()
-            .strip_prefix("->")
-            .map(LuaReturnType::parse);
+        let ret = maybe_ret.trim().strip_prefix("->").map(LuaType::parse);
 
         let doc = match maybe_doc.trim() {
             "" => None,
@@ -74,93 +73,55 @@ impl FromStr for LuaApiDef {
 #[derive(Debug)]
 pub struct LuaApiParam {
     pub name: String,
-    pub ty: String,
+    pub ty: LuaType,
     pub default: Option<String>,
 }
 
 impl LuaApiParam {
     fn parse(s: &str) -> Self {
         let s = s.trim();
-        let (name, rest) = s.split_once(':').unwrap_or((s, ""));
-        let (ty, default) = rest.split_once('=').unwrap_or((rest, ""));
+        let (rest, default) = s.split_once('=').unwrap_or((s, ""));
+        let (name, ty) = rest
+            .split_once(':')
+            .or_else(|| rest.split_once(' ').map(|(a, b)| (b, a)))
+            .unwrap_or((rest, ""));
 
         Self {
             name: name.trim().to_owned(),
-            ty: ty.trim().to_owned(),
+            ty: LuaType::parse(ty),
             default: match default.trim() {
                 "" => None,
-                _ => Some(default.to_owned()),
+                d => Some(d.to_owned()),
             },
         }
     }
 }
 
-pub enum LuaReturnType {
+pub enum LuaType {
     Basic(String),
-    Named(String, Box<LuaReturnType>),
-    Array(Box<LuaReturnType>),
-    Multi(Vec<Box<LuaReturnType>>),
-    Disjoint(Vec<Box<LuaReturnType>>),
+    Named(String, Box<LuaType>),
+    Array(Box<LuaType>),
+    Table(Box<LuaType>, Box<LuaType>),
+    Disjoint(Vec<Box<LuaType>>),
+    ReturnList(Vec<Box<LuaType>>),
 }
 
-fn paren_balanced_split(s: &str, sep: char) -> Vec<String> {
-    let mut parts = Vec::new();
-    let mut buf = String::new();
-    let mut depth = 0;
-
-    for ch in s.chars() {
-        if ch == sep && depth == 0 {
-            parts.push(std::mem::take(&mut buf));
-            continue;
-        }
-        buf.push(ch);
-        depth += match ch {
-            '(' | '{' => 1,
-            ')' | '}' => -1,
-            _ => 0,
-        };
-    }
-
-    if !buf.is_empty() {
-        parts.push(buf.to_owned());
-    }
-
-    parts
-}
-
-fn strip_balanced_outer_parens(s: &str, open: char, close: char) -> Option<&str> {
-    let mut chars = s.chars();
-    if chars.next() != Some(open) || chars.next_back() != Some(close) {
-        return None;
-    }
-    let mut depth = 0;
-    for ch in chars {
-        if ch == open {
-            depth += 1;
-        } else if ch == close {
-            // negative depth means first paren got closed before the end
-            if depth == 0 {
-                return None;
-            }
-            depth -= 1;
-        }
-    }
-    // from above we know that there's >=2 chars in the string
-    Some(&s[open.len_utf8()..s.len() - close.len_utf8()])
-}
-
-impl LuaReturnType {
+impl LuaType {
     /// Walk the return type and collect all the basic types
     /// For example, `named:a|b,c,{d|c}` would return `{"a", "b", "c", "d"}`
     pub fn breakdown(&self) -> HashSet<&str> {
-        fn recur<'s>(tpe: &'s LuaReturnType, set: &mut HashSet<&'s str>) {
-            use LuaReturnType::*;
+        fn recur<'s>(tpe: &'s LuaType, set: &mut HashSet<&'s str>) {
+            use LuaType::*;
             match tpe {
                 Basic(s) => {
                     set.insert(s);
                 }
                 Named(_, ty) | Array(ty) => recur(ty, set),
-                Multi(parts) | Disjoint(parts) => {
+                Table(k, v) => {
+                    recur(k, set);
+                    recur(v, set);
+                }
+                ReturnList(parts) | Disjoint(parts) => {
                     for part in parts {
                         recur(part, set)
                     }
@@ -175,23 +136,10 @@ impl LuaReturnType {
 
     // lol
     fn merge(self) -> Self {
-        use LuaReturnType::*;
+        use LuaType::*;
         match self {
             Array(inner) => Array(inner.merge().into()),
-            Multi(parts) => {
-                let mut merged = Vec::new();
-                for part in parts {
-                    match *part {
-                        Multi(inner_parts) => {
-                            for inner in inner_parts {
-                                merged.push(inner.merge().into());
-                            }
-                        }
-                        part => merged.push(part.merge().into()),
-                    }
-                }
-                Multi(merged)
-            }
+            Table(k, v) => Table(k.merge().into(), v.merge().into()),
             Disjoint(parts) => {
                 let mut merged = Vec::new();
                 for part in parts {
@@ -206,6 +154,20 @@ impl LuaReturnType {
                 }
                 Disjoint(merged)
             }
+            ReturnList(parts) => {
+                let mut merged = Vec::new();
+                for part in parts {
+                    match *part {
+                        ReturnList(inner_parts) => {
+                            for inner in inner_parts {
+                                merged.push(inner.merge().into());
+                            }
+                        }
+                        part => merged.push(part.merge().into()),
+                    }
+                }
+                ReturnList(merged)
+            }
             other => other,
         }
     }
@@ -213,23 +175,27 @@ impl LuaReturnType {
     fn do_parse(s: &str) -> Self {
         let s = s.trim();
 
-        if let Some(inner) = strip_balanced_outer_parens(s, '(', ')') {
+        if let Some(inner) = s.strip_parens_balanced('(', ')') {
             return Self::parse(inner);
         }
-        if let Some(inner) = strip_balanced_outer_parens(s, '{', '}') {
-            return Self::Array(Box::new(Self::parse(inner)));
+
+        if let Some(inner) = s.strip_parens_balanced('{', '}') {
+            return match &*inner.split_balanced('-') {
+                [k, v] => Self::Table(Self::parse(k).into(), Self::parse(v).into()),
+                _ => Self::Array(Self::parse(inner).into()),
+            };
         }
 
         // now we do splits from lowest to highest precedence
 
-        // multi types are lowest
-        let multi_parts = paren_balanced_split(s, ',');
+        // return list types are the lowest
+        let multi_parts = s.split_balanced(',');
         if multi_parts.len() > 1 {
             let parsed_parts = multi_parts
                 .into_iter()
-                .map(|part| Box::new(Self::parse(&part)))
+                .map(|part| Self::parse(&part).into())
                 .collect();
-            return Self::Multi(parsed_parts);
+            return Self::ReturnList(parsed_parts);
         }
 
         // then named types, to allow for `named:a|b`
@@ -252,7 +218,7 @@ impl LuaReturnType {
         }
 
         // disjoint types are tightest
-        let disjoint_parts = paren_balanced_split(s, '|');
+        let disjoint_parts = s.split_balanced('|');
         if disjoint_parts.len() > 1 {
             let parsed_parts = disjoint_parts
                 .into_iter()
@@ -270,11 +236,11 @@ impl LuaReturnType {
     }
 }
 
-impl Debug for LuaReturnType {
+impl Debug for LuaType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use LuaReturnType::*;
+        use LuaType::*;
 
-        fn recur(f: &mut fmt::Formatter<'_>, ty: &LuaReturnType, indent: usize) -> fmt::Result {
+        fn recur(f: &mut fmt::Formatter<'_>, ty: &LuaType, indent: usize) -> fmt::Result {
             if f.alternate() {
                 write!(f, "{: ^w$}", "", w = indent * 2)?;
             }
@@ -294,9 +260,9 @@ impl Debug for LuaReturnType {
                     }
                     recur(f, inner, indent + 1)?;
                 }
-                Multi(parts) => {
-                    write!(f, "(multi")?;
-                    for part in parts {
+                Table(k, v) => {
+                    write!(f, "(table")?;
+                    for part in [k, v] {
                         if f.alternate() {
                             writeln!(f)?;
                         }
@@ -305,6 +271,15 @@ impl Debug for LuaReturnType {
                 }
                 Disjoint(parts) => {
                     write!(f, "(disj")?;
+                    for part in parts {
+                        if f.alternate() {
+                            writeln!(f)?;
+                        }
+                        recur(f, part, indent + 1)?;
+                    }
+                }
+                ReturnList(parts) => {
+                    write!(f, "(return-list")?;
                     for part in parts {
                         if f.alternate() {
                             writeln!(f)?;
@@ -325,12 +300,14 @@ mod tests {
 
     macro_rules! check {
         ($expr:expr, @$snap:literal) => {
-            insta::assert_debug_snapshot!(LuaReturnType::parse($expr), @$snap);
+            insta::assert_debug_snapshot!(LuaType::parse($expr), @$snap);
         };
     }
 
     #[test]
-    fn test_return_types() {
+    fn test_types() {
+        crate::init_logging().unwrap();
+
         check!("component", @r#"(basic "component")"#);
 
         check!("entity_scale:number", @r#"
@@ -344,7 +321,7 @@ mod tests {
         "#);
 
         check!("number,component", @r#"
-        (multi
+        (return-list
           (basic "number")
           (basic "component"))
         "#);
@@ -357,13 +334,13 @@ mod tests {
 
         check!("{number,component}", @r#"
         (array
-          (multi
+          (return-list
             (basic "number")
             (basic "component")))
         "#);
 
         check!("number|component,entity_scale:number", @r#"
-        (multi
+        (return-list
           (disj
             (basic "number")
             (basic "component"))
@@ -372,7 +349,7 @@ mod tests {
         "#);
 
         check!("(number|component),entity_scale:number", @r#"
-        (multi
+        (return-list
           (disj
             (basic "number")
             (basic "component"))
@@ -383,7 +360,7 @@ mod tests {
         check!("number|(component,entity_scale:number)", @r#"
         (disj
           (basic "number")
-          (multi
+          (return-list
             (basic "component")
             (named "entity_scale"
               (basic "number"))))
@@ -403,7 +380,7 @@ mod tests {
         (disj
           (basic "nil")
           (basic "script_return_type")
-          (multi
+          (return-list
             (basic "nil")
             (basic "error_string")))
         "#);
@@ -417,7 +394,7 @@ mod tests {
         "#);
 
         check!("named_union:number|string|nil,second_return:bool|number", @r#"
-        (multi
+        (return-list
           (named "named_union"
             (disj
               (basic "number")
@@ -427,6 +404,71 @@ mod tests {
             (disj
               (basic "bool")
               (basic "number"))))
+        "#);
+
+        check!("{string-int}|named:{int-string|number}", @r#"
+        (disj
+          (table
+            (basic "string")
+            (basic "int"))
+          (named "named"
+            (table
+              (basic "int")
+              (disj
+                (basic "string")
+                (basic "number")))))
+        "#);
+    }
+
+    #[test]
+    fn snapshot_types() {
+        crate::init_logging().unwrap();
+
+        let input = include_str!("../lua_api_documentation.txt");
+
+        let parsed = parse_lua(input).unwrap();
+
+        let mut types = parsed
+            .iter()
+            .map(|d| d.as_ref().unwrap())
+            .flat_map(|d| d.params.iter().map(|p| &p.ty).chain(d.ret.iter()))
+            .flat_map(|t| t.breakdown().into_iter())
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        types.sort();
+
+        insta::assert_debug_snapshot!(types, @r#"
+        [
+            "",
+            "bool",
+            "bool_is_new",
+            "boolean",
+            "component_id",
+            "error_string",
+            "float",
+            "float x",
+            "float y",
+            "function",
+            "int",
+            "int_body_id",
+            "item_entity_id",
+            "multiple types",
+            "multiple_types",
+            "name",
+            "new_text",
+            "nil",
+            "number",
+            "obj",
+            "physics_body_id",
+            "replace_existing_cells",
+            "script_return_type",
+            "string",
+            "uint",
+            "uint32",
+            "x",
+            "y",
+        ]
         "#);
     }
 }
