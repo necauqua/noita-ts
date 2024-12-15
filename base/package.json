@@ -1,0 +1,21 @@
+{
+  "name": "@noita-ts/base",
+  "version": "0.1.0-12",
+  "author": {
+    "name": "necauqua",
+    "email": "him@necauq.ua",
+    "url": "https://necauq.ua"
+  },
+  "files": [
+    "*.d.ts",
+    "mod-tsconfig.json"
+  ],
+  "bin": {
+    "nts": "bin.mjs"
+  },
+  "peerDependencies": {
+    "lua-types": "^2.13.1",
+    "typescript": "^5.7.2",
+    "typescript-to-lua": "^1.28.1"
+  }
+}

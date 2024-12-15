@@ -1,5 +1,7 @@
-
 .direnv
 target
+node_modules
 
 **.pending-snap
+
+/local-test-mod
