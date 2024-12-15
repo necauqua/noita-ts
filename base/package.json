@@ -1,17 +1,19 @@
 {
   "name": "@noita-ts/base",
-  "version": "0.1.0-12",
+  "version": "0.1.0",
+  "noita-api-version": 12,
   "author": {
     "name": "necauqua",
     "email": "him@necauq.ua",
     "url": "https://necauq.ua"
   },
   "files": [
-    "*.d.ts",
+    "src/**.d.ts",
     "mod-tsconfig.json"
   ],
+  "main": "src/index.ts",
   "bin": {
-    "nts": "bin.mjs"
+    "nts": "src/bin.mjs"
   },
   "peerDependencies": {
     "lua-types": "^2.13.1",

@@ -7,7 +7,7 @@
     "types": [
       "lua-types/jit",
       "@typescript-to-lua/language-extensions",
-      "@noita-ts/base/api"
+      "@noita-ts/base/src/api"
     ],
     "strict": true
   },

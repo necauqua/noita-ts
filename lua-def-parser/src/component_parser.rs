@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::parsing::StringExt;
 
 #[derive(Debug)]
@@ -23,7 +25,36 @@ pub enum Category {
     Object,
 }
 
-pub fn parse_components(input: &str) -> (Vec<Component>, Vec<(usize, String)>) {
+impl Display for Category {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use Category as E;
+        match self {
+            E::Member => write!(f, "Member"),
+            E::CustomDataType => write!(f, "Custom Data Type"),
+            E::Private => write!(f, "Private"),
+            E::Object => write!(f, "Object"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ComponentError {
+    pub component: String,
+    pub line_number: usize,
+    pub line: String,
+}
+
+impl ComponentError {
+    pub fn new(component: &Option<String>, line_number: usize, line: &str) -> Self {
+        Self {
+            component: component.as_deref().unwrap_or_default().to_owned(),
+            line_number,
+            line: line.to_owned(),
+        }
+    }
+}
+
+pub fn parse_components(input: &str) -> (Vec<Component>, Vec<ComponentError>) {
     let mut result = Vec::new();
     let mut errors = Vec::new();
 
@@ -61,22 +92,22 @@ pub fn parse_components(input: &str) -> (Vec<Component>, Vec<(usize, String)>) {
         }
 
         let Some((ty, rest)) = split_type(line) else {
-            errors.push((i, line.to_owned()));
+            errors.push(ComponentError::new(&name, i + 1, line));
             continue;
         };
-        let Some((name, rest)) = rest.trim().split_once(' ') else {
-            errors.push((i, line.to_owned()));
+        let Some((field_name, rest)) = rest.trim().split_once(' ') else {
+            errors.push(ComponentError::new(&name, i + 1, line));
             continue;
         };
         let Some((hints, doc)) = rest.trim().split_once('"') else {
-            errors.push((i, line.to_owned()));
+            errors.push(ComponentError::new(&name, i + 1, line));
             continue;
         };
 
         fields.push(ComponentField {
             category,
             ty: ty.to_owned(),
-            name: name.to_owned(),
+            name: field_name.to_owned(),
             hints: hints.trim().to_owned(),
             doc: doc.strip_suffix('"').unwrap_or(doc).to_owned(),
         });

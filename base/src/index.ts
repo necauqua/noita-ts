@@ -50,4 +50,10 @@ type NoitaHooks = {
  */
 export function on<T extends keyof NoitaHooks>(name: T, cb: NoitaHooks[T]) {
   (globalThis as any)[`On${name}`] = cb;
+
+  const my_comp = EntityGetFirstComponentTest(123 as EntityID, "ItemComponent");
+  if (!my_comp) return;
+  const erased = my_comp;
+
+  const thing = ComponentGetValue2Test(erased, "is_consumable");
 }

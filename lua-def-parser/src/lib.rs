@@ -2,6 +2,7 @@ pub mod component_parser;
 pub mod lua_parser;
 pub(crate) mod parsing;
 
+#[doc(hidden)]
 pub fn init_logging() -> anyhow::Result<()> {
     // they gotta add a oneliner for this
     tracing::subscriber::set_global_default(
