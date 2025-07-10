@@ -1,7 +1,5 @@
 .direnv
-target
-node_modules
-
-**.pending-snap
-
-/local-test-mod
+**/node_modules
+**/dist
+**/noita
+**.tsbuildinfo

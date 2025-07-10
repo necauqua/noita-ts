@@ -4,12 +4,16 @@
     "target": "ESNext",
     "lib": ["ESNext"],
     "moduleResolution": "Node",
-    "types": ["lua-types/jit", "@typescript-to-lua/language-extensions"],
     "strict": true,
-    "declaration": true
+    "types": ["lua-types/jit", "@typescript-to-lua/language-extensions"],
+    "declaration": true,
+    "composite": true,
+    "outDir": "dist"
   },
+  "include": ["src/**/*.ts", "types/**/*.d.ts"],
+  "references": [{ "path": "./tsconfig.bin.json" }],
   "tstl": {
-    "buildMode": "library",
-    "luaTarget": "JIT"
+    "luaTarget": "JIT",
+    "noImplicitSelf": true
   }
 }

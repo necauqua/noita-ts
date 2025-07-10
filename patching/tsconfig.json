@@ -4,13 +4,14 @@
     "target": "ESNext",
     "lib": ["ESNext"],
     "moduleResolution": "Node",
-    "resolveJsonModule": true,
     "strict": true,
-    "composite": true
+    "types": ["lua-types/jit", "@typescript-to-lua/language-extensions"],
+    "declaration": true,
+    "composite": true,
+    "outDir": "dist"
   },
-  "files": [],
-  "references": [
-    { "path": "node_modules/@noita-ts/base/tsconfigs/default.json" },
-    { "path": "node_modules/@noita-ts/base/tsconfigs/settings.json" }
-  ]
+  "tstl": {
+    "luaTarget": "JIT",
+    "noImplicitSelf": true
+  }
 }

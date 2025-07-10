@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "types": [
+      "lua-types/jit",
+      "@typescript-to-lua/language-extensions",
+      "@noita-ts/base/types/api"
+    ],
+    "strict": true
+  },
+  "include": ["../../../../src/**/*.ts"],
+  "exclude": ["../../../../src/settings.ts"]
+}

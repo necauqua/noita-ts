@@ -1,22 +1,34 @@
 {
   "name": "@noita-ts/base",
   "version": "0.1.0",
-  "noita-api-version": 12,
-  "author": {
-    "name": "necauqua",
-    "email": "him@necauq.ua",
-    "url": "https://necauq.ua"
-  },
+  "author": "necauqua <him@necauq.ua> (https://necauq.ua/)",
   "files": [
-    "src/**.d.ts",
-    "mod-tsconfig.json"
+    "types/**/*.d.ts",
+    "dist/**/*.{js,lua,d.ts}",
+    "mod-tsconfig.json",
+    "tsconfigs/*.json"
   ],
-  "main": "src/index.ts",
+  "main": "dist/src/index",
   "bin": {
-    "nts": "src/bin.mjs"
+    "nts": "dist/bin/index.js"
   },
-  "peerDependencies": {
+  "type": "module",
+  "scripts": {
+    "build": "npm run typegen && npm run build:lua && npm run build:bin",
+    "build:lua": "tstl -p .",
+    "build:bin": "tsc -p ./tsconfig.bin.json",
+    "typegen": "npm run typegen:api && npm run typegen:components",
+    "typegen:api": "cd ../typegen; npm run typegen -- lua -f ../base/types/fixups.d.ts -o ../base/types/generated/lua_api.d.ts",
+    "typegen:components": "cd ../typegen; npm run typegen -- components -o ../base/types/generated/components.d.ts"
+  },
+  "devDependencies": {
+    "@types/archiver": "^7.0.0",
+    "@types/node": "^24.10.0",
+    "archiver": "^7.0.1",
+    "commander": "^14.0.2",
     "lua-types": "^2.13.1",
+    "steam-locate": "^1.0.6",
+    "sync-directory": "^6.0.5",
     "typescript": "^5.7.2",
     "typescript-to-lua": "^1.28.1"
   }

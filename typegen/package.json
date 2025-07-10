@@ -1,0 +1,16 @@
+{
+  "name": "typegen",
+  "private": true,
+  "author": "necauqua",
+  "description": "A small program to generate good enough TypeScript types from Noita lua API documentation",
+  "scripts": {
+    "typegen": "tsx src/main.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "tsx": "^4.20.6"
+  },
+  "dependencies": {
+    "commander": "^14.0.2"
+  }
+}
