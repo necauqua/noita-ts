@@ -3,9 +3,14 @@ import { Command } from "commander";
 
 import { parseLua, LuaApiDef, LuaType } from "./lua_parser";
 import { parseComponents, Component } from "./component_parser";
+import * as path from "path";
 
 function writer(outPath?: string): NodeJS.WritableStream {
-  return outPath ? fs.createWriteStream(outPath) : process.stdout;
+  if (!outPath) {
+    return process.stdout;
+  }
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  return fs.createWriteStream(outPath);
 }
 
 function mapLuaType(luaType: string, name?: string): string {
