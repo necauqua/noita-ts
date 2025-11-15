@@ -6,7 +6,7 @@
  * @param patch_bytes The bytes to write at that location
  * @return Whether the patch was applied successfully and an error message if the patch failed
  */
-export function patchLocation(
+export default function patchLocation(
   this: void,
   location: number,
   expect: number[] | string,

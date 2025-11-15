@@ -1,3 +1,0 @@
-return {
-    patchLocation = require "patch"
-}
