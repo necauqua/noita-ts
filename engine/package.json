@@ -1,5 +1,5 @@
 {
-  "name": "@noita-ts/patching",
+  "name": "@noita-ts/engine",
   "version": "0.1.0",
   "author": "necauqua <him@necauq.ua> (https://necauq.ua/)",
   "files": [
@@ -7,12 +7,8 @@
   ],
   "main": "src/index",
   "type": "module",
-  "scripts": {
-    "build": "tstl -p ."
-  },
   "devDependencies": {
-    "lua-types": "^2.13.1",
-    "typescript": "^5.7.2",
-    "typescript-to-lua": "^1.28.1"
+    "@typescript-to-lua/language-extensions": "^1.19.0",
+    "lua-types": "^2.13.1"
   }
 }
