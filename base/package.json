@@ -1,6 +1,6 @@
 {
   "name": "@noita-ts/base",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "necauqua <him@necauq.ua> (https://necauq.ua/)",
   "files": [
     "types/**/*.d.ts",
@@ -22,13 +22,14 @@
     "typegen:components": "cd ../typegen; npm run typegen -- components -o ../base/types/generated/components.d.ts"
   },
   "dependencies": {
+    "@typescript-to-lua/language-extensions": "^1.19.0",
     "archiver": "^7.0.1",
     "commander": "^14.0.2",
+    "lua-types": "^2.13.1",
     "steam-locate": "^1.0.6",
     "sync-directory": "^6.0.5",
     "typescript": "^5.7.2",
-    "typescript-to-lua": "^1.28.1",
-    "lua-types": "^2.13.1"
+    "typescript-to-lua": "^1.28.1"
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",
