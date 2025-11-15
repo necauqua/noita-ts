@@ -9,9 +9,5 @@
     "declaration": true,
     "composite": true,
     "outDir": "dist"
-  },
-  "tstl": {
-    "luaTarget": "JIT",
-    "noImplicitSelf": true
   }
 }

@@ -3,6 +3,8 @@
 -- idk luals is confused
 ---@class ffi.cdata*
 
+local ffi = require 'ffi'
+
 ffi.cdef [[
     void* GetModuleHandleA(char* lpModuleName);
 

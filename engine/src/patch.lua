@@ -1,5 +1,7 @@
 ---@diagnostic disable: undefined-global
 
+local ffi = require 'ffi'
+
 -- see https://learn.microsoft.com/en-us/windows/win32/Memory/memory-protection-constants
 local PAGE_EXECUTE_READ_WRITE = 0x40
 
