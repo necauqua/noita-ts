@@ -10,16 +10,18 @@ declare namespace tags {
   const GuiID: unique symbol;
   const ComponentName: unique symbol;
 }
+
 type EntityID = number & { readonly [tags.EntityID]: unique symbol };
 type ComponentID = number & {
   readonly [tags.ComponentID]: unique symbol;
 };
 type GuiID = number & { readonly [tags.GuiID]: unique symbol };
+
+type ComponentName = keyof ComponentShapes;
+
 type Component<Name extends ComponentName> = ComponentID & {
   readonly [tags.ComponentName]: Name;
 };
-
-type ComponentName = keyof ComponentShapes;
 
 interface ComponentTypeMap {
   EntityID: EntityID;
@@ -27,6 +29,18 @@ interface ComponentTypeMap {
 }
 
 /**
- * A Noita analog of `print` which has a higher chance of actually being printed in the console.
+ * A Noita analog of `print` which has a higher chance of actually being
+ * printed in the ~~console~~ noita/logger.txt file.
  */
 declare function print_error(...args: any[]): void;
+
+/**
+ * Synthetic module to provide build-time information.
+ */
+declare module "$mod" {
+  /** The mod ID as set in package.json (and then propagated to mod.xml, mod_id.txt and this) */
+  export const MOD_ID: string;
+
+  /** Set to true when doing `nts run` or `nts build --dev` */
+  export const DEV: boolean;
+}

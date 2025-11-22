@@ -6,11 +6,16 @@
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "strict": true,
-    "composite": true
+    "types": [
+      "@noita-ts/base/node_modules/lua-types/jit",
+      "@noita-ts/base/node_modules/@typescript-to-lua/language-extensions",
+      "@noita-ts/base/types/api"
+    ]
   },
-  "files": [],
-  "references": [
-    { "path": "node_modules/@noita-ts/base/tsconfigs/default.json" },
-    { "path": "node_modules/@noita-ts/base/tsconfigs/settings.json" }
-  ]
+  "tstl": {
+    "noResolvePaths": ["ffi", "bit"],
+    "luaTarget": "JIT",
+    "luaLibImport": "require-minimal",
+    "noImplicitSelf": true
+  }
 }

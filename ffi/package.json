@@ -1,0 +1,10 @@
+{
+  "name": "@noita-ts/ffi",
+  "version": "0.1.0",
+  "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
+  "files": [
+    "**/*.{lua,d.ts}"
+  ],
+  "main": "src/index",
+  "type": "module"
+}

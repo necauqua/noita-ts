@@ -5,9 +5,6 @@
     "lib": ["ESNext"],
     "moduleResolution": "Node",
     "strict": true,
-    "types": ["lua-types/jit", "@typescript-to-lua/language-extensions"],
-    "declaration": true,
-    "composite": true,
-    "outDir": "dist"
+    "declaration": true
   }
 }

@@ -55,4 +55,4 @@ function on<T extends keyof NoitaEvent>(name: T, cb: NoitaEvent[T]) {
   (globalThis as any)[`On${name}`] = cb;
 }
 
-export const events = { on };
+export default { on };

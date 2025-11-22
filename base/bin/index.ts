@@ -11,7 +11,7 @@ import {
   SteamNotFoundError,
 } from "steam-locate";
 import syncDirectory from "sync-directory";
-import { Diagnostic } from "typescript";
+import ts from "typescript";
 import tstl from "typescript-to-lua";
 
 class VFS {
@@ -50,36 +50,51 @@ class VFS {
   }
 }
 
+type BuildData = {
+  modId: string;
+  dev: boolean;
+};
+
 function transpile(
   name: string,
   vfs: VFS,
-  verbose?: boolean,
-): readonly Diagnostic[] {
+  verbose: boolean,
+  buildData: BuildData,
+): readonly ts.Diagnostic[] {
   const entry = path.join(process.cwd(), "src", `${name}.ts`);
   if (!fs.existsSync(entry)) {
     return [];
   }
+  const tmpDir = path.join(process.cwd(), "node_modules", "noita-ts-synthetic");
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const syntheticModule = path.join(tmpDir, "mod.lua");
+  fs.writeFileSync(
+    syntheticModule,
+    `return { MOD_ID = "${buildData.modId}", DEV = ${buildData.dev} }`,
+  );
+
   const res = tstl.parseConfigFileWithSystem(
     path.join(process.cwd(), "tsconfig.json"),
     {
-      types: [
-        "lua-types/jit",
-        "@typescript-to-lua/language-extensions",
-        "@noita-ts/base/types/api",
-      ],
-      luaTarget: tstl.LuaTarget.LuaJIT,
-      luaLibImport: tstl.LuaLibImportKind.RequireMinimal,
       luaBundle: `${name}.lua`,
       luaBundleEntry: `src/${name}.ts`,
-      noImplicitSelf: true,
       tstlVerbose: verbose,
+      luaPlugins: [
+        {
+          plugin: {
+            moduleResolution: (module) =>
+              module == "$mod" ? syntheticModule : undefined,
+          },
+        },
+      ],
     },
   );
+
   if (res.errors.length > 0) {
     return res.errors;
   }
 
-  return tstl.transpileFiles(
+  const { diagnostics } = tstl.transpileFiles(
     [path.join(process.cwd(), "src", `${name}.ts`)],
     res.options,
     (fileName, text) => {
@@ -88,10 +103,17 @@ function transpile(
         vfs.write(path.relative(process.cwd(), fileName), text);
       }
     },
-  ).diagnostics;
+  );
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+
+  return diagnostics;
 }
 
-function makeNoitaMod(verbose?: boolean): { id: string; vfs: VFS } {
+function makeNoitaMod(
+  verbose: boolean,
+  dev: boolean,
+): { id: string; vfs: VFS } {
   const vfs = new VFS();
 
   const packageJson = JSON.parse(
@@ -103,9 +125,14 @@ function makeNoitaMod(verbose?: boolean): { id: string; vfs: VFS } {
   vfs.cd(id);
   vfs.write("mod_id.txt", id);
 
+  const buildData = {
+    modId: id,
+    dev,
+  };
+
   const diagnostics = [
-    ...transpile("init", vfs, verbose),
-    ...transpile("settings", vfs, verbose),
+    ...transpile("init", vfs, verbose, buildData),
+    ...transpile("settings", vfs, verbose, buildData),
   ];
   if (diagnostics.length > 0) {
     const reporter = tstl.createDiagnosticReporter(true);
@@ -180,17 +207,22 @@ program
   .alias("b")
   .option("-v, --verbose", "enable verbose output.")
   .option("-A, --dont-archive", "don't zip the result")
+  .option("--dev", "build in dev mode (DEV build data set to true)")
   .description("Build a mod zip for distribution.")
-  .action((opts: { verbose?: boolean; dontArchive?: boolean }) => {
-    const { id, vfs } = makeNoitaMod(!!opts.verbose);
-    const outputDir = path.resolve("dist");
-    fs.mkdirSync(outputDir, { recursive: true });
-    const outputPath = opts.dontArchive
-      ? outputDir
-      : path.resolve(outputDir, `${id}.zip`);
-    vfs.finalize(outputPath, !opts.dontArchive);
-    console.log(`Built mod zip ${outputPath}`);
-  });
+  .action(
+    (opts: { verbose?: boolean; dontArchive?: boolean; dev?: boolean }) => {
+      const { id, vfs } = makeNoitaMod(!!opts.verbose, !!opts.dev);
+      const outputDir = path.resolve("dist");
+      fs.mkdirSync(outputDir, { recursive: true });
+      if (opts.dontArchive) {
+        vfs.finalize(outputDir, false);
+        console.log(`Built mod folder ${outputDir}/${id}`);
+      } else {
+        vfs.finalize(path.resolve(outputDir, `${id}.zip`), true);
+        console.log(`Built mod zip ${outputDir}`);
+      }
+    },
+  );
 
 function findSteamApp(name: string, id: string): string {
   let noita;
@@ -319,7 +351,7 @@ program
       setupNoitaInstance(localNoita);
     }
 
-    const { id, vfs } = makeNoitaMod();
+    const { id, vfs } = makeNoitaMod(false, true);
     console.log(`Installing mod ${id} to local Noita instance...`);
     const mods = path.resolve(localNoita, "mods");
     fs.mkdirSync(mods, { recursive: true });
