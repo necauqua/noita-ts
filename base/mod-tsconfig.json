@@ -7,8 +7,8 @@
     "resolveJsonModule": true,
     "strict": true,
     "types": [
-      "@noita-ts/base/node_modules/lua-types/jit",
-      "@noita-ts/base/node_modules/@typescript-to-lua/language-extensions",
+      "lua-types/jit",
+      "@typescript-to-lua/language-extensions",
       "@noita-ts/base/types/api"
     ]
   },
