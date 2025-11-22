@@ -3,3 +3,5 @@
 **/dist
 **/noita
 **.tsbuildinfo
+
+example-mod/package-lock.json

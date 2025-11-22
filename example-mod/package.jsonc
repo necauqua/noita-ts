@@ -1,0 +1,29 @@
+// !!! This file does nothing besides describing the package.json for your mod, you can delete this
+{
+  "name": "example-mod", // Name of the package also doubles as mod ID, although you can override it in noita.id
+  "author": "necauqua", // Author of the package
+  "noita": {
+    "id": "example-mod", // The id that we could've overridden here
+    "name": "Example TypeScript Mod", // Name of the mod shown in-game
+    "description": "An example mod written in TypeScript using noita-ts", // Description of the mod shown in-game
+    "compat-version": 12, // API compatibility version, should Noita release a big update that changes this number, an icon "this mod has not been tested with latest mod api" or whatever will be shown in-game
+    "unsafe": false, // "request_no_api_restrictions" - unsafe mods cannot be published to the workshop and must be installed manually, but are not sandboxed meaning you can do network/file access, ffi and literally anything at all, including being a crypto miner
+    "ui-newgame-name": null, // everything below is setting other mod.xml properties
+    "ui-newgame-description": null,
+    "ui-newgame-gfx-banner-bg": null,
+    "ui-newgame-gfx-banner-fg": null,
+    "is-game-mode": false,
+    "game-mode-supports-save-slots": false,
+    "is-translation": false,
+    "translation-xml-path": null,
+    "translation-csv-path": null,
+  },
+  "private": true, // we're not publishing the mod to npm (yet?.)
+  "license": "MIT", // license is a good thing to have
+  // wohooooo, dependencies! lua dependencies will be bundled into the mod
+  "dependencies": {
+    // the base contains some minimal utilities needed for every mod, in particular a convenient mod event setup
+    //  also it gives you the `nts` binary.. so yeah, you'll need this
+    "@noita-ts/base": "0.1.3",
+  },
+}

@@ -1,29 +1,14 @@
 {
   "name": "example-mod",
-  "version": "1.0.0",
+  "author": "DunkIsBald",
   "noita": {
-    "id": "example-mod",
     "name": "Example TypeScript Mod",
-    "description": "An example mod written in TypeScript using noita-ts.",
-    "compat-version": 12,
-    "unsafe": true,
-    "ui-newgame-name": null,
-    "ui-newgame-description": null,
-    "ui-newgame-gfx-banner-bg": null,
-    "ui-newgame-gfx-banner-fg": null,
-    "is-game-mode": false,
-    "game-mode-supports-save-slots": false,
-    "is-translation": false,
-    "translation-xml-path": null,
-    "translation-csv-path": null
+    "description": "An example mod written in TypeScript using noita-ts",
+    "compat-version": 12
   },
-  "author": "necauqua",
+  "private": true,
   "license": "MIT",
   "dependencies": {
-    "@noita-ts/base": "file:../base"
-  },
-  "devDependencies": {
-    "lua-types": "^2.13.1",
-    "typescript-to-lua": "^1.28.1"
+    "@noita-ts/base": "^0.1.4"
   }
 }

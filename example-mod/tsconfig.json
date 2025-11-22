@@ -1,11 +1,4 @@
 {
-  "extends": "@noita-ts/base/mod-tsconfig.json",
-  // typescript is great and all, but the only way to have scoped global types
-  // are those "project references" you can abuse like we do here, but the issue with that
-  // is that you CANNOT HIDE IT BEHIND "extends", THEY ARE NOT INHERITED.
-  // also see https://github.com/microsoft/TypeScript/issues/37053
-  "references": [
-    { "path": "node_modules/@noita-ts/base/tsconfigs/default.json" },
-    { "path": "node_modules/@noita-ts/base/tsconfigs/settings.json" }
-  ]
+  "$schema": "https://raw.githubusercontent.com/TypeScriptToLua/TypeScriptToLua/master/tsconfig-schema.json",
+  "extends": "@noita-ts/base/mod-tsconfig.json"
 }
