@@ -27,7 +27,7 @@ export type GameStats = {
 
 type CppStringIntMap = {
   get(key: string): number | undefined;
-  to_lua(): Record<string, number>;
+  getAll(): Record<string, number>;
   size: LuaLengthMethod<number>;
 };
 

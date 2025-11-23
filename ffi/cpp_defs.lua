@@ -86,7 +86,7 @@ local function string_vector_index(v, key)
     if type(key) == 'number' and key > 0 and key <= v['end'] - v.start then
         return v.start[key - 1]
     end
-    if key == 'to_lua' then
+    if key == 'getAll' then
         return string_vec_to_table
     end
 end
@@ -166,7 +166,7 @@ local function cpp_map(key_type_name, value_type_name)
                     end
                 end
             end,
-            to_lua = function(self)
+            getAll = function(self)
                 local result = {}
                 if not self.root or not self.root.up then
                     return result
