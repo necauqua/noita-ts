@@ -1,11 +1,9 @@
 {
   "name": "example-mod",
   "author": "DunkIsBald",
-  "noita": {
-    "name": "Example TypeScript Mod",
-    "description": "An example mod written in TypeScript using noita-ts",
-    "compat-version": 12
-  },
+  "noita.name": "Example TypeScript Mod",
+  "noita.description": "An example mod written in TypeScript using noita-ts",
+  "noita.compat": 12,
   "private": true,
   "license": "MIT",
   "dependencies": {

@@ -119,8 +119,7 @@ function makeNoitaMod(
   const packageJson = JSON.parse(
     fs.readFileSync(process.env.npm_package_json ?? "package.json", "utf-8"),
   );
-  const noita = packageJson.noita;
-  const id = noita?.id ?? packageJson.name;
+  const id = packageJson?.["noita.id"] ?? packageJson.name;
 
   vfs.cd(id);
   vfs.write("mod_id.txt", id);
@@ -142,7 +141,7 @@ function makeNoitaMod(
     process.exit(1);
   }
 
-  const versionBuiltWith = noita?.["compat-version"];
+  const versionBuiltWith = packageJson?.["noita.compat"];
   if (versionBuiltWith) {
     vfs.write(
       "compatibility.xml",
@@ -151,23 +150,25 @@ function makeNoitaMod(
   }
 
   const modXml = {
-    name: noita?.name ?? packageJson.name,
-    description: noita?.description ?? packageJson.description,
-    ui_newgame_name: noita?.["ui-newgame-name"],
-    ui_newgame_description: noita?.["ui-newgame-description"],
-    ui_newgame_gfx_banner_bg: noita?.["ui-newgame-gfx-banner-bg"],
-    ui_newgame_gfx_banner_fg: noita?.["ui-newgame-gfx-banner-fg"],
-    request_no_api_restrictions: noita?.unsafe ? "1" : undefined,
-    is_game_mode: noita?.["is-game-mode"] ? "1" : undefined,
-    game_mode_supports_save_slots: noita?.["game-mode-supports-save-slots"]
+    name: packageJson?.["noita.name"] ?? id,
+    description: packageJson?.["noita.description"] ?? packageJson.description,
+    ui_newgame_name: packageJson?.["noita.ui-newgame-name"],
+    ui_newgame_description: packageJson?.["noita.ui-newgame-description"],
+    ui_newgame_gfx_banner_bg: packageJson?.["noita.ui-newgame-gfx-banner-bg"],
+    ui_newgame_gfx_banner_fg: packageJson?.["noita.ui-newgame-gfx-banner-fg"],
+    request_no_api_restrictions: packageJson?.unnoita.safe ? "1" : undefined,
+    is_game_mode: packageJson?.["noita.is-game-mode"] ? "1" : undefined,
+    game_mode_supports_save_slots: packageJson?.[
+      "noita.game-mode-supports-save-slots"
+    ]
       ? "1"
       : undefined,
-    is_translation: noita?.["is-translation"] ? "1" : undefined,
-    translation_xml_path: noita?.["translation-xml-path"],
-    translation_csv_path: noita?.["translation-csv-path"],
+    is_translation: packageJson?.["noita.is-translation"] ? "1" : undefined,
+    translation_xml_path: packageJson?.["noita.translation-xml-path"],
+    translation_csv_path: packageJson?.["noita.translation-csv-path"],
 
     // not officially supported, but potentially useful in distant future
-    download_url: noita?.["download-url"],
+    download_url: packageJson?.["noita.download-url"],
   };
 
   vfs.write(
