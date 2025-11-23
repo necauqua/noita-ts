@@ -191,6 +191,7 @@ function M.patch(needle, patch, params)
     M.patchRaw(text:scan(needle, params), patch)
 end
 
-return {
-    default = setmetatable(M, { __index = ffi })
-}
+-- for TS default export
+M.default = M
+
+return setmetatable(M, { __index = ffi })

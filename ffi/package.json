@@ -1,10 +1,14 @@
 {
   "name": "@noita-ts/ffi",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "files": [
     "**/*.{lua,d.ts}"
   ],
-  "main": "src/index",
-  "type": "module"
+  "main": "index",
+  "type": "module",
+  "types": "src/index.d.ts",
+  "dependencies": {
+    "@typescript-to-lua/language-extensions": "^1.19.0"
+  }
 }
