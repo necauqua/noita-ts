@@ -156,7 +156,9 @@ function makeNoitaMod(
     ui_newgame_description: packageJson?.["noita.ui-newgame-description"],
     ui_newgame_gfx_banner_bg: packageJson?.["noita.ui-newgame-gfx-banner-bg"],
     ui_newgame_gfx_banner_fg: packageJson?.["noita.ui-newgame-gfx-banner-fg"],
-    request_no_api_restrictions: packageJson?.unnoita.safe ? "1" : undefined,
+    request_no_api_restrictions: packageJson?.["noita.unsafe"]
+      ? "1"
+      : undefined,
     is_game_mode: packageJson?.["noita.is-game-mode"] ? "1" : undefined,
     game_mode_supports_save_slots: packageJson?.[
       "noita.game-mode-supports-save-slots"
