@@ -44,3 +44,14 @@ declare module "$mod" {
   /** Set to true when doing `nts run` or `nts build --dev` */
   export const DEV: boolean;
 }
+
+/**
+ * Noita-TS allows importing arbitrary lua code (including vanilla with `data/` prefix or other mods with `mods/<modid>/`).
+ *
+ * You can do `import * as utilities from 'data/scripts/lib/utilities.lua';`
+ * and the globals defined in `utilities.lua` will be available as properties of `utilities: any`.
+ */
+declare module "*.lua" {
+  const content: any;
+  export = content;
+}

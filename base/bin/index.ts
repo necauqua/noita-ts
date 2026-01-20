@@ -26,7 +26,7 @@ class VFS {
     this.files[this.cwd != "" ? this.cwd + "/" + filePath : filePath] = content;
   }
 
-  finalize(outputPath: string, zip: boolean) {
+  async finalize(outputPath: string, zip: boolean) {
     if (zip) {
       const archive = archiver("zip", {
         zlib: { level: 9 },
@@ -35,17 +35,25 @@ class VFS {
       for (const [filePath, content] of Object.entries(this.files)) {
         archive.append(content, { name: filePath });
       }
-      archive.finalize();
+      await archive.finalize();
     } else {
+      const promises: Promise<void>[] = [];
       for (const [filePath, content] of Object.entries(this.files)) {
         const fullPath = path.join(outputPath, filePath);
         fs.mkdirSync(path.dirname(fullPath), { recursive: true });
         if (typeof content === "string") {
           fs.writeFileSync(fullPath, content);
-        } else {
-          content.pipe(fs.createWriteStream(fullPath));
+          continue;
         }
+        const stream = content.pipe(fs.createWriteStream(fullPath));
+        promises.push(
+          new Promise((resolve, reject) => {
+            stream.on("finish", resolve);
+            stream.on("error", reject);
+          }),
+        );
       }
+      await Promise.all(promises);
     }
   }
 }
@@ -56,56 +64,99 @@ type BuildData = {
 };
 
 function transpile(
-  name: string,
   vfs: VFS,
   verbose: boolean,
   buildData: BuildData,
 ): readonly ts.Diagnostic[] {
-  const entry = path.join(process.cwd(), "src", `${name}.ts`);
-  if (!fs.existsSync(entry)) {
-    return [];
-  }
-  const tmpDir = path.join(process.cwd(), "node_modules", "noita-ts-synthetic");
-  fs.mkdirSync(tmpDir, { recursive: true });
-  const syntheticModule = path.join(tmpDir, "mod.lua");
+  const cwd = process.cwd();
+
+  const noitaTsDir = path.join(cwd, "node_modules", "@noita-ts");
+  fs.mkdirSync(noitaTsDir, { recursive: true }); // just in case idk
+
+  const syntheticModule = path.join(noitaTsDir, "$mod.lua");
   fs.writeFileSync(
     syntheticModule,
     `return { MOD_ID = "${buildData.modId}", DEV = ${buildData.dev} }`,
   );
 
-  const res = tstl.parseConfigFileWithSystem(
-    path.join(process.cwd(), "tsconfig.json"),
-    {
-      luaBundle: `${name}.lua`,
-      luaBundleEntry: `src/${name}.ts`,
-      tstlVerbose: verbose,
-      luaPlugins: [
-        {
-          plugin: {
-            moduleResolution: (module) =>
-              module == "$mod" ? syntheticModule : undefined,
-          },
-        },
-      ],
-    },
+  vfs.write(
+    "require_shim.lua",
+    `local original_require = require
+
+function require(module)
+  local filename = (module:match'^data/.-%.lua' or module:match'^mods/.-%.lua') and module or 'mods/${buildData.modId}/' .. module:gsub('^src%.', ''):gsub('%.lua$', ''):gsub('%.', '/') .. '.lua'
+  local cached = __loadonce[filename]
+  if cached ~= nil then
+    return cached[1]
+  end
+  local f, err = loadfile(filename)
+  if f == nil then
+    if original_require ~= nil then
+      local result = original_require(module)
+      __loadonce[filename] = { result }
+      return result
+    end
+    return f, err
+  end
+  local env = setmetatable({}, { __index = _G })
+  local result = setfenv(f, env)()
+  local captured = {}
+  for k, v in pairs(env) do captured[k] = v end
+  if type(result) ~= 'table' then
+    captured.default = result
+    result = captured
+  end
+  __loadonce[filename] = { result }
+  -- do_mod_appends(filename) -- figuring out setfenv setup for mod appends for now :(
+  return result
+end
+`,
   );
+
+  const configFile = path.join(cwd, "tsconfig.json");
+  const res = tstl.parseConfigFileWithSystem(configFile, {
+    tstlVerbose: verbose,
+    luaPlugins: [
+      {
+        plugin: {
+          visitors: {
+            [ts.SyntaxKind.ImportDeclaration]: (node, context) => {
+              const statement = context.superTransformStatements(node);
+
+              const scope = context.scopeStack[context.scopeStack.length - 1];
+              scope.importStatements;
+
+              return statement;
+            },
+          },
+          beforeEmit(_program, _options, _emitHost, result) {
+            for (const file of result) {
+              const relative = path.relative(process.cwd(), file.outputPath);
+              file.outputPath = path.resolve(
+                cwd,
+                relative.replace(/^src\//, ""),
+              );
+              file.code =
+                `dofile_once('mods/${buildData.modId}/require_shim.lua')\n\n` +
+                file.code;
+            }
+          },
+          moduleResolution: (module) =>
+            module == "$mod" ? syntheticModule : undefined,
+        },
+      },
+    ],
+  });
 
   if (res.errors.length > 0) {
     return res.errors;
   }
 
-  const { diagnostics } = tstl.transpileFiles(
-    [path.join(process.cwd(), "src", `${name}.ts`)],
+  const { diagnostics } = tstl.transpileProject(
+    configFile,
     res.options,
-    (fileName, text) => {
-      // dont disable them in tsconfig because "composite" wants it there
-      if (!fileName.endsWith(".d.ts") && !fileName.endsWith(".tsbuildinfo")) {
-        vfs.write(path.relative(process.cwd(), fileName), text);
-      }
-    },
+    (fileName, text) => vfs.write(path.relative(process.cwd(), fileName), text),
   );
-
-  fs.rmSync(tmpDir, { recursive: true, force: true });
 
   return diagnostics;
 }
@@ -129,10 +180,7 @@ function makeNoitaMod(
     dev,
   };
 
-  const diagnostics = [
-    ...transpile("init", vfs, verbose, buildData),
-    ...transpile("settings", vfs, verbose, buildData),
-  ];
+  const diagnostics = transpile(vfs, verbose, buildData);
   if (diagnostics.length > 0) {
     const reporter = tstl.createDiagnosticReporter(true);
     for (const diagnostic of diagnostics) {
@@ -213,15 +261,19 @@ program
   .option("--dev", "build in dev mode (DEV build data set to true)")
   .description("Build a mod zip for distribution.")
   .action(
-    (opts: { verbose?: boolean; dontArchive?: boolean; dev?: boolean }) => {
+    async (opts: {
+      verbose?: boolean;
+      dontArchive?: boolean;
+      dev?: boolean;
+    }) => {
       const { id, vfs } = makeNoitaMod(!!opts.verbose, !!opts.dev);
       const outputDir = path.resolve("dist");
       fs.mkdirSync(outputDir, { recursive: true });
       if (opts.dontArchive) {
-        vfs.finalize(outputDir, false);
+        await vfs.finalize(outputDir, false);
         console.log(`Built mod folder ${outputDir}/${id}`);
       } else {
-        vfs.finalize(path.resolve(outputDir, `${id}.zip`), true);
+        await vfs.finalize(path.resolve(outputDir, `${id}.zip`), true);
         console.log(`Built mod zip ${outputDir}`);
       }
     },
@@ -347,7 +399,7 @@ program
   .description(
     "Run an isolated instance of Noita with the mod installed (requires Noita to be installed through Steam).",
   )
-  .action(() => {
+  .action(async () => {
     const localNoita = path.resolve("noita");
     if (!fs.existsSync(localNoita)) {
       console.log("A local Noita instance not found, setting up...");
@@ -358,7 +410,8 @@ program
     console.log(`Installing mod ${id} to local Noita instance...`);
     const mods = path.resolve(localNoita, "mods");
     fs.mkdirSync(mods, { recursive: true });
-    vfs.finalize(mods, false);
+    fs.rmSync(path.resolve(mods, id), { recursive: true, force: true });
+    await vfs.finalize(mods, false);
 
     // lmao at some point I will have to actually parse nxml 🤷
     //  not now tho
