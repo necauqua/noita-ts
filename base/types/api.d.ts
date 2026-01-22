@@ -51,7 +51,4 @@ declare module "$mod" {
  * You can do `import * as utilities from 'data/scripts/lib/utilities.lua';`
  * and the globals defined in `utilities.lua` will be available as properties of `utilities: any`.
  */
-declare module "*.lua" {
-  const content: any;
-  export = content;
-}
+declare module "*.lua";

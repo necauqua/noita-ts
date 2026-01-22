@@ -84,7 +84,7 @@ function transpile(
     `local original_require = require
 
 function require(module)
-  local filename = (module:match'^data/.-%.lua' or module:match'^mods/.-%.lua') and module or 'mods/${buildData.modId}/' .. module:gsub('^src%.', ''):gsub('%.lua$', ''):gsub('%.', '/') .. '.lua'
+  local filename = (module:match'^data/.-%.lua$' or module:match'^mods/.-%.lua$' or (module:match'^[^./]+$' and module ~= 'lualib_bundle')) and module or 'mods/${buildData.modId}/' .. module:gsub('^src%.', ''):gsub('%.lua$', ''):gsub('%.', '/') .. '.lua'
   local cached = __loadonce[filename]
   if cached ~= nil then
     return cached[1]
