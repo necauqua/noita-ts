@@ -149,6 +149,8 @@ declare const _default: {
   ): CommonFfiTypes[K];
   cast<T>(this: void, type: string, ptr: any): T;
 
+  offsetof(this: void, structName: string, memberName: string): number;
+
   C: Record<string, any>;
 };
 
