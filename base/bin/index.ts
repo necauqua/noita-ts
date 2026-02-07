@@ -13,6 +13,7 @@ import {
 import syncDirectory from "sync-directory";
 import ts from "typescript";
 import tstl from "typescript-to-lua";
+import * as jsonc from "jsonc-parser";
 
 class VFS {
   files: Record<string, string | ReadStream> = {};
@@ -161,123 +162,142 @@ end
   return diagnostics;
 }
 
-function makeNoitaMod(
-  verbose: boolean,
-  dev: boolean,
-): { id: string; vfs: VFS } {
-  const vfs = new VFS();
+class NoitaMod {
+  id: string;
+  vfs: VFS;
 
-  const packageJson = JSON.parse(
-    fs.readFileSync(process.env.npm_package_json ?? "package.json", "utf-8"),
-  );
-  const id = packageJson?.["noita.id"] ?? packageJson.name;
+  constructor(id: string, vfs: VFS) {
+    this.id = id;
+    this.vfs = vfs;
+  }
 
-  vfs.cd(id);
-  vfs.write("mod_id.txt", id);
-
-  const buildData = {
-    modId: id,
+  static make({
+    verbose,
     dev,
-  };
+    noWorkshopId,
+  }: {
+    verbose?: boolean;
+    dev?: boolean;
+    noWorkshopId?: boolean;
+  }): NoitaMod {
+    const vfs = new VFS();
 
-  const diagnostics = transpile(vfs, verbose, buildData);
-  if (diagnostics.length > 0) {
-    const reporter = tstl.createDiagnosticReporter(true);
-    for (const diagnostic of diagnostics) {
-      reporter(diagnostic);
-    }
-    process.exit(1);
-  }
-
-  const versionBuiltWith = packageJson?.["noita.compat"];
-  if (versionBuiltWith) {
-    vfs.write(
-      "compatibility.xml",
-      `<Mod _format_version="0" version_built_with="${versionBuiltWith}"/>`,
+    const packageJson = JSON.parse(
+      fs.readFileSync(process.env.npm_package_json ?? "package.json", "utf-8"),
     );
-  }
+    const id = packageJson?.["noita.id"] ?? packageJson.name;
 
-  const modXml = {
-    name: packageJson?.["noita.name"] ?? id,
-    description: packageJson?.["noita.description"] ?? packageJson.description,
-    ui_newgame_name: packageJson?.["noita.ui-newgame-name"],
-    ui_newgame_description: packageJson?.["noita.ui-newgame-description"],
-    ui_newgame_gfx_banner_bg: packageJson?.["noita.ui-newgame-gfx-banner-bg"],
-    ui_newgame_gfx_banner_fg: packageJson?.["noita.ui-newgame-gfx-banner-fg"],
-    request_no_api_restrictions: packageJson?.["noita.unsafe"]
-      ? "1"
-      : undefined,
-    is_game_mode: packageJson?.["noita.is-game-mode"] ? "1" : undefined,
-    game_mode_supports_save_slots: packageJson?.[
-      "noita.game-mode-supports-save-slots"
-    ]
-      ? "1"
-      : undefined,
-    is_translation: packageJson?.["noita.is-translation"] ? "1" : undefined,
-    translation_xml_path: packageJson?.["noita.translation-xml-path"],
-    translation_csv_path: packageJson?.["noita.translation-csv-path"],
-
-    // not officially supported, but potentially useful in distant future
-    download_url: packageJson?.["noita.download-url"],
-  };
-
-  vfs.write(
-    "mod.xml",
-    [
-      `<Mod`,
-      ...Object.entries(modXml)
-        .filter(([, v]) => !!v)
-        .map(([k, v]) => `  ${k}="${v}"`),
-      `/>`,
-    ].join("\r\n"),
-  );
-
-  const src = path.join(process.cwd(), "src");
-  const files = fs.readdirSync(src, {
-    recursive: true,
-  });
-  for (const file of files) {
-    if (typeof file !== "string") {
-      continue;
+    if (!id) {
+      throw new Error('No mod ID ("noita.id" or "name") found in package.json');
     }
-    if (!file.endsWith(".ts")) {
-      const fullPath = path.join(src, file);
-      if (fs.statSync(fullPath).isFile()) {
-        vfs.write(file, fs.createReadStream(fullPath));
+
+    vfs.cd(id);
+    vfs.write("mod_id.txt", id);
+
+    const buildData = {
+      modId: id,
+      dev: !!dev,
+    };
+
+    const diagnostics = transpile(vfs, !!verbose, buildData);
+    if (diagnostics.length > 0) {
+      const reporter = tstl.createDiagnosticReporter(true);
+      for (const diagnostic of diagnostics) {
+        reporter(diagnostic);
+      }
+      process.exit(1);
+    }
+
+    const versionBuiltWith = packageJson?.["noita.compat"];
+    if (versionBuiltWith) {
+      vfs.write(
+        "compatibility.xml",
+        `<Mod _format_version="0" version_built_with="${versionBuiltWith}"/>`,
+      );
+    }
+
+    const modXml = {
+      name: packageJson?.["noita.name"] ?? id,
+      description:
+        packageJson?.["noita.description"] ?? packageJson.description,
+      ui_newgame_name: packageJson?.["noita.ui-newgame-name"],
+      ui_newgame_description: packageJson?.["noita.ui-newgame-description"],
+      ui_newgame_gfx_banner_bg: packageJson?.["noita.ui-newgame-gfx-banner-bg"],
+      ui_newgame_gfx_banner_fg: packageJson?.["noita.ui-newgame-gfx-banner-fg"],
+      request_no_api_restrictions: packageJson?.["noita.unsafe"]
+        ? "1"
+        : undefined,
+      is_game_mode: packageJson?.["noita.is-game-mode"] ? "1" : undefined,
+      game_mode_supports_save_slots: packageJson?.[
+        "noita.game-mode-supports-save-slots"
+      ]
+        ? "1"
+        : undefined,
+      is_translation: packageJson?.["noita.is-translation"] ? "1" : undefined,
+      translation_xml_path: packageJson?.["noita.translation-xml-path"],
+      translation_csv_path: packageJson?.["noita.translation-csv-path"],
+
+      // not officially supported, but potentially useful in distant future
+      download_url: packageJson?.["noita.download-url"],
+    };
+
+    const workshopXml = {
+      name: packageJson?.["noita.workshop.name"] ?? modXml.name,
+      description:
+        packageJson?.["noita.workshop.description"] ?? modXml.description,
+      tags: (packageJson?.["noita.workshop.tags"] ?? []).join(","),
+      dont_upload_files: (
+        packageJson?.["noita.workshop.skip-files"] ?? []
+      ).join("|"),
+      dont_upload_folders: [
+        ".jj",
+        ...(packageJson?.["noita.workshop.skip-folders"] ?? []),
+      ].join("|"),
+    };
+
+    const xmlConfig = (entries: Record<string, string | undefined>) =>
+      [
+        `<Mod`,
+        ...Object.entries(entries)
+          .filter(([, v]) => !!v)
+          .map(([k, v]) => `  ${k}="${v}"`),
+        `/>`,
+      ].join("\r\n");
+
+    vfs.write("mod.xml", xmlConfig(modXml));
+    vfs.write("workshop.xml", xmlConfig(workshopXml));
+    const workshopId = packageJson?.["noita.workshop.id"];
+    if (workshopId && !noWorkshopId) {
+      vfs.write("workshop_id.txt", workshopId);
+    }
+    const workshopPreview = "workshop-preview.png";
+    // meh check-then-act who cares
+    if (fs.statSync(workshopPreview)) {
+      vfs.write(
+        "workshop_preview_image.png",
+        fs.createReadStream(workshopPreview),
+      );
+    }
+
+    const src = path.join(process.cwd(), "src");
+    const files = fs.readdirSync(src, {
+      recursive: true,
+    });
+    for (const file of files) {
+      if (typeof file !== "string") {
+        continue;
+      }
+      if (!file.endsWith(".ts")) {
+        const fullPath = path.join(src, file);
+        if (fs.statSync(fullPath).isFile()) {
+          vfs.write(file, fs.createReadStream(fullPath));
+        }
       }
     }
-  }
 
-  return { id, vfs };
+    return new NoitaMod(id, vfs);
+  }
 }
-
-const program = new Command();
-
-program
-  .command("build")
-  .alias("b")
-  .option("-v, --verbose", "enable verbose output.")
-  .option("-A, --dont-archive", "don't zip the result")
-  .option("--dev", "build in dev mode (DEV build data set to true)")
-  .description("Build a mod zip for distribution.")
-  .action(
-    async (opts: {
-      verbose?: boolean;
-      dontArchive?: boolean;
-      dev?: boolean;
-    }) => {
-      const { id, vfs } = makeNoitaMod(!!opts.verbose, !!opts.dev);
-      const outputDir = path.resolve("dist");
-      fs.mkdirSync(outputDir, { recursive: true });
-      if (opts.dontArchive) {
-        await vfs.finalize(outputDir, false);
-        console.log(`Built mod folder ${outputDir}/${id}`);
-      } else {
-        await vfs.finalize(path.resolve(outputDir, `${id}.zip`), true);
-        console.log(`Built mod zip ${outputDir}`);
-      }
-    },
-  );
 
 function findSteamApp(name: string, id: string): string {
   let noita;
@@ -394,19 +414,15 @@ function setupLinuxEnv(
   return { command, args, env };
 }
 
-program
-  .command("run")
-  .description(
-    "Run an isolated instance of Noita with the mod installed (requires Noita to be installed through Steam).",
-  )
-  .action(async () => {
-    const localNoita = path.resolve("noita");
-    if (!fs.existsSync(localNoita)) {
-      console.log("A local Noita instance not found, setting up...");
-      setupNoitaInstance(localNoita);
-    }
+async function run(mod: NoitaMod | null, exe: string, noitaArgs: string[]) {
+  const localNoita = path.resolve("noita");
+  if (!fs.existsSync(localNoita)) {
+    console.log("A local Noita instance not found, setting up...");
+    setupNoitaInstance(localNoita);
+  }
 
-    const { id, vfs } = makeNoitaMod(false, true);
+  if (mod) {
+    const { id, vfs } = mod;
     console.log(`Installing mod ${id} to local Noita instance...`);
     const mods = path.resolve(localNoita, "mods");
     fs.mkdirSync(mods, { recursive: true });
@@ -429,45 +445,152 @@ program
     }
     fs.mkdirSync(save00, { recursive: true });
     fs.writeFileSync(modConfigPath, modConfig);
+  }
 
-    let exe = path.resolve(localNoita, "noita.exe");
-    let noitaArgs = [
+  exe = path.resolve(localNoita, exe);
+  let env = undefined;
+
+  if (process.platform !== "win32") {
+    console.log("Not running on Windows, adjusting for Linux");
+    const {
+      command,
+      args,
+      env: linuxEnv,
+    } = setupLinuxEnv(localNoita, exe, noitaArgs);
+    exe = command;
+    noitaArgs = args;
+    console.log(
+      `Linux env:\n  ${Object.entries(linuxEnv)
+        .map(([k, v]) => `${k}=${v}`)
+        .join("\n  ")}`,
+    );
+    env = { ...process.env, ...linuxEnv };
+  }
+
+  console.log(`Noita launch commmand:\n  ${exe}\n  ${noitaArgs.join("\n  ")}`);
+
+  const res = spawnSync(exe, noitaArgs, {
+    cwd: localNoita,
+    env,
+    stdio: "inherit",
+  });
+  if (res.error) {
+    console.error(res.error);
+    process.exit(1);
+  }
+}
+
+const program = new Command();
+
+program
+  .command("build")
+  .alias("b")
+  .option("-v, --verbose", "enable verbose output.")
+  .option("-A, --dont-archive", "don't zip the result")
+  .option("--dev", "build in dev mode (DEV build data set to true)")
+  .description("Build a mod zip for distribution.")
+  .action(
+    async (opts: {
+      verbose?: boolean;
+      dontArchive?: boolean;
+      dev?: boolean;
+    }) => {
+      const { id, vfs } = NoitaMod.make(opts);
+      const outputDir = path.resolve("dist");
+      fs.mkdirSync(outputDir, { recursive: true });
+      if (opts.dontArchive) {
+        await vfs.finalize(outputDir, false);
+        console.log(`Built mod folder ${outputDir}/${id}`);
+      } else {
+        await vfs.finalize(path.resolve(outputDir, `${id}.zip`), true);
+        console.log(`Built mod zip ${outputDir}`);
+      }
+    },
+  );
+
+program
+  .command("run")
+  .option("-v, --verbose", "enable verbose output.")
+  .option("--non-dev", "build in non-dev mode (DEV build data set to false)")
+  .description(
+    "Run an isolated instance of Noita with the mod installed (requires Noita to be installed through Steam).",
+  )
+  .action(async (opts: { verbose?: boolean; nonDev?: boolean }) => {
+    const mod = NoitaMod.make({ verbose: opts.verbose, dev: !opts.nonDev });
+    await run(mod, "noita.exe", [
       "-no_logo_splashes",
       "-gamemode",
       "-always_store_userdata_in_workdir",
-    ];
-    let env = undefined;
-
-    if (process.platform !== "win32") {
-      console.log("Not running on Windows, adjusting for Linux");
-      const {
-        command,
-        args,
-        env: linuxEnv,
-      } = setupLinuxEnv(localNoita, exe, noitaArgs);
-      exe = command;
-      noitaArgs = args;
-      console.log(
-        `Linux env:\n  ${Object.entries(linuxEnv)
-          .map(([k, v]) => `${k}=${v}`)
-          .join("\n  ")}`,
-      );
-      env = { ...process.env, ...linuxEnv };
-    }
-
-    console.log(
-      `Noita launch commmand:\n  ${exe}\n  ${noitaArgs.join("\n  ")}`,
-    );
-
-    const res = spawnSync(exe, noitaArgs, {
-      cwd: localNoita,
-      env,
-      stdio: "inherit",
-    });
-    if (res.error) {
-      console.error(res.error);
-      process.exit(1);
-    }
+    ]);
   });
+
+program
+  .command("publish")
+  .option("-v, --verbose", "enable verbose output.")
+  .option(
+    "--force-new",
+    "ignore noita.workspace.id set in package.json and publish as a new workshop item.",
+  )
+  .argument("<change notes>", "the change notes for the Steam Workshop release")
+  .description(
+    "Run an isolated instance of Noita with the mod installed (requires Noita to be installed through Steam).",
+  )
+  .action(
+    async (
+      changeNotes,
+      opts: {
+        verbose?: boolean;
+        forceNew?: boolean;
+      },
+    ) => {
+      const mod = NoitaMod.make(opts);
+
+      await run(mod, "noita_dev.exe", [
+        "-workshop_upload",
+        mod.id,
+        "-workshop_upload_change_notes",
+        changeNotes,
+      ]);
+
+      const workshopId = fs
+        .readFileSync(`noita/mods/${mod.id}/workshop_id.txt`, "ascii")
+        .trim();
+      const workshopUrl = `https://steamcommunity.com/sharedfiles/filedetails/?id=${workshopId}`;
+
+      // todo move package.json reading out of `run`
+      const packageJsonPath = process.env.npm_package_json ?? "package.json";
+      const packageJsonText = fs.readFileSync(packageJsonPath, "utf-8");
+      const packageJson = JSON.parse(packageJsonText);
+      if (packageJson?.["noita.workshop.id"] != workshopId) {
+        const edit = jsonc.modify(
+          packageJsonText,
+          ["noita.workshop.id"],
+          workshopId,
+          {
+            formattingOptions: { insertSpaces: true, tabSize: 2 },
+            getInsertionIndex(properties) {
+              let idx = properties.indexOf("noita.id");
+              if (idx != -1) {
+                return idx + 1;
+              }
+              return properties.indexOf("name") + 1;
+            },
+          },
+        );
+        fs.writeFileSync(
+          packageJsonPath,
+          jsonc.applyEdits(packageJsonText, edit),
+        );
+        console.log(`Published the mod at ${workshopUrl}`);
+      } else {
+        console.log(`Updated the mod at ${workshopUrl}`);
+      }
+    },
+  );
+
+program
+  .command("unpak")
+  .description("Unpack the data.wak file")
+  .action(() => run(null, "noita.exe", ["-wizard_unpak"]));
 
 program.parse(process.argv);

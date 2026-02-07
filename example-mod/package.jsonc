@@ -3,8 +3,13 @@
   "name": "example-mod", // Name of the package also doubles as mod ID, although you can override it in noita.id
   "author": "necauqua", // Author of the package
   "noita.id": "example-mod", // The id that we could've overridden here
-  "noita.name": "Example TypeScript Mod", // Name of the mod shown in-game
-  "noita.description": "An example mod written in TypeScript using noita-ts", // Description of the mod shown in-game
+  "noita.name": "Example TypeScript Mod", // Name of the mod shown in-game (defaults to noita.id)
+  "noita.description": "An example mod written in TypeScript using noita-ts", // Description of the mod shown in-game, defaults to package description
+  "noita.workshop.name": "Example TypeScript Mod", // Name of the mod on the steam workshop page, defaults to value of noita.name
+  "noita.workshop.description": "Uploaded to the workshop!", // The description of the mod on the steam workshop page, defaults to value of noita.description
+  "noita.workshop.tags": [], // Tags for the mod on the steam workshop page
+  "noita.workshop.skip-files": [], // Files to skip when uploading to the workshop
+  "noita.workshop.skip-folders": [], // Folders to skip when uploading to the workshop (note that while .git is ignored by the uploader, noita-ts additionally always adds .jj here)
   "noita.compat": 12, // API compatibility version, should Noita release a big update that changes this number, an icon "this mod has not been tested with latest mod api" or whatever will be shown in-game
   "noita.unsafe": false, // "request_no_api_restrictions" - unsafe mods cannot be published to the workshop and must be installed manually, but are not sandboxed meaning you can do network/file access, ffi and literally anything at all, including being a crypto miner
   "noita.ui-newgame-name": null, // everything below is setting other mod.xml properties
