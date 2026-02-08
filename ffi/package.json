@@ -7,7 +7,7 @@
   ],
   "main": "index",
   "type": "module",
-  "types": "src/index.d.ts",
+  "types": "index.d.ts",
   "dependencies": {
     "@typescript-to-lua/language-extensions": "^1.19.0"
   }

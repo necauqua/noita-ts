@@ -268,15 +268,15 @@ class NoitaMod {
     vfs.write("workshop.xml", xmlConfig(workshopXml));
     const workshopId = packageJson?.["noita.workshop.id"];
     if (workshopId && !noWorkshopId) {
-      vfs.write("workshop_id.txt", workshopId);
+      vfs.write("workshop_id.txt", workshopId.toString());
     }
-    const workshopPreview = "workshop-preview.png";
-    // meh check-then-act who cares
-    if (fs.statSync(workshopPreview)) {
-      vfs.write(
-        "workshop_preview_image.png",
-        fs.createReadStream(workshopPreview),
-      );
+
+    try {
+      const name = "workshop-preview.png";
+      fs.statSync(name); // meh check-then-act who cares
+      vfs.write("workshop_preview_image.png", fs.createReadStream(name));
+    } catch (e) {
+      // ignore
     }
 
     const src = path.join(process.cwd(), "src");
