@@ -1,6 +1,6 @@
 {
   "name": "@noita-ts/base",
-  "version": "0.3.1",
+  "version": "0.4.1",
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "files": [
     "types/**/*.d.ts",
@@ -15,8 +15,9 @@
   "type": "module",
   "scripts": {
     "publish": "npm run build && npm publish --access public",
-    "build": "npm run typegen && npm run build:lua && npm run build:bin",
+    "build": "npm run typegen && npm run build:lua && npm run build:bin && npm run build:noita-api",
     "build:lua": "tstl -p .",
+    "build:noita-api": "curl -Lo dist/noita.d.lua https://raw.githubusercontent.com/NathanSnail/AutoLuaAPI/c8947a4977cff16148a7e7f574721b5decaf2463/out.lua",
     "build:bin": "tsc -p ./tsconfig.bin.json",
     "typegen": "npm run typegen:api && npm run typegen:components",
     "typegen:api": "cd ../typegen; npm run typegen -- lua -f ../base/types/fixups.d.ts -o ../base/types/generated/lua_api.d.ts",
