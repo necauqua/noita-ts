@@ -114,52 +114,81 @@ end
 `,
   );
 
-  const configFile = path.join(cwd, "tsconfig.json");
-  const res = tstl.parseConfigFileWithSystem(configFile, {
-    tstlVerbose: verbose,
-    luaPlugins: [
-      {
-        plugin: {
-          visitors: {
-            [ts.SyntaxKind.ImportDeclaration]: (node, context) => {
-              const statement = context.superTransformStatements(node);
+  const config = tstl.parseConfigFileWithSystem(
+    path.join(cwd, "tsconfig.json"),
+    {
+      tstlVerbose: verbose,
+      sourceMapTraceback: buildData.dev,
+      luaPlugins: [
+        {
+          plugin: {
+            beforeEmit(_program, _options, emitHost, result) {
+              for (const file of result) {
+                const relative = path.relative(
+                  emitHost.getCurrentDirectory(),
+                  file.outputPath,
+                );
+                file.outputPath = path.resolve(
+                  cwd,
+                  relative.replace(/^src\//, ""),
+                );
 
-              const scope = context.scopeStack[context.scopeStack.length - 1];
-              scope.importStatements;
+                file.code =
+                  `dofile_once('mods/${buildData.modId}/require_shim.lua')\n\n` +
+                  file.code;
 
-              return statement;
+                const { fileName } = file as any; // from tstl.ProcessedFile
+                if (typeof fileName !== "string") {
+                  continue;
+                }
+                const dir = path.dirname(fileName);
+                for (const [_, include] of file.code.matchAll(
+                  /^\s*---\s*@noita-ts-include\s+(\S+)\s*$/gm,
+                )) {
+                  if (verbose) {
+                    console.log(
+                      `@noita-ts-include "${include}" encountered in ${relative}`,
+                    );
+                  }
+                  const originalFile = path.resolve(dir, include);
+                  try {
+                    fs.statSync(originalFile);
+                    vfs.write(
+                      path.join(path.dirname(relative), include),
+                      fs.createReadStream(originalFile),
+                    );
+                  } catch (e) {
+                    console.error(
+                      `failed to include ${include} from file ${relative}`,
+                    );
+                  }
+                }
+              }
             },
+            moduleResolution: (module) =>
+              module == "$mod" ? syntheticModule : undefined,
           },
-          beforeEmit(_program, _options, _emitHost, result) {
-            for (const file of result) {
-              const relative = path.relative(process.cwd(), file.outputPath);
-              file.outputPath = path.resolve(
-                cwd,
-                relative.replace(/^src\//, ""),
-              );
-              file.code =
-                `dofile_once('mods/${buildData.modId}/require_shim.lua')\n\n` +
-                file.code;
-            }
-          },
-          moduleResolution: (module) =>
-            module == "$mod" ? syntheticModule : undefined,
         },
-      },
-    ],
-  });
-
-  if (res.errors.length > 0) {
-    return res.errors;
-  }
-
-  const { diagnostics } = tstl.transpileProject(
-    configFile,
-    res.options,
-    (fileName, text) => vfs.write(path.relative(process.cwd(), fileName), text),
+      ],
+    },
   );
 
-  return diagnostics;
+  if (config.errors.length > 0) {
+    return config.errors;
+  }
+
+  const program = ts.createProgram(config.fileNames, config.options);
+  const preEmitDiagnostics = ts.getPreEmitDiagnostics(program);
+  const { diagnostics } = new tstl.Transpiler().emit({
+    program,
+    writeFile: (fileName, text) =>
+      vfs.write(path.relative(process.cwd(), fileName), text),
+  });
+
+  return ts.sortAndDeduplicateDiagnostics([
+    ...preEmitDiagnostics,
+    ...diagnostics,
+  ]);
 }
 
 class NoitaMod {
