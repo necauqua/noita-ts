@@ -1,4 +1,3 @@
----@diagnostic disable-next-line: undefined-global
 print_error("A bundled lua file was imported!")
 
 LUA_POLLUTION_HAPPENED = 'yep'
