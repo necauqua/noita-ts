@@ -31,6 +31,11 @@ interface ComponentTypeMap {
 }
 
 /**
+ * Extend NXML shapes with documented components
+ */
+declare interface NxmlShapes extends ComponentShapes {}
+
+/**
  * A Noita analog of `print` which has a higher chance of actually being
  * printed in the ~~console~~ noita/logger.txt file.
  */

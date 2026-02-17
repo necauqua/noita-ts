@@ -1,0 +1,14 @@
+{
+  "name": "@noita-ts/nxml",
+  "version": "0.1.0",
+  "files": [
+    "index.lua",
+    "index.d.ts"
+  ],
+  "main": "index",
+  "type": "module",
+  "types": "index.d.ts",
+  "dependencies": {
+    "@typescript-to-lua/language-extensions": "^1.19.0"
+  }
+}
