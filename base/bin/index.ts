@@ -118,7 +118,7 @@ end
     path.join(cwd, "tsconfig.json"),
     {
       tstlVerbose: verbose,
-      sourceMapTraceback: buildData.dev,
+      // sourceMapTraceback: buildData.dev, // requires "debug", so only works for unsafe mods
       luaPlugins: [
         {
           plugin: {
