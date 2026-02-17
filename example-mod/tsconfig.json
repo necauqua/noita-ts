@@ -1,4 +1,3 @@
 {
-  "$schema": "https://raw.githubusercontent.com/TypeScriptToLua/TypeScriptToLua/master/tsconfig-schema.json",
-  "extends": "@noita-ts/base/mod-tsconfig.json"
+  "extends": "@noita-ts/base/mod-tsconfig.json",
 }

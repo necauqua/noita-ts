@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+  "runtime.version": "LuaJIT",
   "workspace.library": ["${workspaceFolder}/base/dist/noita.d.lua"],
-  "diagnostics.disable": ["lowercase-global"],
-  "runtime.version": "LuaJIT"
+  "diagnostics.disable": ["lowercase-global"]
 }

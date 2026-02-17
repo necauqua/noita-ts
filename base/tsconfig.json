@@ -7,13 +7,13 @@
     "strict": true,
     "types": ["lua-types/jit", "@typescript-to-lua/language-extensions"],
     "declaration": true,
-    "composite": true,
-    "outDir": "dist"
+    "outDir": "dist",
   },
   "include": ["src/**/*.ts", "types/**/*.d.ts"],
   "references": [{ "path": "./tsconfig.bin.json" }],
   "tstl": {
+    "noResolvePaths": ["$mod"],
     "luaTarget": "JIT",
-    "noImplicitSelf": true
-  }
+    "noImplicitSelf": true,
+  },
 }

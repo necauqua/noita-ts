@@ -2,11 +2,12 @@
   "compilerOptions": {
     "target": "ESNext",
     "lib": ["ESNext"],
-    "moduleResolution": "Node",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "strict": true,
     "composite": true,
-    "outDir": "dist"
+    "outDir": "dist",
   },
-  "include": ["bin/**/*.ts"]
+  "include": ["bin/**/*.ts"],
 }

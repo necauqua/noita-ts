@@ -1,6 +1,8 @@
 /// <reference path="./generated/lua_api.d.ts" />
 /// <reference path="./generated/components.d.ts" />
 /// <reference path="./fixups.d.ts" />
+/// <reference path="./settings.d.ts" />
+/// <reference path="./util.d.ts" />
 
 /** @noSelfInFile */
 

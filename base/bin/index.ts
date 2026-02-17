@@ -71,20 +71,12 @@ function transpile(
 ): readonly ts.Diagnostic[] {
   const cwd = process.cwd();
 
-  const noitaTsDir = path.join(cwd, "node_modules", "@noita-ts");
-  fs.mkdirSync(noitaTsDir, { recursive: true }); // just in case idk
-
-  const syntheticModule = path.join(noitaTsDir, "$mod.lua");
-  fs.writeFileSync(
-    syntheticModule,
-    `return { MOD_ID = "${buildData.modId}", DEV = ${buildData.dev} }`,
-  );
-
-  vfs.write(
-    "require_shim.lua",
-    `local original_require = require
+  const require_shim = `local original_require = require
 
 function require(module)
+  if module == "$mod" then
+    return { MOD_ID = "${buildData.modId}", DEV = ${buildData.dev} }
+  end
   local filename = (module:match'^data/.-%.lua$' or module:match'^mods/.-%.lua$' or (module:match'^[^./]+$' and module ~= 'lualib_bundle')) and module or 'mods/${buildData.modId}/' .. module:gsub('^src%.', ''):gsub('%.lua$', ''):gsub('%.', '/') .. '.lua'
   local cached = __loadonce[filename]
   if cached ~= nil then
@@ -111,8 +103,47 @@ function require(module)
   -- do_mod_appends(filename) -- figuring out setfenv setup for mod appends for now :(
   return result
 end
-`,
-  );
+`;
+  vfs.write("require_shim.lua", require_shim);
+
+  const global_prepend = `dofile_once('mods/${buildData.modId}/require_shim.lua')\n\n`;
+
+  const settings_prepend = `function require(module)
+  if module == "$mod" then
+    return { MOD_ID = "${buildData.modId}", DEV = ${buildData.dev} }
+  end
+  local cached = __loadonce[module]
+  if cached ~= nil then
+    return cached[1]
+  end
+  local f, err = loadfile(module)
+  if f == nil then
+    return f, err
+  end
+  local env = setmetatable({}, { __index = _G })
+  local result = setfenv(f, env)()
+  local captured = {}
+  for k, v in pairs(env) do captured[k] = v end
+  if type(result) ~= 'table' then
+    captured.default = result
+    result = captured
+  end
+  __loadonce[module] = { result }
+  -- do_mod_appends(module) -- figuring out setfenv setup for mod appends for now :(
+  return result
+end`;
+
+  const settings_insert = `
+local ____lib = require 'data/scripts/lib/mod_settings.lua'
+local ModSettingScope = {
+  NewGame = ____lib.MOD_SETTING_SCOPE_NEW_GAME,
+  Restart = ____lib.MOD_SETTING_SCOPE_RUNTIME_RESTART,
+  Runtime = ____lib.MOD_SETTING_SCOPE_RUNTIME,
+}
+function ModSettingsUpdate(init_scope) ____lib.mod_settings_update("${buildData.modId}", $1, init_scope) end
+function ModSettingsGuiCount() return ____lib.mod_settings_gui_count("${buildData.modId}", $1) end
+function ModSettingsGui(gui, in_main_menu) ____lib.mod_settings_gui("${buildData.modId}", $1, gui, in_main_menu) end
+$1 = `;
 
   const config = tstl.parseConfigFileWithSystem(
     path.join(cwd, "tsconfig.json"),
@@ -133,9 +164,18 @@ end
                   relative.replace(/^src\//, ""),
                 );
 
-                file.code =
-                  `dofile_once('mods/${buildData.modId}/require_shim.lua')\n\n` +
-                  file.code;
+                if (relative == "src/settings.lua") {
+                  file.code =
+                    settings_prepend +
+                    "\n" +
+                    file.code.replace(
+                      /(_+exports\.default) = /,
+                      settings_insert,
+                    );
+                  continue;
+                }
+
+                file.code = global_prepend + file.code;
 
                 const { fileName } = file as any; // from tstl.ProcessedFile
                 if (typeof fileName !== "string") {
@@ -165,8 +205,6 @@ end
                 }
               }
             },
-            moduleResolution: (module) =>
-              module == "$mod" ? syntheticModule : undefined,
           },
         },
       ],
@@ -278,10 +316,9 @@ class NoitaMod {
       dont_upload_files: (
         packageJson?.["noita.workshop.skip-files"] ?? []
       ).join("|"),
-      dont_upload_folders: [
-        ".jj",
-        ...(packageJson?.["noita.workshop.skip-folders"] ?? []),
-      ].join("|"),
+      dont_upload_folders: (
+        packageJson?.["noita.workshop.skip-folders"] ?? []
+      ).join("|"),
     };
 
     const xmlConfig = (entries: Record<string, string | undefined>) =>

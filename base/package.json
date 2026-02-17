@@ -1,6 +1,6 @@
 {
   "name": "@noita-ts/base",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "files": [
     "types/**/*.d.ts",
@@ -24,7 +24,6 @@
     "typegen:components": "cd ../typegen; npm run typegen -- components -o ../base/types/generated/components.d.ts"
   },
   "dependencies": {
-    "@npmcli/package-json": "^7.0.4",
     "@typescript-to-lua/language-extensions": "^1.19.0",
     "archiver": "^7.0.1",
     "commander": "^14.0.2",
