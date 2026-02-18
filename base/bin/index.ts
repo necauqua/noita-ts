@@ -14,6 +14,7 @@ import syncDirectory from "sync-directory";
 import ts from "typescript";
 import tstl from "typescript-to-lua";
 import * as jsonc from "jsonc-parser";
+import JsonPlugin from "./json-plugin.js";
 
 class VFS {
   files: Record<string, string | ReadStream> = {};
@@ -151,6 +152,7 @@ $1 = `;
       tstlVerbose: verbose,
       // sourceMapTraceback: buildData.dev, // requires "debug", so only works for unsafe mods
       luaPlugins: [
+        { plugin: new JsonPlugin(verbose) },
         {
           plugin: {
             beforeEmit(_program, _options, emitHost, result) {
