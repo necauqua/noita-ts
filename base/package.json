@@ -5,10 +5,10 @@
   "files": [
     "types/**/*.d.ts",
     "dist/**/*.{js,lua,d.ts}",
-    "mod-tsconfig.json",
-    "tsconfigs/*.json"
+    "mod-tsconfig.json"
   ],
-  "main": "dist/src/index",
+  "main": "dist/index",
+  "types": "dist/index.d.ts",
   "bin": {
     "nts": "dist/bin/index.js"
   },

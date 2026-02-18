@@ -4,10 +4,9 @@
     "lib": ["ESNext"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "esModuleInterop": true,
     "strict": true,
-    "composite": true,
-    "outDir": "dist",
+    "rootDir": "bin",
+    "outDir": "dist/bin",
   },
-  "include": ["bin/**/*.ts"],
+  "include": ["bin"],
 }
