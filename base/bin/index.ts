@@ -159,12 +159,10 @@ $1 = `;
                   emitHost.getCurrentDirectory(),
                   file.outputPath,
                 );
-                file.outputPath = path.resolve(
-                  cwd,
-                  relative.replace(/^src\//, ""),
-                );
+                const srcRelative = relative.replace(/^src[\/\\]+/, "");
+                file.outputPath = path.resolve(cwd, srcRelative);
 
-                if (relative == "src/settings.lua") {
+                if (srcRelative == "settings.lua") {
                   file.code =
                     settings_prepend +
                     "\n" +
