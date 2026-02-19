@@ -18,7 +18,7 @@
     "build": "npm run typegen && npm run build:lua && npm run build:bin && npm run build:noita-api",
     "build:lua": "tstl -p . && cp src/*.lua dist/",
     "build:noita-api": "test -f dist/noita.d.lua || curl -Lo dist/noita.d.lua https://raw.githubusercontent.com/NathanSnail/AutoLuaAPI/c8947a4977cff16148a7e7f574721b5decaf2463/out.lua",
-    "build:bin": "tsc -p ./tsconfig.bin.json",
+    "build:bin": "tsc -p ./tsconfig.bin.json && cp bin/*.lua dist/bin",
     "typegen": "npm run typegen:api && npm run typegen:components",
     "typegen:api": "cd ../typegen; npm run typegen -- lua -f ../base/types/fixups.d.ts -o ../base/types/generated/lua_api.d.ts",
     "typegen:components": "cd ../typegen; npm run typegen -- components -o ../base/types/generated/components.d.ts"
