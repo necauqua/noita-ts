@@ -157,7 +157,9 @@ declare namespace nxml {
      */
     first_of<N extends NxmlNames>(
       element_name: N,
-    ): LuaMultiReturn<[XMLElement<N>, number]> | undefined;
+    ):
+      | LuaMultiReturn<[XMLElement<N>, number]>
+      | LuaMultiReturn<[undefined, undefined]>;
 
     /**
      * Returns the nth child element with the given name and its index.
@@ -165,7 +167,9 @@ declare namespace nxml {
     nth_of<N extends NxmlNames>(
       element_name: N,
       n: number,
-    ): LuaMultiReturn<[XMLElement<N>, number]> | undefined;
+    ):
+      | LuaMultiReturn<[XMLElement<N>, number]>
+      | LuaMultiReturn<[undefined, undefined]>;
 
     /**
      * Iterate over each child with the given name, effectively a filter.
