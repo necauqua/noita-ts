@@ -1,5 +1,4 @@
 local ffi = require 'ffi'
-local bit = require 'bit'
 
 ---@class Section
 --- @field name string
@@ -137,7 +136,7 @@ function Section:scan(needle, params)
             check(index >= 0 and index <= self.len, 'not found: at parameter out of bounds', name, 1)
         end
         for _ = 0, skip do
-            local found = memfind(self.offset + index, self.len - index, needle, needle_len, limit, name)
+            local found = memfind(self.offset + index, self.len - index, needle, needle_len --[[ @as integer ]], limit, name)
             index = found - self.offset + needle_len
         end
         return self.offset + index - needle_len
@@ -149,7 +148,7 @@ function Section:scan(needle, params)
         check(index >= 0 and index <= self.len, 'not found: at parameter out of bounds', name, 1)
     end
     for _ = 0, skip do
-        local found = memrfind(self.offset, index, needle, needle_len, limit, name)
+        local found = memrfind(self.offset, index, needle, needle_len --[[ @as integer ]], limit, name)
         index = found - self.offset
     end
     return self.offset + index

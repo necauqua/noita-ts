@@ -2,7 +2,10 @@ import fs from "fs";
 import path from "path";
 import ts from "typescript";
 import tstl from "typescript-to-lua";
-import JsonPlugin from "./json-plugin.js";
+import IncludePlugin from "./plugins/include.js";
+import JsonPlugin from "./plugins/json-polyfill.js";
+import NoitaRequirePlugin from "./plugins/noita-require.js";
+import NoitaSettingsPlugin from "./plugins/noita-settings.js";
 import VFS from "./vfs.js";
 
 export type BuildData = {
@@ -13,95 +16,31 @@ export type BuildData = {
 function transpile(
   vfs: VFS,
   verbose: boolean,
-  { modId, dev }: BuildData,
+  buildData: BuildData,
 ): readonly ts.Diagnostic[] {
+  const luaPlugins: tstl.InMemoryLuaPlugin[] = [
+    { plugin: new JsonPlugin("@noita-ts/base/dist/json", verbose) },
+    {
+      plugin: new IncludePlugin(
+        "noita-ts-include",
+        vfs.write.bind(vfs),
+        verbose,
+      ),
+    },
+    { plugin: new NoitaRequirePlugin(buildData, vfs.write.bind(vfs)) },
+  ];
+  const writeFile = (fileName: string, text: string) =>
+    vfs.write(path.relative(cwd, fileName), text);
+
   const cwd = process.cwd();
-
-  const shim = fs
-    .readFileSync(new URL("require_shim.lua", import.meta.url), "utf-8")
-    .replaceAll("{{MOD_ID}}", modId)
-    .replaceAll('"{{DEV}}"', dev.toString());
-
-  vfs.write("require_shim.lua", shim);
-
-  const settings_prepend = fs
-    .readFileSync(new URL("settings_shim.lua", import.meta.url), "utf-8")
-    .replaceAll("{{MOD_ID}}", modId)
-    .replaceAll('"{{DEV}}"', dev.toString());
-
-  const settings_insert = `
-local ____lib = require 'data/scripts/lib/mod_settings.lua'
-local ModSettingScope = {
-  NewGame = ____lib.MOD_SETTING_SCOPE_NEW_GAME,
-  Restart = ____lib.MOD_SETTING_SCOPE_RUNTIME_RESTART,
-  Runtime = ____lib.MOD_SETTING_SCOPE_RUNTIME,
-}
-function ModSettingsUpdate(init_scope) ____lib.mod_settings_update("${modId}", $1, init_scope) end
-function ModSettingsGuiCount() return ____lib.mod_settings_gui_count("${modId}", $1) end
-function ModSettingsGui(gui, in_main_menu) ____lib.mod_settings_gui("${modId}", $1, gui, in_main_menu) end
-$1 = `;
 
   const config = tstl.parseConfigFileWithSystem(
     path.join(cwd, "tsconfig.json"),
     {
       tstlVerbose: verbose,
       // sourceMapTraceback: dev, // requires "debug", so only works for unsafe mods
-      luaPlugins: [
-        { plugin: new JsonPlugin(verbose) },
-        {
-          plugin: {
-            beforeEmit(_program, _options, emitHost, result) {
-              for (const file of result) {
-                const relative = path.relative(
-                  emitHost.getCurrentDirectory(),
-                  file.outputPath,
-                );
-                const srcRelative = relative.replace(/^src[\/\\]+/, "");
-                file.outputPath = path.resolve(cwd, srcRelative);
-
-                if (srcRelative == "settings.lua") {
-                  file.code =
-                    settings_prepend +
-                    "\n" +
-                    file.code.replace(
-                      /(_+exports\.default) = /,
-                      settings_insert,
-                    );
-                  continue;
-                }
-                file.code = `dofile_once('mods/${modId}/require_shim.lua')\n\n${file.code}`;
-
-                const { fileName } = file as any; // from tstl.ProcessedFile
-                if (typeof fileName !== "string") {
-                  continue;
-                }
-                const dir = path.dirname(fileName);
-                for (const [_, include] of file.code.matchAll(
-                  /^\s*---\s*@noita-ts-include\s+(\S+)\s*$/gm,
-                )) {
-                  if (verbose) {
-                    console.log(
-                      `@noita-ts-include "${include}" encountered in ${relative}`,
-                    );
-                  }
-                  const originalFile = path.resolve(dir, include);
-                  try {
-                    fs.statSync(originalFile);
-                    vfs.write(
-                      path.join(path.dirname(relative), include),
-                      fs.createReadStream(originalFile),
-                    );
-                  } catch (e) {
-                    console.error(
-                      `failed to include ${include} from file ${relative}`,
-                    );
-                  }
-                }
-              }
-            },
-          },
-        },
-      ],
+      luaPlugins,
+      rootDir: "src",
     },
   );
 
@@ -109,18 +48,41 @@ $1 = `;
     return config.errors;
   }
 
-  const program = ts.createProgram(config.fileNames, config.options);
-  const preEmitDiagnostics = ts.getPreEmitDiagnostics(program);
-  const { diagnostics } = new tstl.Transpiler().emit({
-    program,
-    writeFile: (fileName, text) =>
-      vfs.write(path.relative(process.cwd(), fileName), text),
-  });
+  const diagnostics: ts.Diagnostic[] = [];
 
-  return ts.sortAndDeduplicateDiagnostics([
-    ...preEmitDiagnostics,
-    ...diagnostics,
-  ]);
+  const program = ts.createProgram(config.fileNames, config.options);
+  diagnostics.push(...ts.getPreEmitDiagnostics(program));
+
+  const res = new tstl.Transpiler().emit({ program, writeFile });
+  diagnostics.push(...res.diagnostics);
+
+  // Settings cannot dofile_once any non-vanilla files - including our own
+  //  - but we allow to import own files by the magic of having an additional
+  //  tstl pass with bundling enabled
+  //  This is kinda required for lualib_bundle, because the moment you use any
+  //  TS polyfill, the settings would break 🤷
+  const settings = path.join("src", "settings.ts");
+  const settingsFull = path.join(cwd, settings);
+  if (program.getRootFileNames().findIndex((f) => f == settingsFull) !== -1) {
+    if (verbose) {
+      console.log("Second transpilation pass (to bundle settings.ts):");
+    }
+
+    luaPlugins.unshift({ plugin: new NoitaSettingsPlugin(buildData) });
+    config.options.luaBundle = "settings.lua";
+    config.options.luaBundleEntry = settings;
+
+    const settingsProgram = ts.createProgram([settingsFull], config.options);
+    diagnostics.push(...ts.getPreEmitDiagnostics(settingsProgram));
+
+    const res = new tstl.Transpiler().emit({
+      program: settingsProgram,
+      writeFile,
+    });
+    diagnostics.push(...res.diagnostics);
+  }
+
+  return ts.sortAndDeduplicateDiagnostics(diagnostics);
 }
 
 export default class NoitaMod {

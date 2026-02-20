@@ -1,5 +1,4 @@
 local ffi = require 'ffi'
-local bit = require 'bit'
 
 ffi.cdef [[
     typedef struct cpp_string {

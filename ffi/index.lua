@@ -2,7 +2,6 @@
 ---@class ffi.cdata*
 
 local ffi = require 'ffi'
-local bit = require 'bit'
 local Section = require 'section'
 
 --- @type Section

@@ -13,7 +13,7 @@
     ]
   },
   "tstl": {
-    "noResolvePaths": ["ffi", "bit", "$mod", "**.lua"],
+    "noResolvePaths": ["$mod", "**.lua", "ffi"],
     "luaTarget": "JIT",
     "luaLibImport": "require-minimal",
     "noImplicitSelf": true

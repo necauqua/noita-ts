@@ -7,13 +7,15 @@ import {
   Visitors,
 } from "typescript-to-lua";
 
-export default class JsonPlugin implements Plugin {
+export default class JsonPolyfillPlugin implements Plugin {
+  private prefix: string;
   private verbose: boolean;
   visitors?: Visitors | undefined;
 
   private jsonImportingFiles = new Set<string>();
 
-  constructor(verbose: boolean) {
+  constructor(module: string, verbose: boolean) {
+    this.prefix = `local JSON = require("${module}")\n`;
     this.verbose = verbose;
     this.visitors = {
       [ts.SyntaxKind.Identifier]: (node, context) => {
@@ -27,7 +29,7 @@ export default class JsonPlugin implements Plugin {
 
   afterPrint(
     _program: ts.Program,
-    _options: CompilerOptions,
+    options: CompilerOptions,
     _emitHost: EmitHost,
     result: ProcessedFile[],
   ) {
@@ -42,8 +44,11 @@ export default class JsonPlugin implements Plugin {
         console.log(`JSON detected in file: ${file.fileName}`);
       }
 
-      file.code =
-        'local JSON = require("@noita-ts/base/dist/json")\n' + file.code;
+      file.code = this.prefix + file.code;
+
+      if (options.luaBundle) {
+        file.sourceMapNode = undefined;
+      }
     }
   }
 }
