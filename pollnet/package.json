@@ -5,7 +5,7 @@
     "index.lua",
     "index.d.ts",
     "pollnet.dll",
-    "pollnet-license.txt"
+    "LICENSE-pollnet"
   ],
   "main": "index",
   "type": "module",
