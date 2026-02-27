@@ -214,9 +214,9 @@ program
       fs.mkdirSync(outputDir, { recursive: true });
       if (opts.dontArchive) {
         await vfs.finalize(outputDir);
-        console.log(`Built mod folder ${outputDir}/${id}`);
+        console.log(`Built mod folder ${path.join(outputDir, id)}`);
       } else {
-        const zip = path.resolve(outputDir, `${id}.zip`);
+        const zip = path.join(outputDir, `${id}.zip`);
         await vfs.archive(zip);
         console.log(`Built mod zip ${zip}`);
       }

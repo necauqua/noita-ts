@@ -63,7 +63,11 @@ function transpile(
   //  TS polyfill, the settings would break 🤷
   const settings = path.join("src", "settings.ts");
   const settingsFull = path.join(cwd, settings);
-  if (program.getRootFileNames().findIndex((f) => f == settingsFull) !== -1) {
+  if (
+    program
+      .getRootFileNames()
+      .findIndex((f) => path.normalize(f) == settingsFull) !== -1
+  ) {
     if (verbose) {
       console.log("Second transpilation pass (to bundle settings.ts):");
     }
