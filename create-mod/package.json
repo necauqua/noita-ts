@@ -1,0 +1,23 @@
+{
+  "name": "@noita-ts/create-mod",
+  "version": "0.1.0",
+  "description": "Scaffold a new noita-ts mod",
+  "type": "module",
+  "bin": "./dist/index.js",
+  "files": [
+    "dist",
+    "template"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.0.1"
+  }
+}
