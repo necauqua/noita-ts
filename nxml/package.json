@@ -8,7 +8,13 @@
   "main": "index",
   "type": "module",
   "types": "index.d.ts",
+  "scripts": {
+    "prepublishOnly": "tsc -p ."
+  },
   "dependencies": {
     "@typescript-to-lua/language-extensions": "^1.19.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }

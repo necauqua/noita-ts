@@ -1,9 +1,11 @@
 {
-  "name": "@noita-ts/ffi",
-  "version": "0.1.3",
-  "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
+  "name": "@noita-ts/pollnet",
+  "version": "0.1.0",
   "files": [
-    "**/*.{lua,d.ts}"
+    "index.lua",
+    "index.d.ts",
+    "pollnet.dll",
+    "pollnet-license.txt"
   ],
   "main": "index",
   "type": "module",
