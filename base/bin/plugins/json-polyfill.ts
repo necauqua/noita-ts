@@ -1,3 +1,4 @@
+import path from "path";
 import ts from "typescript";
 import {
   CompilerOptions,
@@ -20,7 +21,9 @@ export default class JsonPolyfillPlugin implements Plugin {
     this.visitors = {
       [ts.SyntaxKind.Identifier]: (node, context) => {
         if (node.text === "JSON") {
-          this.jsonImportingFiles.add(node.getSourceFile().fileName);
+          this.jsonImportingFiles.add(
+            path.normalize(node.getSourceFile().fileName),
+          );
         }
         return context.superTransformExpression(node);
       },
