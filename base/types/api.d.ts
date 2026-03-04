@@ -1,3 +1,4 @@
+/// <reference path="./base.d.ts" />
 /// <reference path="./generated/lua_api.d.ts" />
 /// <reference path="./generated/components.d.ts" />
 /// <reference path="./fixups.d.ts" />
@@ -5,19 +6,6 @@
 /// <reference path="./util.d.ts" />
 
 /** @noSelfInFile */
-
-declare namespace tags {
-  const EntityID: unique symbol;
-  const ComponentID: unique symbol;
-  const GuiID: unique symbol;
-  const ComponentName: unique symbol;
-}
-
-type EntityID = number & { readonly [tags.EntityID]: unique symbol };
-type ComponentID = number & {
-  readonly [tags.ComponentID]: unique symbol;
-};
-type GuiID = number & { readonly [tags.GuiID]: unique symbol };
 
 type ComponentName = keyof ComponentShapes;
 
@@ -27,6 +15,10 @@ type Component<Name extends ComponentName> = ComponentID & {
 
 interface ComponentTypeMap {
   EntityID: EntityID;
+  vec2: [number, number];
+  ["LensValue<float>"]: number;
+  ["std::vector<int>"]: number[];
+  ["std::vector<float>"]: number[];
   [x: string]: unknown;
 }
 
