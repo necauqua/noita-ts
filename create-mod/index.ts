@@ -23,7 +23,7 @@ async function main() {
     dirArg ??
     cancellable(
       await p.text({
-        message: "Select a location for the mod:",
+        message: "Select a directory:",
         validate(v) {
           if (!v) {
             return "A dir name is required";
@@ -56,7 +56,7 @@ async function main() {
 
   const name = cancellable(
     await p.text({
-      message: "Ingame UI mod name:",
+      message: "Name:",
       placeholder: "Example TS Mod",
     }),
   );
@@ -71,7 +71,7 @@ async function main() {
   const unsafe = cancellable(
     await p.confirm({
       message:
-        "Require unsafe mode? Also known as 'no API restrictions'. Remember that this prevents the mod from being published to the Steam Workshop.",
+        "Unsafe? (aka 'no API restrictions', prevents publishing to Steam Workshop)",
       initialValue: false,
     }),
   );
@@ -85,21 +85,21 @@ async function main() {
 
   const extraBaseDeps = cancellable(
     await p.multiselect({
-      message: "Choose extra base dependencies:",
+      message:
+        "Extra base dependencies (space to select, enter to confirm/skip):",
+      required: false,
       options: [
         {
           value: "@noita-ts/nxml",
-          label:
-            "@noita-ts/nxml (a library for convenient Noita XML file editing, wrapper around Nathans NXML fork)",
+          hint: "a library for convenient Noita XML file editing, wrapper around Nathans NXML fork",
         },
         {
           value: "@noita-ts/pollnet",
-          label:
-            "@noita-ts/pollnet (a networking library, wrapper around pollnet)",
+          hint: "a networking library, wrapper around pollnet",
         },
         {
           value: "@noita-ts/ffi",
-          label: "@noita-ts/ffi (a set of Noita engine modding utitiles)",
+          hint: "a set of Noita engine modding utitiles",
         },
       ],
     }),
