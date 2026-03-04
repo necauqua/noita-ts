@@ -55,25 +55,15 @@ interface ModSettingValue<V extends boolean | number | string | undefined> {
   scope: ModSettingScope;
   /** If `true` the setting is not shown */
   hidden?: boolean;
-  /** A callback for when the setting is updated in the UI */
-  change_fn?: (
-    this: void,
-    mod_id: string,
-    gui: GuiID,
-    in_main_menu: boolean,
-    setting: this,
-    old_value: V,
-    new_value: V,
-  ) => void;
   /** If set, this is called instead of default setting UI rendering code */
-  ui_fn?: (
-    this: void,
-    mod_id: string,
-    gui: GuiID,
-    in_main_menu: boolean,
-    im_id: number,
-    setting: this,
-  ) => void;
+  draw?: (opts: { gui: GuiID; in_main_menu: boolean; im_id: number }) => void;
+  /** A callback for when the setting is updated in the UI */
+  onchange?: (opts: {
+    gui: GuiID;
+    in_main_menu: boolean;
+    old_value: V;
+    new_value: V;
+  }) => void;
 
   // make it exclusive with categories and labels
   not_setting?: undefined;

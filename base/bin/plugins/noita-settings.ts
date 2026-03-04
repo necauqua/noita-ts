@@ -16,10 +16,24 @@ local ModSettingScope = {
   Runtime = ____lib.MOD_SETTING_SCOPE_RUNTIME,
 }
 local function ____register_handlers(exports)
-    local settings = exports.default
-    ModSettingsUpdate = function(init_scope) ____lib.mod_settings_update("${modId}", settings, init_scope) end
-    ModSettingsGuiCount = function() return ____lib.mod_settings_gui_count("${modId}", settings) end
-    ModSettingsGui = function(gui, in_main_menu) ____lib.mod_settings_gui("${modId}", settings, gui, in_main_menu) end
+  local settings = exports.default
+  for _, setting in pairs(settings) do
+    local draw = setting.draw
+    if draw then
+      setting.ui_fn = function(mod_id, gui, in_main_menu, im_id, setting)
+        draw(setting, { gui = gui, in_main_menu = in_main_menu, im_id = im_id })
+      end
+    end
+    local onchange = setting.onchange
+    if onchange then
+      setting.change_fn = function(mod_id, gui, in_main_menu, setting, old_value, new_value)
+        onchange(setting, { gui = gui, in_main_menu = in_main_menu, old_value = old_value, new_value = new_value })
+      end
+    end
+  end
+  ModSettingsUpdate = function(init_scope) ____lib.mod_settings_update("${modId}", settings, init_scope) end
+  ModSettingsGuiCount = function() return ____lib.mod_settings_gui_count("${modId}", settings) end
+  ModSettingsGui = function(gui, in_main_menu) ____lib.mod_settings_gui("${modId}", settings, gui, in_main_menu) end
 end
 `;
 
