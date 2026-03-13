@@ -9,8 +9,8 @@
     "template"
   ],
   "scripts": {
-    "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "rm -rf dist && npm run build",
+    "build": "tsc"
   },
   "license": "MIT",
   "devDependencies": {
