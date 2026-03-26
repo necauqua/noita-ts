@@ -22,10 +22,17 @@ interface ComponentTypeMap {
   [x: string]: unknown;
 }
 
+type ComponentNxmlShapes = {
+  [C in keyof ComponentShapes]: ComponentShapes[C] & {
+    _enabled?: boolean;
+    _tags?: string;
+  };
+};
+
 /**
  * Extend NXML shapes with documented components
  */
-declare interface NxmlShapes extends ComponentShapes {}
+declare interface NxmlShapes extends ComponentNxmlShapes {}
 
 /**
  * A Noita analog of `print` which has a higher chance of actually being
