@@ -141,3 +141,8 @@ declare function EntityGetFirstComponentIncludingDisabled<
   component_type_name: N,
   tag?: string,
 ): Component<N> | undefined;
+
+/**
+ * Returns a list of component ids.
+ */
+declare function EntityGetAllComponents(entity_id: EntityID): ComponentID[];
