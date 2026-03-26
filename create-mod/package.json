@@ -3,7 +3,9 @@
   "version": "0.1.1",
   "description": "Scaffold a new noita-ts mod",
   "type": "module",
-  "bin": "./dist/index.js",
+  "bin": {
+    "create-mod": "dist/index.js"
+  },
   "files": [
     "dist",
     "template"
