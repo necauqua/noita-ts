@@ -33,6 +33,8 @@ type ModSettingLabel = {
   not_setting: true;
   /** The text to show */
   ui_name: string;
+  /** If `true` the label is not shown */
+  hidden?: boolean;
 
   // make it exclusive with categories and values
   id?: undefined;
