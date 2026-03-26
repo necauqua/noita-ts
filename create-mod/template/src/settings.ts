@@ -3,7 +3,7 @@
 // type.
 //
 // Additionally, you also can declare something like this anywhere:
-// ```typesctipt
+// ```typescript
 // declare global {
 //   interface SettingsShape {
 //     a_setting_we_just_use_to_persist_stuff: string
