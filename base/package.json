@@ -31,8 +31,8 @@
     "lua-types": "^2.13.1",
     "steam-locate": "^1.0.6",
     "sync-directory": "^6.0.5",
-    "typescript": "^5.7.2",
-    "typescript-to-lua": "^1.28.1"
+    "typescript": "^6.0.2",
+    "typescript-to-lua": "^1.36.0"
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",
