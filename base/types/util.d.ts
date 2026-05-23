@@ -13,3 +13,5 @@ type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   : never;
 
 type Prettify<T> = { [K in keyof T]: T[K] } & {};
+
+type Suggest<T extends string> = T | (string & {});

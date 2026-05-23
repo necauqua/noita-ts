@@ -1,5 +1,7 @@
 /** @noSelfInFile */
 
+/// <reference path="./magic-numbers.d.ts" />
+
 declare function EntityAddChild(parent_id: EntityID, child_id: EntityID): void;
 
 /**
@@ -146,3 +148,16 @@ declare function EntityGetFirstComponentIncludingDisabled<
  * Returns a list of component ids.
  */
 declare function EntityGetAllComponents(entity_id: EntityID): ComponentID[];
+
+/**
+ * Gets the value of a Noita lua_global variable.
+ * They exist as part of the WorldStateComponent, so they are persisted per-world.
+ * If the variable doesn't exist, it returns `default_value` if provided, otherwise an empty string.
+ */
+declare function GlobalsGetValue(key: string, default_value?: string): string;
+
+/**
+ * Get one of the magic numbers that control various aspects of the game.
+ * They can be set by xml files via `ModMagicNumbersFileAdd`.
+ */
+declare function MagicNumbersGetValue(key: Suggest<MagicNumbers>): string;
