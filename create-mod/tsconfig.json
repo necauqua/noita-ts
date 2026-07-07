@@ -5,6 +5,7 @@
     "moduleResolution": "nodenext",
     "outDir": "dist",
     "strict": true,
+    "types": ["node"],
   },
   "exclude": ["template"],
 }
