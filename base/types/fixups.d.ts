@@ -161,3 +161,12 @@ declare function GlobalsGetValue(key: string, default_value?: string): string;
  * They can be set by xml files via `ModMagicNumbersFileAdd`.
  */
 declare function MagicNumbersGetValue(key: Suggest<MagicNumbers>): string;
+
+/**
+ * A faster(?) shorthand for `EntityGetFirstComponent(entity_id, "GameEffectComponent")`, used by vanilla code.
+ * Yes, it returns 0 if the entity doesn't have the effect, not `nil`.
+ */
+declare function GameGetGameEffect(
+  entity_id: EntityID,
+  game_effect_name: string,
+): Component<"GameEffectComponent"> | 0;
