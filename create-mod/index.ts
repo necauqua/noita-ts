@@ -162,6 +162,13 @@ async function main() {
     },
   };
 
+  // npm strips .gitignore files from published packages,
+  // so it cannot live in the template and is generated here instead
+  fs.writeFileSync(
+    path.join(location, ".gitignore"),
+    ["node_modules", "dist", "noita"].join("\n") + "\n",
+  );
+
   fs.writeFileSync(
     path.join(location, "package.json"),
     JSON.stringify(pkg, null, 2) + "\n",
