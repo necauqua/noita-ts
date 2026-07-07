@@ -142,16 +142,21 @@ declare const _default: {
 
   cdef(this: void, cdefs: string): void;
 
-  cast<K extends keyof CommonFfiTypes>(
+  // Suggest<keyof CommonFfiTypes | `${keyof CommonFfiTypes}*`>
+  cast<
+    K extends (string & {}) | keyof CommonFfiTypes | `${keyof CommonFfiTypes}*`,
+  >(
     this: void,
     type: K,
     ptr: any,
-  ): CommonFfiTypes[K];
+  ): FfiType<K>;
   cast<T>(this: void, type: string, ptr: any): T;
 
   offsetof(this: void, structName: string, memberName: string): number;
 
   C: Record<string, any>;
+
+  load(this: void, libName: string): Record<string, any>;
 };
 
 export type Ptr<T> = {
@@ -159,15 +164,24 @@ export type Ptr<T> = {
 };
 
 type CommonFfiTypes = {
-  "uint8_t*": Ptr<number>;
-  "uint16_t*": Ptr<number>;
-  "uint32_t*": Ptr<number>;
-  "uint64_t*": Ptr<number>;
+  bool: boolean;
 
-  "int8_t*": Ptr<number>;
-  "int16_t*": Ptr<number>;
-  "int32_t*": Ptr<number>;
-  "int64_t*": Ptr<number>;
-};
+  uint8_t: number;
+  uint16_t: number;
+  uint32_t: number;
+  uint64_t: number;
+
+  int8_t: number;
+  int16_t: number;
+  int32_t: number;
+  int64_t: number;
+
+  float: number;
+  double: number;
+} & Record<string, unknown>;
+
+type FfiType<K extends string> = K extends `${infer T}*`
+  ? Ptr<FfiType<T>>
+  : CommonFfiTypes[K];
 
 export default _default;
