@@ -191,7 +191,7 @@ export class HttpClient {
         throw new Error(`socket error: ${error}`);
       }
       const [statusStr, headersStr, respBody] = msgs;
-      const status = tonumber(string.match("^%d+", statusStr)) ?? 500;
+      const status = tonumber(string.match("^%d+", statusStr)[0]) ?? 500;
       return new HttpResponse(status, headersStr, respBody);
     });
   }
