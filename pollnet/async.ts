@@ -119,13 +119,14 @@ export class HttpResponse {
     this.body = body;
   }
 
+  /** @noSelf */
   static read(socket: pollnet.Socket): HttpResponse {
     const [msgs, error] = socket.await_n(3);
     if (!msgs) {
       throw new Error(`socket error: ${error}`);
     }
     const [statusStr, headersStr, respBody] = msgs;
-    const status = tonumber(string.match("^%d+", statusStr)[0]) ?? 500;
+    const status = tonumber(string.match(statusStr, "^%d+")[0]) ?? 500;
     return new HttpResponse(status, headersStr, respBody);
   }
 
