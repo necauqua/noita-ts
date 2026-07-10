@@ -4,7 +4,7 @@
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "files": [
     "types/**/*.d.ts",
-    "dist/**/*.{lua,d.ts}",
+    "dist/**/*.{js,lua,d.ts}",
     "mod-tsconfig.json"
   ],
   "type": "module",
