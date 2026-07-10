@@ -13,5 +13,6 @@
     "noResolvePaths": ["$mod", "ffi"],
     "buildMode": "library",
     "luaTarget": "JIT",
+    "luaLibImport": "require-minimal",
   },
 }

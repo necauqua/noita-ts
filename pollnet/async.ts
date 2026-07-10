@@ -1,54 +1,109 @@
-import pollnet from "./index";
+import pollnet from ".";
 
-/**
- * Run `body` inside a reactor coroutine and get its completion as a Promise.
- * `body` may freely use socket.await() / other yield-based pollnet APIs.
- * Errors inside body reject the promise.
- */
-export const spawn = <T>(
-  reactor: pollnet.Reactor,
-  body: () => T,
-): Promise<T> => {
-  return new Promise<T>((resolve, reject) => {
-    reactor.run(() => {
-      try {
-        resolve(body());
-      } catch (e) {
-        reject(e);
-      }
+export namespace compat {
+  /**
+   * Run `body` inside a reactor coroutine and get its completion as a Promise.
+   * `body` may freely use socket.await() / other yield-based pollnet APIs.
+   * Errors inside body reject the promise.
+   */
+  export const asyncify = <T>(
+    reactor: pollnet.Reactor,
+    body: () => T,
+  ): Promise<T> => {
+    return new Promise<T>((resolve, reject) => {
+      reactor.run(() => {
+        try {
+          resolve(body());
+        } catch (e) {
+          reject(e);
+        }
+      });
     });
-  });
-};
+  };
+
+  /**
+   * Parks the *current coroutine* until the promise settles, then returns its
+   * value or rethrows its rejection.
+   * Only call from inside a reactor coroutine (`reactor.run(() => { .. HERE .. })`).
+   */
+  export const yieldPromise = <T>(p: Promise<T>): T => {
+    let done = false;
+    let ok = false;
+    let result: unknown;
+    p.then(
+      (v) => {
+        done = true;
+        ok = true;
+        result = v;
+      },
+      (e) => {
+        done = true;
+        ok = false;
+        result = e;
+      },
+    );
+    while (!done) {
+      coroutine.yield();
+    }
+    if (!ok) {
+      throw result;
+    }
+    return result as T;
+  };
+}
 
 /**
- * Parks the *current coroutine* until the promise settles, then returns its
- * value or rethrows its rejection.
- * Only call from inside a reactor coroutine (`reactor.run(() => { .. HERE .. })`).
+ * Promise-friendly wrapper around a {@link pollnet.Reactor}.
+ *
+ * Lets you drive yield-based pollnet coroutines while exposing their results
+ * as Promises. Call {@link poll} regularly (e.g. once per frame) to advance
+ * all running coroutines.
  */
-export const blockOn = <T>(p: Promise<T>): T => {
-  let done = false;
-  let ok = false;
-  let result: unknown;
-  p.then(
-    (v) => {
-      done = true;
-      ok = true;
-      result = v;
-    },
-    (e) => {
-      done = true;
-      ok = false;
-      result = e;
-    },
-  );
-  while (!done) {
-    coroutine.yield();
+export class AsyncReactor {
+  private reactor: pollnet.Reactor;
+
+  constructor() {
+    this.reactor = pollnet.Reactor();
   }
-  if (!ok) {
-    throw result;
+
+  /**
+   * Advance every coroutine currently running on the reactor by one step.
+   * Must be called periodically for spawned work to make progress.
+   */
+  poll() {
+    return this.reactor.update();
   }
-  return result as T;
-};
+
+  /**
+   * Run `body` as a reactor coroutine and return its result as a Promise.
+   * `body` may use yield-based pollnet APIs (e.g. `socket.await()`).
+   */
+  spawn<T>(body: () => T): Promise<T> {
+    return compat.asyncify(this.reactor, body);
+  }
+
+  /**
+   * Async version of `pollnet.Reactor.run_server`.
+   *
+   * Accept connections on `server_sock`, spawning a coroutine that runs
+   * `client_body` for each incoming client. `client_body` receives the client
+   * socket and its remote address, and may itself return a Promise which the
+   * coroutine parks on until it settles.
+   */
+  runServer(
+    server_sock: pollnet.Socket,
+    client_body: (sock: pollnet.Socket, addr: string) => Promise<void>,
+  ) {
+    server_sock.on_connection((client_sock, addr) => {
+      this.reactor.run(() =>
+        compat.yieldPromise(client_body(client_sock, addr)),
+      );
+    });
+    this.reactor.run(() => {
+      while (server_sock.await()[0]) {}
+    });
+  }
+}
 
 export class HttpResponse {
   status: number;
@@ -61,6 +116,11 @@ export class HttpResponse {
     this.body = body;
   }
 
+  /**
+   * Parse the raw header block into a map.
+   * Header names seen more than once collapse into an array of their values, in
+   * order.
+   */
   parseHeaders(): Record<string, string | string[]> {
     const headers: Record<string, string | string[]> = {};
     for (const line of this.headers.split("\n")) {
@@ -83,35 +143,25 @@ export class HttpResponse {
   }
 }
 
-export default class AsyncReactor {
-  private reactor: pollnet.Reactor;
+/**
+ * Tiny async HTTP client built on top of an {@link AsyncReactor}.
+ * Requests run as reactor coroutines and resolve to an {@link HttpResponse}.
+ */
+export class HttpClient {
+  private reactor: AsyncReactor;
 
-  constructor() {
-    this.reactor = pollnet.Reactor();
+  constructor(reactor: AsyncReactor) {
+    this.reactor = reactor;
   }
 
-  update() {
-    return this.reactor.update();
-  }
-
-  /** Runs a coroutine thread */
-  run(thread_body: (this: pollnet.Reactor) => void) {
-    this.reactor.run(thread_body);
-  }
-
-  /** Runs a server with client handler */
-  run_server(
-    server_sock: pollnet.Socket,
-    client_body: (sock: pollnet.Socket, addr: string) => void,
-  ) {
-    this.reactor.run_server(server_sock, client_body);
-  }
-
-  http_get(
+  /**
+   * Perform an HTTP GET.
+   */
+  get(
     url: string,
     headers?: Record<string, string | string[]> | string,
   ): Promise<HttpResponse> {
-    return spawn(this.reactor, () => {
+    return this.reactor.spawn(() => {
       const socket = pollnet.http_get(url, headers, false);
       const [msgs, error] = socket.await_n(3);
       if (!msgs) {
@@ -123,12 +173,15 @@ export default class AsyncReactor {
     });
   }
 
-  http_post(
+  /**
+   * Perform an HTTP POST with an optional request `body`.
+   */
+  post(
     url: string,
     headers?: Record<string, string | string[]> | string,
     body?: string,
   ): Promise<HttpResponse> {
-    return spawn(this.reactor, () => {
+    return this.reactor.spawn(() => {
       const socket = pollnet.http_post(url, headers, body, false);
       const [msgs, error] = socket.await_n(3);
       if (!msgs) {
