@@ -46,7 +46,7 @@ void pollnet_sleep_ms(uint32_t milliseconds);
 ]]
 
 --- @noita-ts-include ./pollnet.dll
-local pollnet = ffi.load("mods/" .. require("$mod").MOD_ID .. "/lua_modules/@noita-ts/pollnet/pollnet.dll")
+local pollnet = ffi.load("mods/" .. require("$mod").MOD_ID .. "/lua_modules/@noita-ts/pollnet/dist/pollnet.dll")
 
 local POLLNET_VERSION = ffi.string(pollnet.pollnet_version())
 
