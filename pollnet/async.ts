@@ -119,6 +119,16 @@ export class HttpResponse {
     this.body = body;
   }
 
+  static read(socket: pollnet.Socket): HttpResponse {
+    const [msgs, error] = socket.await_n(3);
+    if (!msgs) {
+      throw new Error(`socket error: ${error}`);
+    }
+    const [statusStr, headersStr, respBody] = msgs;
+    const status = tonumber(string.match("^%d+", statusStr)[0]) ?? 500;
+    return new HttpResponse(status, headersStr, respBody);
+  }
+
   /**
    * Parse the raw header block into a map.
    * Header names seen more than once collapse into an array of their values, in
@@ -164,16 +174,9 @@ export class HttpClient {
     url: string,
     headers?: Record<string, string | string[]> | string,
   ): Promise<HttpResponse> {
-    return this.reactor.spawn(() => {
-      const socket = pollnet.http_get(url, headers, false);
-      const [msgs, error] = socket.await_n(3);
-      if (!msgs) {
-        throw new Error(`socket error: ${error}`);
-      }
-      const [statusStr, headersStr, respBody] = msgs;
-      const status = tonumber(string.match("^%d+", statusStr)) ?? 500;
-      return new HttpResponse(status, headersStr, respBody);
-    });
+    return this.reactor.spawn(() =>
+      HttpResponse.read(pollnet.http_get(url, headers, false)),
+    );
   }
 
   /**
@@ -184,15 +187,8 @@ export class HttpClient {
     headers?: Record<string, string | string[]> | string,
     body?: string,
   ): Promise<HttpResponse> {
-    return this.reactor.spawn(() => {
-      const socket = pollnet.http_post(url, headers, body, false);
-      const [msgs, error] = socket.await_n(3);
-      if (!msgs) {
-        throw new Error(`socket error: ${error}`);
-      }
-      const [statusStr, headersStr, respBody] = msgs;
-      const status = tonumber(string.match("^%d+", statusStr)[0]) ?? 500;
-      return new HttpResponse(status, headersStr, respBody);
-    });
+    return this.reactor.spawn(() =>
+      HttpResponse.read(pollnet.http_post(url, headers, body, false)),
+    );
   }
 }
