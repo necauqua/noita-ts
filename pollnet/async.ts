@@ -92,12 +92,15 @@ export class AsyncReactor {
    */
   runServer(
     server_sock: pollnet.Socket,
-    client_body: (sock: pollnet.Socket, addr: string) => Promise<void>,
+    client_body: (sock: pollnet.Socket, addr: string) => Promise<void> | void,
   ) {
     server_sock.on_connection((client_sock, addr) => {
-      this.reactor.run(() =>
-        compat.yieldPromise(client_body(client_sock, addr)),
-      );
+      this.reactor.run(() => {
+        const r = client_body(client_sock, addr);
+        if (r instanceof Promise) {
+          compat.yieldPromise(r);
+        }
+      });
     });
     this.reactor.run(() => {
       while (server_sock.await()[0]) {}
