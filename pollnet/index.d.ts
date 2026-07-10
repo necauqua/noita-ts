@@ -154,8 +154,7 @@ declare namespace pollnet {
 
     /** Awaits a message (coroutine.yield) */
     await():
-      | LuaMultiReturn<[string, undefined]>
-      | LuaMultiReturn<[false, string]>;
+      LuaMultiReturn<[string, undefined]> | LuaMultiReturn<[false, string]>;
 
     /** Awaits N messages */
     await_n(
@@ -197,12 +196,12 @@ declare namespace pollnet {
     init(): void;
 
     /** Runs a coroutine thread */
-    run(thread_body: (self: Reactor) => Promise<void> | void): void;
+    run(thread_body: (this: Reactor) => void): void;
 
     /** Runs a server with client handler */
     run_server(
       server_sock: Socket,
-      client_body: (sock: Socket, addr: string) => Promise<void> | void,
+      client_body: (sock: Socket, addr: string) => void,
     ): void;
 
     /** Logs messages */

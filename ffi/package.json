@@ -5,8 +5,8 @@
   "files": [
     "**/*.{lua,d.ts}"
   ],
-  "main": "index",
   "type": "module",
+  "main": "index",
   "types": "index.d.ts",
   "exports": {
     ".": {

@@ -3,9 +3,15 @@
   "compilerOptions": {
     "target": "ESNext",
     "lib": ["ESNext"],
-    "types": ["@typescript-to-lua/language-extensions"],
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
+    "types": ["lua-types/jit", "@typescript-to-lua/language-extensions"],
     "strict": true,
     "declaration": true,
+    "outDir": "dist",
+  },
+  "tstl": {
+    "noResolvePaths": ["$mod", "ffi"],
+    "buildMode": "library",
+    "luaTarget": "JIT",
   },
 }

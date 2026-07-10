@@ -4,15 +4,15 @@
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "files": [
     "types/**/*.d.ts",
-    "dist/**/*.{js,lua,d.ts}",
+    "dist/**/*.{lua,d.ts}",
     "mod-tsconfig.json"
   ],
+  "type": "module",
   "main": "dist/index",
   "types": "dist/index.d.ts",
   "bin": {
     "nts": "dist/bin/index.js"
   },
-  "type": "module",
   "scripts": {
     "prepublishOnly": "rm -rf dist && npm run build",
     "build": "npm run typegen && npm run build:lua && npm run build:bin && npm run build:noita-api",

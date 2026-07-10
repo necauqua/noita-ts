@@ -2,21 +2,33 @@
   "name": "@noita-ts/pollnet",
   "version": "0.1.0",
   "files": [
-    "index.lua",
-    "index.d.ts",
+    "dist/**/*.{lua,d.ts}",
     "pollnet.dll",
     "LICENSE-pollnet"
   ],
-  "main": "index",
   "type": "module",
-  "types": "index.d.ts",
+  "main": "dist/index",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index"
+    },
+    "./async": {
+      "types": "./dist/async.d.ts",
+      "default": "./dist/async"
+    }
+  },
   "scripts": {
-    "prepublishOnly": "tsc -p ."
+    "build": "tstl -p . && cp *.lua *.d.ts dist/",
+    "prepublishOnly": "rm -rf dist && npm run build"
   },
   "dependencies": {
-    "@typescript-to-lua/language-extensions": "^1.19.0"
+    "@typescript-to-lua/language-extensions": "^1.19.0",
+    "lua-types": "^2.13.1"
   },
   "devDependencies": {
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "typescript-to-lua": "^1.36.0"
   }
 }
