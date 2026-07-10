@@ -8,6 +8,16 @@
   "main": "index",
   "type": "module",
   "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index"
+    },
+    "./global_stats": {
+      "types": "./global_stats.d.ts",
+      "default": "./global_stats"
+    }
+  },
   "scripts": {
     "prepublishOnly": "tsc -p ."
   },
