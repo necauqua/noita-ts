@@ -2,8 +2,7 @@
   "name": "@noita-ts/pollnet",
   "version": "0.3.1",
   "files": [
-    "dist/**/*.{lua,d.ts}",
-    "pollnet.dll",
+    "dist/**/*.{lua,dll,d.ts}",
     "LICENSE-pollnet"
   ],
   "type": "module",
@@ -20,7 +19,7 @@
     }
   },
   "scripts": {
-    "build": "tstl -p . && cp *.lua *.d.ts dist/",
+    "build": "tstl -p . && cp *.{lua,d.ts,dll} dist/",
     "prepublishOnly": "rm -rf dist && npm run build"
   },
   "dependencies": {
