@@ -4,19 +4,32 @@ local ffi = require 'ffi'
 --- @field name string
 --- @field offset number
 --- @field len number
+--- @field code boolean whether this section holds executable code
 local Section = {}
 
-function Section.new(name, offset, len)
+--- @param name string
+--- @param offset number
+--- @param len number
+--- @param code boolean? whether this section holds executable code
+function Section.new(name, offset, len, code)
     return setmetatable({
         name = name,
         offset = offset,
         len = len,
+        code = code or false,
     }, { __index = Section })
 end
 
 ffi.cdef [[
     void* memchr(const void* ptr, int value, size_t num);
     int memcmp(const void *buffer1, const void *buffer2, size_t count);
+]]
+
+--- @noita-ts-include ./hde32.dll
+local hde32 = ffi.load('mods/' .. require('$mod').MOD_ID .. '/lua_modules/@noita-ts/ffi/hde32.dll')
+
+ffi.cdef [[
+    unsigned int hde32_len(const void* addr);
 ]]
 
 --- @param condition boolean
@@ -61,6 +74,41 @@ local function memfind(offset, len, needle, needle_len, limit, name)
         search_ptr = search_ptr + advance
         remaining = remaining - advance
         scanned = scanned + advance
+    end
+
+    ---@diagnostic disable-next-line: missing-return -- ugh lmao
+    check(false, 'not found: scanned the entire range', name, 2)
+end
+
+--- Walk instruction boundaries (via hde32) looking for the needle.
+--- Only valid for executable code: a machine-code pattern must begin at an
+--- instruction boundary, so this avoids false matches inside instruction
+--- operands and inspects far fewer positions than a byte-by-byte scan.
+--- Here `limit` counts instructions walked rather than bytes.
+--- @param offset number
+--- @param len number
+--- @param needle ffi.cdata* | string
+--- @param needle_len number
+--- @param limit number
+--- @param name string
+--- @return number
+local function memfindcode(offset, len, needle, needle_len, limit, name)
+    local ptr = ffi.cast('uint8_t*', offset)
+    local end_ptr = ptr + len - needle_len
+    local scanned = 0
+
+    while ptr <= end_ptr do
+        check(scanned < limit, 'not found: scan cutoff limit reached', name, 2)
+
+        if ffi.C.memcmp(ptr, needle, needle_len) == 0 then
+            return tonumber(ffi.cast('size_t', ptr)) --[[ @as number ]]
+        end
+
+        local ilen = hde32.hde32_len(ptr)
+        -- hde32 returns 0 on a decode error; step a single byte to resynchronise
+        -- rather than spinning forever
+        ptr = ptr + (ilen > 0 and ilen or 1)
+        scanned = scanned + 1
     end
 
     ---@diagnostic disable-next-line: missing-return -- ugh lmao
@@ -135,8 +183,9 @@ function Section:scan(needle, params)
             index = at - self.offset
             check(index >= 0 and index <= self.len, 'not found: at parameter out of bounds', name, 1)
         end
+        local find = self.code and memfindcode or memfind
         for _ = 0, skip do
-            local found = memfind(self.offset + index, self.len - index, needle, needle_len --[[ @as integer ]], limit, name)
+            local found = find(self.offset + index, self.len - index, needle, needle_len --[[ @as integer ]], limit, name)
             index = found - self.offset + needle_len
         end
         return self.offset + index - needle_len

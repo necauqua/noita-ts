@@ -3,7 +3,8 @@
   "version": "0.2.0",
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "files": [
-    "**/*.{lua,d.ts}"
+    "**/*.{lua,d.ts}",
+    "hde32.dll"
   ],
   "type": "module",
   "main": "index",
@@ -19,7 +20,7 @@
     }
   },
   "scripts": {
-    "prepublishOnly": "tsc -p ."
+    "prepublishOnly": "docker build --output . hde32 && tsc -p ."
   },
   "dependencies": {
     "@typescript-to-lua/language-extensions": "^1.19.0"

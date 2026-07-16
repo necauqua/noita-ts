@@ -70,7 +70,8 @@ for i = 0, pe.NumberOfSections - 1 do
         text = Section.new(
             '.text',
             base + section.VirtualAddress,
-            section.VirtualSize
+            section.VirtualSize,
+            true -- executable code: scanned by walking instruction boundaries
         )
     end
 end
