@@ -50,6 +50,9 @@ Mod metadata (id, name, description, workshop settings, etc.) lives in
   [pollnet](https://github.com/probable-basilisk/pollnet), bundling the 32-bit
   dll and a Noita-specific loader.
 - [`@noita-ts/ffi`](ffi) - LuaJIT FFI helpers/types for unsafe mods.
+- [`@noita-ts/noita-dear-imgui-types`](noita-dear-imgui-types) - type
+  definitions for [Noita-Dear-ImGui](https://github.com/dextercd/Noita-Dear-ImGui)
+  (ImGui 1.26.0).
 - [`typegen`](typegen) - internal tool that generates the TypeScript
   definitions from Noita's Lua API documentation.
 

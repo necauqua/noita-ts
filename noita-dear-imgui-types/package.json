@@ -1,0 +1,20 @@
+{
+  "name": "@noita-ts/noita-dear-imgui-types",
+  "version": "0.1.0",
+  "description": "TypeScript type definitions for Noita-Dear-ImGui, for use with noita-ts / TypeScriptToLua.",
+  "files": [
+    "types.d.ts",
+    "readme.md"
+  ],
+  "type": "module",
+  "types": "types.d.ts",
+  "scripts": {
+    "prepublishOnly": "tsc -p ."
+  },
+  "dependencies": {
+    "@typescript-to-lua/language-extensions": "^1.19.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  }
+}
