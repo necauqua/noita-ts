@@ -1,6 +1,6 @@
 {
   "name": "@noita-ts/noita-dear-imgui-types",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TypeScript type definitions for Noita-Dear-ImGui, for use with noita-ts / TypeScriptToLua.",
   "files": [
     "types.d.ts",
