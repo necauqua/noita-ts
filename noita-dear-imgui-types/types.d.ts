@@ -266,9 +266,6 @@ declare enum Cond {
   FirstUseEver = 4,
   Appearing = 8,
 }
-declare interface ImGui {
-  readonly Cond: typeof Cond;
-}
 
 declare enum TableFlags {
   None = 0,
@@ -308,16 +305,10 @@ declare enum TableFlags {
   SortTristate = 134217728,
   HighlightHoveredColumn = 268435456,
 }
-declare interface ImGui {
-  readonly TableFlags: typeof TableFlags;
-}
 
 declare enum TableRowFlags {
   None = 0,
   Headers = 1,
-}
-declare interface ImGui {
-  readonly TableRowFlags: typeof TableRowFlags;
 }
 
 declare enum TableColumnFlags {
@@ -346,9 +337,6 @@ declare enum TableColumnFlags {
   IsSorted = 67108864,
   IsHovered = 134217728,
 }
-declare interface ImGui {
-  readonly TableColumnFlags: typeof TableColumnFlags;
-}
 
 declare enum TableBgTarget {
   None = 0,
@@ -356,160 +344,11 @@ declare enum TableBgTarget {
   RowBg1 = 2,
   CellBg = 3,
 }
-declare interface ImGui {
-  readonly TableBgTarget: typeof TableBgTarget;
-}
 
 declare enum SortDirection {
   None = 0,
   Ascending = 1,
   Descending = 2,
-}
-declare interface ImGui {
-  readonly SortDirection: typeof SortDirection;
-}
-
-declare interface ImGui {
-  BeginTable(this: void, str_id: string, columns: number): boolean;
-  BeginTable(
-    this: void,
-    str_id: string,
-    columns: number,
-    flags: TableFlags,
-  ): boolean;
-  BeginTable(
-    this: void,
-    str_id: string,
-    columns: number,
-    flags: TableFlags,
-    outer_size_x: number,
-    outer_size_y: number,
-  ): boolean;
-  BeginTable(
-    this: void,
-    str_id: string,
-    columns: number,
-    flags: TableFlags,
-    outer_size_x: number,
-    outer_size_y: number,
-    inner_size: number,
-  ): boolean;
-}
-
-declare interface ImGui {
-  EndTable(this: void): void;
-}
-
-declare interface ImGui {
-  TableNextRow(this: void): void;
-  TableNextRow(this: void, row_flags: TableRowFlags): void;
-  TableNextRow(
-    this: void,
-    row_flags: TableRowFlags,
-    min_row_height: number,
-  ): void;
-}
-
-declare interface ImGui {
-  TableNextColumn(this: void): boolean;
-}
-
-declare interface ImGui {
-  TableSetColumnIndex(this: void, column_n: number): boolean;
-}
-
-declare interface ImGui {
-  TableSetupColumn(this: void, label: string): void;
-  TableSetupColumn(this: void, label: string, flags: TableColumnFlags): void;
-  TableSetupColumn(
-    this: void,
-    label: string,
-    flags: TableColumnFlags,
-    init_width_or_weight: number,
-  ): void;
-  TableSetupColumn(
-    this: void,
-    label: string,
-    flags: TableColumnFlags,
-    init_width_or_weight: number,
-    user_id: number,
-  ): void;
-}
-
-declare interface ImGui {
-  TableSetupScrollFreeze(this: void, cols: number, rows: number): void;
-}
-
-declare interface ImGui {
-  TableHeadersRow(this: void): void;
-}
-
-declare interface ImGui {
-  TableAngledHeadersRow(this: void): void;
-}
-
-declare interface ImGui {
-  TableHeader(this: void, label: string): void;
-}
-
-declare interface ImGui {
-  TableGetColumnCount(this: void): number;
-}
-
-declare interface ImGui {
-  TableGetColumnIndex(this: void): number;
-}
-
-declare interface ImGui {
-  TableGetRowIndex(this: void): number;
-}
-
-declare interface ImGui {
-  TableGetColumnName(this: void): string;
-  TableGetColumnName(this: void, column_n: number): string;
-}
-
-declare interface ImGui {
-  TableGetColumnFlags(this: void): number;
-  TableGetColumnFlags(this: void, column_n: number): TableColumnFlags;
-}
-
-declare interface ImGui {
-  TableSetColumnEnabled(this: void, column_n: number, v: boolean): void;
-}
-
-declare interface ImGui {
-  TableGetHoveredColumn(this: void): number;
-}
-
-declare interface ImGui {
-  TableSetBgColor(
-    this: void,
-    target: TableBgTarget,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-  ): void;
-  TableSetBgColor(
-    this: void,
-    target: TableBgTarget,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    column_n: number,
-  ): void;
-}
-
-declare interface ImGui {
-  TableGetSortSpecs(
-    this: void,
-  ): LuaMultiReturn<[boolean | undefined, ImGuiTableSortSpecs | undefined]>;
-}
-
-declare interface ImGui {
-  TableSortSpecsMarkClean(this: void): void;
 }
 
 declare enum Col {
@@ -576,9 +415,6 @@ declare enum Col {
   ModalWindowDimBg = 57,
   COUNT = 58,
 }
-declare interface ImGui {
-  readonly Col: typeof Col;
-}
 
 declare enum StyleVar {
   Alpha = 0,
@@ -617,9 +453,6 @@ declare enum StyleVar {
   DockingSeparatorSize = 33,
   COUNT = 34,
 }
-declare interface ImGui {
-  readonly StyleVar: typeof StyleVar;
-}
 
 declare enum ItemFlags {
   None = 0,
@@ -628,77 +461,6 @@ declare enum ItemFlags {
   NoNavDefaultFocus = 4,
   ButtonRepeat = 8,
   AutoClosePopups = 16,
-}
-declare interface ImGui {
-  readonly ItemFlags: typeof ItemFlags;
-}
-
-declare interface ImGui {
-  PushStyleColor(this: void, idx: Col, r: number, g: number, b: number): void;
-  PushStyleColor(
-    this: void,
-    idx: Col,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-  ): void;
-}
-
-declare interface ImGui {
-  PopStyleColor(this: void): void;
-  PopStyleColor(this: void, count: number): void;
-}
-
-declare interface ImGui {
-  PushStyleVar(this: void, idx: StyleVar, val: number): void;
-  PushStyleVar(this: void, idx: StyleVar, valx: number, valy: number): void;
-}
-
-declare interface ImGui {
-  PopStyleVar(this: void): void;
-  PopStyleVar(this: void, count: number): void;
-}
-
-declare interface ImGui {
-  PushButtonRepeat(this: void, repeat: boolean): void;
-}
-
-declare interface ImGui {
-  PopButtonRepeat(this: void): void;
-}
-
-declare interface ImGui {
-  PushItemFlag(this: void, option: ItemFlags, enabled: boolean): void;
-}
-
-declare interface ImGui {
-  PopItemFlag(this: void): void;
-}
-
-declare interface ImGui {
-  PushItemWidth(this: void, item_width: number): void;
-}
-
-declare interface ImGui {
-  PopItemWidth(this: void): void;
-}
-
-declare interface ImGui {
-  SetNextItemWidth(this: void, item_width: number): void;
-}
-
-declare interface ImGui {
-  CalcItemWidth(this: void): number;
-}
-
-declare interface ImGui {
-  PushTextWrapPos(this: void): void;
-  PushTextWrapPos(this: void, wrap_local_pos_x: number): void;
-}
-
-declare interface ImGui {
-  PopTextWrapPos(this: void): void;
 }
 
 declare enum InputTextFlags {
@@ -727,374 +489,12 @@ declare enum InputTextFlags {
   CallbackResize = 2097152,
   CallbackEdit = 4194304,
 }
-declare interface ImGui {
-  readonly InputTextFlags: typeof InputTextFlags;
-}
-
-declare interface ImGui {
-  InputText(
-    this: void,
-    label: string,
-    str: string,
-  ): LuaMultiReturn<[boolean, string]>;
-  InputText(
-    this: void,
-    label: string,
-    str: string,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, string]>;
-}
-
-declare interface ImGui {
-  InputTextMultiline(
-    this: void,
-    label: string,
-    str: string,
-  ): LuaMultiReturn<[boolean, string]>;
-  InputTextMultiline(
-    this: void,
-    label: string,
-    str: string,
-    size_x: number,
-    size_y: number,
-  ): LuaMultiReturn<[boolean, string]>;
-  InputTextMultiline(
-    this: void,
-    label: string,
-    str: string,
-    size_x: number,
-    size_y: number,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, string]>;
-}
-
-declare interface ImGui {
-  InputTextWithHint(
-    this: void,
-    label: string,
-    hint: string,
-    str: string,
-  ): LuaMultiReturn<[boolean, string]>;
-  InputTextWithHint(
-    this: void,
-    label: string,
-    hint: string,
-    str: string,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, string]>;
-}
-
-declare interface ImGui {
-  InputFloat(
-    this: void,
-    label: string,
-    v: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  InputFloat(
-    this: void,
-    label: string,
-    v: number,
-    step: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  InputFloat(
-    this: void,
-    label: string,
-    v: number,
-    step: number,
-    step_fast: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  InputFloat(
-    this: void,
-    label: string,
-    v: number,
-    step: number,
-    step_fast: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number]>;
-  InputFloat(
-    this: void,
-    label: string,
-    v: number,
-    step: number,
-    step_fast: number,
-    format: string,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, number]>;
-}
-
-declare interface ImGui {
-  InputFloat2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  InputFloat2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  InputFloat2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    format: string,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, number, number]>;
-}
-
-declare interface ImGui {
-  InputFloat3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  InputFloat3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  InputFloat3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    format: string,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-}
-
-declare interface ImGui {
-  InputFloat4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  InputFloat4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  InputFloat4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    format: string,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-}
-
-declare interface ImGui {
-  InputInt(
-    this: void,
-    label: string,
-    v: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  InputInt(
-    this: void,
-    label: string,
-    v: number,
-    step: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  InputInt(
-    this: void,
-    label: string,
-    v: number,
-    step: number,
-    step_fast: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  InputInt(
-    this: void,
-    label: string,
-    v: number,
-    step: number,
-    step_fast: number,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, number]>;
-}
-
-declare interface ImGui {
-  InputInt2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  InputInt2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, number, number]>;
-}
-
-declare interface ImGui {
-  InputInt3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  InputInt3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-}
-
-declare interface ImGui {
-  InputInt4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  InputInt4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-}
-
-declare interface ImGui {
-  InputDouble(
-    this: void,
-    label: string,
-    v: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  InputDouble(
-    this: void,
-    label: string,
-    v: number,
-    step: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  InputDouble(
-    this: void,
-    label: string,
-    v: number,
-    step: number,
-    step_fast: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  InputDouble(
-    this: void,
-    label: string,
-    v: number,
-    step: number,
-    step_fast: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number]>;
-  InputDouble(
-    this: void,
-    label: string,
-    v: number,
-    step: number,
-    step_fast: number,
-    format: string,
-    flags: InputTextFlags,
-  ): LuaMultiReturn<[boolean, number]>;
-}
 
 declare enum MouseButton {
   Left = 0,
   Right = 1,
   Middle = 2,
   COUNT = 5,
-}
-declare interface ImGui {
-  readonly MouseButton: typeof MouseButton;
-}
-
-declare interface ImGui {
-  IsMouseDown(this: void, button: MouseButton): boolean;
-}
-
-declare interface ImGui {
-  IsMouseClicked(this: void, button: MouseButton): boolean;
-  IsMouseClicked(this: void, button: MouseButton, repeat: boolean): boolean;
-}
-
-declare interface ImGui {
-  IsMouseReleased(this: void, button: MouseButton): boolean;
-}
-
-declare interface ImGui {
-  IsMouseDoubleClicked(this: void, button: MouseButton): boolean;
-}
-
-declare interface ImGui {
-  GetMouseClickedCount(this: void, button: MouseButton): number;
-}
-
-declare interface ImGui {
-  IsMousePosValid(this: void): boolean;
-  IsMousePosValid(this: void, posx: number, posy: number): boolean;
-}
-
-declare interface ImGui {
-  GetMousePos(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetMousePosOnOpeningCurrentPopup(
-    this: void,
-  ): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  IsMouseDragging(this: void, button: MouseButton): boolean;
-  IsMouseDragging(
-    this: void,
-    button: MouseButton,
-    lock_threshold: number,
-  ): boolean;
-}
-
-declare interface ImGui {
-  GetMouseDragDelta(this: void): LuaMultiReturn<[number, number]>;
-  GetMouseDragDelta(
-    this: void,
-    button: MouseButton,
-  ): LuaMultiReturn<[number, number]>;
-  GetMouseDragDelta(
-    this: void,
-    button: MouseButton,
-    lock_threshold: number,
-  ): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  ResetMouseDragDelta(this: void): void;
-  ResetMouseDragDelta(this: void, button: MouseButton): void;
 }
 
 declare enum MouseCursor {
@@ -1109,21 +509,6 @@ declare enum MouseCursor {
   Hand = 7,
   NotAllowed = 8,
   COUNT = 9,
-}
-declare interface ImGui {
-  readonly MouseCursor: typeof MouseCursor;
-}
-
-declare interface ImGui {
-  GetMouseCursor(this: void): MouseCursor;
-}
-
-declare interface ImGui {
-  SetMouseCursor(this: void, cursor_type: MouseCursor): void;
-}
-
-declare interface ImGui {
-  SetNextFrameWantCaptureMouse(this: void, want_capture_mouse: boolean): void;
 }
 
 declare enum DragDropFlags {
@@ -1142,45 +527,6 @@ declare enum DragDropFlags {
   AcceptNoPreviewTooltip = 4096,
   AcceptPeekOnly = 3072,
 }
-declare interface ImGui {
-  readonly DragDropFlags: typeof DragDropFlags;
-}
-
-declare interface ImGui {
-  BeginDragDropSource(this: void): boolean;
-  BeginDragDropSource(this: void, flags: DragDropFlags): boolean;
-}
-
-declare interface ImGui {
-  SetDragDropPayload(this: void, type: string, payload: any): boolean;
-  SetDragDropPayload(
-    this: void,
-    type: string,
-    payload: any,
-    cond: Cond,
-  ): boolean;
-}
-
-declare interface ImGui {
-  EndDragDropSource(this: void): void;
-}
-
-declare interface ImGui {
-  AcceptDragDropPayload(this: void, type: string): any;
-  AcceptDragDropPayload(this: void, type: string, flags: DragDropFlags): any;
-}
-
-declare interface ImGui {
-  BeginDragDropTarget(this: void): boolean;
-}
-
-declare interface ImGui {
-  EndDragDropTarget(this: void): void;
-}
-
-declare interface ImGui {
-  GetDragDropPayload(this: void): any;
-}
 
 declare enum Dir {
   None = -1,
@@ -1190,162 +536,12 @@ declare enum Dir {
   Down = 3,
   COUNT = 4,
 }
-declare interface ImGui {
-  readonly Dir: typeof Dir;
-}
-
-declare interface ImGui {
-  GetStyle(this: void): ImGuiStyle;
-}
 
 declare enum ButtonFlags {
   None = 0,
   MouseButtonLeft = 1,
   MouseButtonRight = 2,
   MouseButtonMiddle = 4,
-}
-declare interface ImGui {
-  readonly ButtonFlags: typeof ButtonFlags;
-}
-
-declare interface ImGui {
-  Button(this: void, label: string): boolean;
-  Button(this: void, label: string, width: number, height: number): boolean;
-}
-
-declare interface ImGui {
-  SmallButton(this: void, label: string): boolean;
-}
-
-declare interface ImGui {
-  InvisibleButton(
-    this: void,
-    str_id: string,
-    size_x: number,
-    size_y: number,
-  ): boolean;
-  InvisibleButton(
-    this: void,
-    str_id: string,
-    size_x: number,
-    size_y: number,
-    flags: ButtonFlags,
-  ): boolean;
-}
-
-declare interface ImGui {
-  ArrowButton(this: void, str_id: string, dir: Dir): boolean;
-}
-
-declare interface ImGui {
-  Checkbox(
-    this: void,
-    label: string,
-    value: boolean,
-  ): LuaMultiReturn<[boolean, boolean]>;
-}
-
-declare interface ImGui {
-  CheckboxFlags(
-    this: void,
-    label: string,
-    flags: number,
-    flags_value: number,
-  ): LuaMultiReturn<[boolean, number]>;
-}
-
-declare interface ImGui {
-  RadioButton(this: void, label: string, active: boolean): boolean;
-}
-
-declare interface ImGui {
-  ProgressBar(this: void, fraction: number): void;
-  ProgressBar(this: void, fraction: number, size_x: number): void;
-  ProgressBar(
-    this: void,
-    fraction: number,
-    size_x: number,
-    size_y: number,
-  ): void;
-  ProgressBar(
-    this: void,
-    fraction: number,
-    size_x: number,
-    size_y: number,
-    overlay: string,
-  ): void;
-}
-
-declare interface ImGui {
-  Bullet(this: void): void;
-}
-
-declare interface ImGui {
-  TextLink(this: void, label: string): boolean;
-}
-
-declare interface ImGui {
-  TextLinkOpenURL(this: void, label: string): void;
-  TextLinkOpenURL(this: void, label: string, url: string): void;
-}
-
-declare interface ImGui {
-  BeginTooltip(this: void): boolean;
-}
-
-declare interface ImGui {
-  BeginItemTooltip(this: void): boolean;
-}
-
-declare interface ImGui {
-  EndTooltip(this: void): void;
-}
-
-declare interface ImGui {
-  SetTooltip(this: void, text: string): void;
-}
-
-declare interface ImGui {
-  BeginMenuBar(this: void): boolean;
-}
-
-declare interface ImGui {
-  EndMenuBar(this: void): void;
-}
-
-declare interface ImGui {
-  BeginMainMenuBar(this: void): boolean;
-}
-
-declare interface ImGui {
-  EndMainMenuBar(this: void): void;
-}
-
-declare interface ImGui {
-  BeginMenu(this: void, label: string): boolean;
-  BeginMenu(this: void, label: string, enabled: boolean): boolean;
-}
-
-declare interface ImGui {
-  EndMenu(this: void): void;
-}
-
-declare interface ImGui {
-  MenuItem(this: void, label: string): boolean;
-  MenuItem(this: void, label: string, shortcut: string): boolean;
-  MenuItem(
-    this: void,
-    label: string,
-    shortcut: string,
-    selected: boolean,
-  ): LuaMultiReturn<[boolean, boolean]>;
-  MenuItem(
-    this: void,
-    label: string,
-    shortcut: string,
-    selected: boolean,
-    enabled: boolean,
-  ): LuaMultiReturn<[boolean, boolean]>;
 }
 
 declare enum TabBarFlags {
@@ -1362,18 +558,6 @@ declare enum TabBarFlags {
   FittingPolicyMask_ = 384,
   FittingPolicyDefault_ = 128,
 }
-declare interface ImGui {
-  readonly TabBarFlags: typeof TabBarFlags;
-}
-
-declare interface ImGui {
-  BeginTabBar(this: void, str_id: string): boolean;
-  BeginTabBar(this: void, str_id: string, flags: TabBarFlags): boolean;
-}
-
-declare interface ImGui {
-  EndTabBar(this: void): void;
-}
 
 declare enum TabItemFlags {
   None = 0,
@@ -1386,35 +570,6 @@ declare enum TabItemFlags {
   Leading = 64,
   Trailing = 128,
   NoAssumedClosure = 256,
-}
-declare interface ImGui {
-  readonly TabItemFlags: typeof TabItemFlags;
-}
-
-declare interface ImGui {
-  BeginTabItem(
-    this: void,
-    label: string,
-    open?: boolean,
-    flags?: TabItemFlags,
-  ): LuaMultiReturn<[boolean, boolean | undefined]>;
-}
-
-declare interface ImGui {
-  EndTabItem(this: void): void;
-}
-
-declare interface ImGui {
-  TabItemButton(this: void, label: string): boolean;
-  TabItemButton(this: void, label: string, flags: TabItemFlags): boolean;
-}
-
-declare interface ImGui {
-  SetTabItemClosed(this: void, tab_or_docked_window_label: string): void;
-}
-
-declare interface ImGui {
-  as_vector_float(this: void, vec: number[] | Vector<number>): Vector<number>;
 }
 
 declare enum ComboFlags {
@@ -1429,39 +584,6 @@ declare enum ComboFlags {
   WidthFitPreview = 128,
   HeightMask_ = 30,
 }
-declare interface ImGui {
-  readonly ComboFlags: typeof ComboFlags;
-}
-
-declare interface ImGui {
-  BeginCombo(this: void, label: string, preview_value: string): boolean;
-  BeginCombo(
-    this: void,
-    label: string,
-    preview_value: string,
-    flags: ComboFlags,
-  ): boolean;
-}
-
-declare interface ImGui {
-  EndCombo(this: void): void;
-}
-
-declare interface ImGui {
-  Combo(
-    this: void,
-    label: string,
-    current_item: number,
-    items: object,
-  ): LuaMultiReturn<[boolean, number]>;
-  Combo(
-    this: void,
-    label: string,
-    current_item: number,
-    items: object,
-    popup_max_height_in_items: number,
-  ): LuaMultiReturn<[boolean, number]>;
-}
 
 declare enum SelectableFlags {
   None = 0,
@@ -1473,36 +595,6 @@ declare enum SelectableFlags {
   AllowOverlap = 16,
   Highlight = 32,
 }
-declare interface ImGui {
-  readonly SelectableFlags: typeof SelectableFlags;
-}
-
-declare interface ImGui {
-  Selectable(this: void, label: string): boolean;
-  Selectable(this: void, label: string, selected: boolean): boolean;
-  Selectable(
-    this: void,
-    label: string,
-    selected: boolean,
-    flags: SelectableFlags,
-  ): boolean;
-  Selectable(
-    this: void,
-    label: string,
-    selected: boolean,
-    flags: SelectableFlags,
-    size_x: number,
-    size_y: number,
-  ): boolean;
-}
-
-declare interface ImGui {
-  GetClipboardText(this: void): string;
-}
-
-declare interface ImGui {
-  SetClipboardText(this: void, text: string): void;
-}
 
 declare enum SliderFlags {
   None = 0,
@@ -1513,674 +605,6 @@ declare enum SliderFlags {
   WrapAround = 256,
   InvalidMask_ = 1879048207,
 }
-declare interface ImGui {
-  readonly SliderFlags: typeof SliderFlags;
-}
-
-declare interface ImGui {
-  DragFloat(
-    this: void,
-    label: string,
-    v: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  DragFloat(
-    this: void,
-    label: string,
-    v: number,
-    v_speed: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  DragFloat(
-    this: void,
-    label: string,
-    v: number,
-    v_speed: number,
-    v_min: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  DragFloat(
-    this: void,
-    label: string,
-    v: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  DragFloat(
-    this: void,
-    label: string,
-    v: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number]>;
-  DragFloat(
-    this: void,
-    label: string,
-    v: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    flags: SliderFlags,
-  ): LuaMultiReturn<[boolean, number]>;
-}
-
-declare interface ImGui {
-  DragFloat2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragFloat2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v_speed: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragFloat2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v_speed: number,
-    v_min: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragFloat2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragFloat2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragFloat2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    flags: SliderFlags,
-  ): LuaMultiReturn<[boolean, number, number]>;
-}
-
-declare interface ImGui {
-  DragFloat3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  DragFloat3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v_speed: number,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  DragFloat3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v_speed: number,
-    v_min: number,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  DragFloat3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  DragFloat3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  DragFloat3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    flags: SliderFlags,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-}
-
-declare interface ImGui {
-  DragFloat4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  DragFloat4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    v_speed: number,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  DragFloat4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    v_speed: number,
-    v_min: number,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  DragFloat4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  DragFloat4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  DragFloat4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    flags: SliderFlags,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-}
-
-declare interface ImGui {
-  DragFloatRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragFloatRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragFloatRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-    v_min: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragFloatRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragFloatRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragFloatRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    format_max: string,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragFloatRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    format_max: string,
-    flags: SliderFlags,
-  ): LuaMultiReturn<[boolean, number, number]>;
-}
-
-declare interface ImGui {
-  DragInt(
-    this: void,
-    label: string,
-    v: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  DragInt(
-    this: void,
-    label: string,
-    v: number,
-    v_speed: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  DragInt(
-    this: void,
-    label: string,
-    v: number,
-    v_speed: number,
-    v_min: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  DragInt(
-    this: void,
-    label: string,
-    v: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-  ): LuaMultiReturn<[boolean, number]>;
-  DragInt(
-    this: void,
-    label: string,
-    v: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number]>;
-  DragInt(
-    this: void,
-    label: string,
-    v: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    flags: SliderFlags,
-  ): LuaMultiReturn<[boolean, number]>;
-}
-
-declare interface ImGui {
-  DragInt2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragInt2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v_speed: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragInt2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v_speed: number,
-    v_min: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragInt2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragInt2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragInt2(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    flags: SliderFlags,
-  ): LuaMultiReturn<[boolean, number, number]>;
-}
-
-declare interface ImGui {
-  DragInt3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  DragInt3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v_speed: number,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  DragInt3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v_speed: number,
-    v_min: number,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  DragInt3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  DragInt3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-  DragInt3(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    flags: SliderFlags,
-  ): LuaMultiReturn<[boolean, number, number, number]>;
-}
-
-declare interface ImGui {
-  DragInt4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  DragInt4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    v_speed: number,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  DragInt4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    v_speed: number,
-    v_min: number,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  DragInt4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  DragInt4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-  DragInt4(
-    this: void,
-    label: string,
-    v1: number,
-    v2: number,
-    v3: number,
-    v4: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    flags: SliderFlags,
-  ): LuaMultiReturn<[boolean, number, number, number, number]>;
-}
-
-declare interface ImGui {
-  DragIntRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragIntRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragIntRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-    v_min: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragIntRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragIntRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragIntRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    format_max: string,
-  ): LuaMultiReturn<[boolean, number, number]>;
-  DragIntRange2(
-    this: void,
-    label: string,
-    v_current_min: number,
-    v_current_max: number,
-    v_speed: number,
-    v_min: number,
-    v_max: number,
-    format: string,
-    format_max: string,
-    flags: SliderFlags,
-  ): LuaMultiReturn<[boolean, number, number]>;
-}
-
-declare interface ImGui {
-  PushID(this: void, str_id: string): void;
-  PushID(this: void, int_id: number): void;
-}
-
-declare interface ImGui {
-  PopID(this: void): void;
-}
-
-declare interface ImGui {
-  GetID(this: void, str_id: string): number;
-  GetID(this: void, int_id: number): number;
-}
-
-declare interface ImGui {
-  GetMainViewport(this: void): ImGuiViewport;
-}
-
-declare interface ImGui {
-  GetMainViewportID(this: void): number;
-}
-
-declare interface ImGui {
-  GetMainViewportWorkPos(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetMainViewportPos(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetMainViewportSize(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetMainViewportWorkSize(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  TextUnformatted(this: void, text: string): void;
-}
-
-declare interface ImGui {
-  Text(this: void, text: string): void;
-}
-
-declare interface ImGui {
-  TextColored(
-    this: void,
-    colr: number,
-    colg: number,
-    colb: number,
-    cola: number,
-    text: string,
-  ): void;
-}
-
-declare interface ImGui {
-  TextDisabled(this: void, text: string): void;
-}
-
-declare interface ImGui {
-  TextWrapped(this: void, text: string): void;
-}
-
-declare interface ImGui {
-  LabelText(this: void, label: string, text: string): void;
-}
-
-declare interface ImGui {
-  BulletText(this: void, text: string): void;
-}
-
-declare interface ImGui {
-  SeparatorText(this: void, text: string): void;
-}
 
 declare enum Axis {
   X1 = 0,
@@ -2189,9 +613,6 @@ declare enum Axis {
   Y1 = 3,
   Y2 = 4,
   Y3 = 5,
-}
-declare interface ImPlot {
-  readonly Axis: typeof Axis;
 }
 
 declare enum PlotFlags {
@@ -2206,9 +627,6 @@ declare enum PlotFlags {
   Equal = 128,
   Crosshairs = 256,
   CanvasOnly = 55,
-}
-declare interface ImPlot {
-  readonly PlotFlags: typeof PlotFlags;
 }
 
 declare enum PlotAxisFlags {
@@ -2233,9 +651,6 @@ declare enum PlotAxisFlags {
   NoDecorations = 15,
   AuxDefault = 258,
 }
-declare interface ImPlot {
-  readonly PlotAxisFlags: typeof PlotAxisFlags;
-}
 
 declare enum PlotSubplotFlags {
   None = 0,
@@ -2251,9 +666,6 @@ declare enum PlotSubplotFlags {
   LinkAllY = 512,
   ColMajor = 1024,
 }
-declare interface ImPlot {
-  readonly PlotSubplotFlags: typeof PlotSubplotFlags;
-}
 
 declare enum PlotLegendFlags {
   None = 0,
@@ -2265,18 +677,12 @@ declare enum PlotLegendFlags {
   Horizontal = 32,
   Sort = 64,
 }
-declare interface ImPlot {
-  readonly PlotLegendFlags: typeof PlotLegendFlags;
-}
 
 declare enum PlotMouseTextFlags {
   None = 0,
   NoAuxAxes = 1,
   NoFormat = 2,
   ShowAlways = 4,
-}
-declare interface ImPlot {
-  readonly PlotMouseTextFlags: typeof PlotMouseTextFlags;
 }
 
 declare enum PlotDragToolFlags {
@@ -2286,9 +692,6 @@ declare enum PlotDragToolFlags {
   NoInputs = 4,
   Delayed = 8,
 }
-declare interface ImPlot {
-  readonly PlotDragToolFlags: typeof PlotDragToolFlags;
-}
 
 declare enum PlotColormapScaleFlags {
   None = 0,
@@ -2296,17 +699,11 @@ declare enum PlotColormapScaleFlags {
   Opposite = 2,
   Invert = 4,
 }
-declare interface ImPlot {
-  readonly PlotColormapScaleFlags: typeof PlotColormapScaleFlags;
-}
 
 declare enum PlotItemFlags {
   None = 0,
   NoLegend = 1,
   NoFit = 2,
-}
-declare interface ImPlot {
-  readonly PlotItemFlags: typeof PlotItemFlags;
 }
 
 declare enum PlotLineFlags {
@@ -2317,16 +714,10 @@ declare enum PlotLineFlags {
   NoClip = 8192,
   Shaded = 16384,
 }
-declare interface ImPlot {
-  readonly PlotLineFlags: typeof PlotLineFlags;
-}
 
 declare enum PlotScatterFlags {
   None = 0,
   NoClip = 1024,
-}
-declare interface ImPlot {
-  readonly PlotScatterFlags: typeof PlotScatterFlags;
 }
 
 declare enum PlotStairsFlags {
@@ -2334,23 +725,14 @@ declare enum PlotStairsFlags {
   PreStep = 1024,
   Shaded = 2048,
 }
-declare interface ImPlot {
-  readonly PlotStairsFlags: typeof PlotStairsFlags;
-}
 
 declare enum PlotShadedFlags {
   None = 0,
-}
-declare interface ImPlot {
-  readonly PlotShadedFlags: typeof PlotShadedFlags;
 }
 
 declare enum PlotBarsFlags {
   None = 0,
   Horizontal = 1024,
-}
-declare interface ImPlot {
-  readonly PlotBarsFlags: typeof PlotBarsFlags;
 }
 
 declare enum PlotBarGroupsFlags {
@@ -2358,32 +740,20 @@ declare enum PlotBarGroupsFlags {
   Horizontal = 1024,
   Stacked = 2048,
 }
-declare interface ImPlot {
-  readonly PlotBarGroupsFlags: typeof PlotBarGroupsFlags;
-}
 
 declare enum PlotErrorBarsFlags {
   None = 0,
   Horizontal = 1024,
-}
-declare interface ImPlot {
-  readonly PlotErrorBarsFlags: typeof PlotErrorBarsFlags;
 }
 
 declare enum PlotStemsFlags {
   None = 0,
   Horizontal = 1024,
 }
-declare interface ImPlot {
-  readonly PlotStemsFlags: typeof PlotStemsFlags;
-}
 
 declare enum PlotInfLinesFlags {
   None = 0,
   Horizontal = 1024,
-}
-declare interface ImPlot {
-  readonly PlotInfLinesFlags: typeof PlotInfLinesFlags;
 }
 
 declare enum PlotPieChartFlags {
@@ -2391,16 +761,10 @@ declare enum PlotPieChartFlags {
   Normalize = 1024,
   IgnoreHidden = 2048,
 }
-declare interface ImPlot {
-  readonly PlotPieChartFlags: typeof PlotPieChartFlags;
-}
 
 declare enum PlotHeatmapFlags {
   None = 0,
   ColMajor = 1024,
-}
-declare interface ImPlot {
-  readonly PlotHeatmapFlags: typeof PlotHeatmapFlags;
 }
 
 declare enum PlotHistogramFlags {
@@ -2411,46 +775,28 @@ declare enum PlotHistogramFlags {
   NoOutliers = 8192,
   ColMajor = 16384,
 }
-declare interface ImPlot {
-  readonly PlotHistogramFlags: typeof PlotHistogramFlags;
-}
 
 declare enum PlotDigitalFlags {
   None = 0,
 }
-declare interface ImPlot {
-  readonly PlotDigitalFlags: typeof PlotDigitalFlags;
-}
 
 declare enum PlotImageFlags {
   None = 0,
-}
-declare interface ImPlot {
-  readonly PlotImageFlags: typeof PlotImageFlags;
 }
 
 declare enum PlotTextFlags {
   None = 0,
   Vertical = 1024,
 }
-declare interface ImPlot {
-  readonly PlotTextFlags: typeof PlotTextFlags;
-}
 
 declare enum PlotDummyFlags {
   None = 0,
-}
-declare interface ImPlot {
-  readonly PlotDummyFlags: typeof PlotDummyFlags;
 }
 
 declare enum PlotCond {
   None = 0,
   Always = 1,
   Once = 2,
-}
-declare interface ImPlot {
-  readonly PlotCond: typeof PlotCond;
 }
 
 declare enum PlotCol {
@@ -2475,9 +821,6 @@ declare enum PlotCol {
   AxisBgActive = 18,
   Selection = 19,
   Crosshairs = 20,
-}
-declare interface ImPlot {
-  readonly PlotCol: typeof PlotCol;
 }
 
 declare enum PlotStyleVar {
@@ -2509,18 +852,12 @@ declare enum PlotStyleVar {
   PlotDefaultSize = 25,
   PlotMinSize = 26,
 }
-declare interface ImPlot {
-  readonly PlotStyleVar: typeof PlotStyleVar;
-}
 
 declare enum PlotScale {
   Linear = 0,
   Time = 1,
   Log10 = 2,
   SymLog = 3,
-}
-declare interface ImPlot {
-  readonly PlotScale: typeof PlotScale;
 }
 
 declare enum PlotMarker {
@@ -2535,9 +872,6 @@ declare enum PlotMarker {
   Cross = 7,
   Plus = 8,
   Asterisk = 9,
-}
-declare interface ImPlot {
-  readonly PlotMarker: typeof PlotMarker;
 }
 
 declare enum PlotColormap {
@@ -2558,9 +892,6 @@ declare enum PlotColormap {
   Spectral = 14,
   Greys = 15,
 }
-declare interface ImPlot {
-  readonly PlotColormap: typeof PlotColormap;
-}
 
 declare enum PlotLocation {
   Center = 0,
@@ -2573,992 +904,12 @@ declare enum PlotLocation {
   SouthWest = 6,
   SouthEast = 10,
 }
-declare interface ImPlot {
-  readonly PlotLocation: typeof PlotLocation;
-}
 
 declare enum PlotBin {
   Sqrt = -1,
   Sturges = -2,
   Rice = -3,
   Scott = -4,
-}
-declare interface ImPlot {
-  readonly PlotBin: typeof PlotBin;
-}
-
-declare interface ImPlot {
-  BeginPlot(this: void, title_id: string): boolean;
-  BeginPlot(
-    this: void,
-    title_id: string,
-    size_x: number,
-    size_y: number,
-  ): boolean;
-  BeginPlot(
-    this: void,
-    title_id: string,
-    size_x: number,
-    size_y: number,
-    flags: PlotFlags,
-  ): boolean;
-}
-
-declare interface ImPlot {
-  EndPlot(this: void): void;
-}
-
-declare interface ImPlot {
-  BeginSubplots(
-    this: void,
-    title_id: string,
-    rows: number,
-    cols: number,
-    size_x: number,
-    size_y: number,
-  ): boolean;
-  BeginSubplots(
-    this: void,
-    title_id: string,
-    rows: number,
-    cols: number,
-    size_x: number,
-    size_y: number,
-    flags: PlotSubplotFlags,
-  ): boolean;
-}
-
-declare interface ImPlot {
-  EndSubplots(this: void): void;
-}
-
-declare interface ImPlot {
-  SetupAxis(this: void, axis: Axis): void;
-  SetupAxis(this: void, axis: Axis, label: string): void;
-  SetupAxis(this: void, axis: Axis, label: string, flags: PlotAxisFlags): void;
-  SetupAxis(this: void, axis: Axis, label: string, flags: PlotAxisFlags): void;
-}
-
-declare interface ImPlot {
-  SetupAxisLimits(this: void, axis: Axis, v_min: number, v_max: number): void;
-  SetupAxisLimits(
-    this: void,
-    axis: Axis,
-    v_min: number,
-    v_max: number,
-    cond: PlotCond,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetupAxisFormat(this: void, axis: Axis, fmt: string): void;
-}
-
-declare interface ImPlot {
-  SetupAxisTicks(
-    this: void,
-    axis: Axis,
-    values: number[] | Vector<number>,
-    labels?: string[],
-    keep_default?: boolean,
-  ): void;
-  SetupAxisTicks(
-    this: void,
-    axis: Axis,
-    v_min: number,
-    v_max: number,
-    n_ticks: number,
-    labels?: string[],
-    keep_default?: boolean,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetupAxisScale(this: void, axis: Axis, scale: PlotScale): void;
-}
-
-declare interface ImPlot {
-  SetupAxisLimitsConstraints(
-    this: void,
-    axis: Axis,
-    v_min: number,
-    v_max: number,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetupAxisZoomConstraints(
-    this: void,
-    axis: Axis,
-    z_min: number,
-    z_max: number,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetupAxes(this: void, x_label: string, y_label: string): void;
-  SetupAxes(
-    this: void,
-    x_label: string,
-    y_label: string,
-    x_flags: PlotAxisFlags,
-  ): void;
-  SetupAxes(
-    this: void,
-    x_label: string,
-    y_label: string,
-    x_flags: PlotAxisFlags,
-    y_flags: PlotAxisFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetupAxesLimits(
-    this: void,
-    x_min: number,
-    x_max: number,
-    y_min: number,
-    y_max: number,
-  ): void;
-  SetupAxesLimits(
-    this: void,
-    x_min: number,
-    x_max: number,
-    y_min: number,
-    y_max: number,
-    cond: PlotCond,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetupLegend(this: void, location: PlotLocation): void;
-  SetupLegend(this: void, location: PlotLocation, flags: PlotLegendFlags): void;
-}
-
-declare interface ImPlot {
-  SetupMouseText(this: void, location: PlotLocation): void;
-  SetupMouseText(
-    this: void,
-    location: PlotLocation,
-    flags: PlotMouseTextFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetupFinish(this: void): void;
-}
-
-declare interface ImPlot {
-  SetNextAxisLimits(this: void, axis: Axis, v_min: number, v_max: number): void;
-  SetNextAxisLimits(
-    this: void,
-    axis: Axis,
-    v_min: number,
-    v_max: number,
-    cond: PlotCond,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetNextAxisToFit(this: void, axis: Axis): void;
-}
-
-declare interface ImPlot {
-  SetNextAxesLimits(
-    this: void,
-    x_min: number,
-    x_max: number,
-    y_min: number,
-    y_max: number,
-  ): void;
-  SetNextAxesLimits(
-    this: void,
-    x_min: number,
-    x_max: number,
-    y_min: number,
-    y_max: number,
-    cond: PlotCond,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetNextAxesToFit(this: void): void;
-}
-
-declare interface ImPlot {
-  PlotLine(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-  ): void;
-  PlotLine(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    xscale: number,
-  ): void;
-  PlotLine(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    xscale: number,
-    xstart: number,
-  ): void;
-  PlotLine(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    xscale: number,
-    xstart: number,
-    flags: PlotLineFlags,
-  ): void;
-  PlotLine(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-  ): void;
-  PlotLine(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-    flags: PlotLineFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotScatter(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-  ): void;
-  PlotScatter(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    xscale: number,
-  ): void;
-  PlotScatter(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    xscale: number,
-    xstart: number,
-  ): void;
-  PlotScatter(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    xscale: number,
-    xstart: number,
-    flags: PlotScatterFlags,
-  ): void;
-  PlotScatter(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-  ): void;
-  PlotScatter(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-    flags: PlotScatterFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotStairs(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-  ): void;
-  PlotStairs(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    xscale: number,
-  ): void;
-  PlotStairs(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    xscale: number,
-    xstart: number,
-  ): void;
-  PlotStairs(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    xscale: number,
-    xstart: number,
-    flags: PlotStairsFlags,
-  ): void;
-  PlotStairs(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-  ): void;
-  PlotStairs(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-    flags: PlotStairsFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotBars(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-  ): void;
-  PlotBars(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    bar_size: number,
-  ): void;
-  PlotBars(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    bar_size: number,
-    shift: number,
-  ): void;
-  PlotBars(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    bar_size: number,
-    shift: number,
-    flags: PlotBarsFlags,
-  ): void;
-  PlotBars(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-    bar_size: number,
-  ): void;
-  PlotBars(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-    flags: PlotBarsFlags,
-    bar_size: number,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotBarGroups(
-    this: void,
-    labels: string[],
-    values: number[] | Vector<number>,
-    item_count: number,
-    group_count: number,
-    group_size?: number,
-    shift?: number,
-    flags?: PlotBarGroupsFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotErrorBars(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-    err: number[] | Vector<number>,
-    flags?: PlotErrorBarsFlags,
-  ): void;
-  PlotErrorBars(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-    neg: number[] | Vector<number>,
-    pos: number[] | Vector<number>,
-    flags?: PlotErrorBarsFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotStems(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    ref?: number,
-    scale?: number,
-    start?: number,
-    flags?: PlotStemsFlags,
-  ): void;
-  PlotStems(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-    ref?: number,
-    flags?: PlotStemsFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotInfLines(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    flags?: PlotInfLinesFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotPieChart(
-    this: void,
-    label_ids: string[],
-    values: number[] | Vector<number>,
-    x: number,
-    y: number,
-    radius: number,
-    label_fmt?: string,
-    angle0?: number,
-    flags?: PlotPieChartFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotHeatmap(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    rows: number,
-    cols: number,
-    scale_min?: number,
-    scale_max?: number,
-    label_fmt?: string,
-    bounds_min?: ImPlotPlotPoint,
-    bounds_max?: ImPlotPlotPoint,
-    flags?: PlotHeatmapFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotHistogram(
-    this: void,
-    label_id: string,
-    values: number[] | Vector<number>,
-    bins?: PlotBin,
-    bar_scale?: number,
-    range?: ImPlotPlotRange,
-    flags?: PlotHistogramFlags,
-  ): number;
-}
-
-declare interface ImPlot {
-  PlotHistogram2D(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-    x_bins?: PlotBin,
-    y_bins?: PlotBin,
-    range?: ImPlotPlotRect,
-    flags?: PlotHistogramFlags,
-  ): number;
-}
-
-declare interface ImPlot {
-  PlotDigital(
-    this: void,
-    label_id: string,
-    xs: number[] | Vector<number>,
-    ys: number[] | Vector<number>,
-    flags?: PlotDigitalFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotText(this: void, text: string, x: number, y: number): void;
-  PlotText(
-    this: void,
-    text: string,
-    x: number,
-    y: number,
-    pix_offset_x: number,
-    pix_offset_y: number,
-  ): void;
-  PlotText(
-    this: void,
-    text: string,
-    x: number,
-    y: number,
-    pix_offset_x: number,
-    pix_offset_y: number,
-    flags: PlotTextFlags,
-  ): void;
-}
-
-declare interface ImPlot {
-  PlotDummy(this: void, label_id: string): void;
-  PlotDummy(this: void, label_id: string, flags: PlotDummyFlags): void;
-}
-
-declare interface ImPlot {
-  DragPoint(
-    this: void,
-    id: number,
-    x: number,
-    y: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    size?: number,
-    flags?: PlotDragToolFlags,
-  ): LuaMultiReturn<[boolean, number, number, boolean, boolean, boolean]>;
-}
-
-declare interface ImPlot {
-  DragLineX(
-    this: void,
-    id: number,
-    x: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    thickness?: number,
-    flags?: PlotDragToolFlags,
-  ): LuaMultiReturn<[boolean, number, boolean, boolean, boolean]>;
-}
-
-declare interface ImPlot {
-  DragLineY(
-    this: void,
-    id: number,
-    y: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    thickness?: number,
-    flags?: PlotDragToolFlags,
-  ): LuaMultiReturn<[boolean, number, boolean, boolean, boolean]>;
-}
-
-declare interface ImPlot {
-  DragRect(
-    this: void,
-    id: number,
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    flags?: PlotDragToolFlags,
-  ): LuaMultiReturn<
-    [boolean, number, number, number, number, boolean, boolean, boolean]
-  >;
-}
-
-declare interface ImPlot {
-  Annotation(
-    this: void,
-    x: number,
-    y: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    pix_offset_x: number,
-    pix_offset_y: number,
-    clamp: boolean,
-  ): void;
-  Annotation(
-    this: void,
-    x: number,
-    y: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    pix_offset_x: number,
-    pix_offset_y: number,
-    clamp: boolean,
-    round: boolean,
-  ): void;
-  Annotation(
-    this: void,
-    x: number,
-    y: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    pix_offset_x: number,
-    pix_offset_y: number,
-    clamp: boolean,
-    text: string,
-  ): void;
-}
-
-declare interface ImPlot {
-  TagX(this: void, x: number, r: number, g: number, b: number, a: number): void;
-  TagX(
-    this: void,
-    x: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    round: boolean,
-  ): void;
-  TagX(
-    this: void,
-    x: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    text: string,
-  ): void;
-}
-
-declare interface ImPlot {
-  TagY(this: void, y: number, r: number, g: number, b: number, a: number): void;
-  TagY(
-    this: void,
-    y: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    round: boolean,
-  ): void;
-  TagY(
-    this: void,
-    y: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-    text: string,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetAxis(this: void, axis: Axis): void;
-}
-
-declare interface ImPlot {
-  SetAxes(this: void, x_axis: Axis, y_axis: Axis): void;
-}
-
-declare interface ImPlot {
-  PixelsToPlot(
-    this: void,
-    x: number,
-    y: number,
-  ): LuaMultiReturn<[number, number]>;
-  PixelsToPlot(
-    this: void,
-    x: number,
-    y: number,
-    x_axis: Axis,
-  ): LuaMultiReturn<[number, number]>;
-  PixelsToPlot(
-    this: void,
-    x: number,
-    y: number,
-    x_axis: Axis,
-    y_axis: Axis,
-  ): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImPlot {
-  PlotToPixels(
-    this: void,
-    x: number,
-    y: number,
-  ): LuaMultiReturn<[number, number]>;
-  PlotToPixels(
-    this: void,
-    x: number,
-    y: number,
-    x_axis: Axis,
-  ): LuaMultiReturn<[number, number]>;
-  PlotToPixels(
-    this: void,
-    x: number,
-    y: number,
-    x_axis: Axis,
-    y_axis: Axis,
-  ): LuaMultiReturn<[number, number]>;
-  PlotToPixels(
-    this: void,
-    plt: ImPlotPlotPoint,
-  ): LuaMultiReturn<[number, number]>;
-  PlotToPixels(
-    this: void,
-    plt: ImPlotPlotPoint,
-    x_axis: Axis,
-  ): LuaMultiReturn<[number, number]>;
-  PlotToPixels(
-    this: void,
-    plt: ImPlotPlotPoint,
-    x_axis: Axis,
-    y_axis: Axis,
-  ): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImPlot {
-  GetPlotPos(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImPlot {
-  GetPlotSize(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImPlot {
-  GetPlotMousePos(this: void): LuaMultiReturn<[number, number]>;
-  GetPlotMousePos(this: void, x_axis: Axis): LuaMultiReturn<[number, number]>;
-  GetPlotMousePos(
-    this: void,
-    x_axis: Axis,
-    y_axis: Axis,
-  ): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImPlot {
-  GetPlotLimits(this: void): ImPlotPlotRect;
-  GetPlotLimits(this: void, x_axis: Axis): ImPlotPlotRect;
-  GetPlotLimits(this: void, x_axis: Axis, y_axis: Axis): ImPlotPlotRect;
-}
-
-declare interface ImPlot {
-  IsPlotHovered(this: void): boolean;
-}
-
-declare interface ImPlot {
-  IsAxisHovered(this: void, axis: Axis): boolean;
-}
-
-declare interface ImPlot {
-  IsSubplotsHovered(this: void): boolean;
-}
-
-declare interface ImPlot {
-  IsPlotSelected(this: void): boolean;
-}
-
-declare interface ImPlot {
-  GetPlotSelection(this: void): ImPlotPlotRect;
-  GetPlotSelection(this: void, x_axis: Axis): ImPlotPlotRect;
-  GetPlotSelection(this: void, x_axis: Axis, y_axis: Axis): ImPlotPlotRect;
-  GetPlotSelection(this: void, x_axis: Axis, y_axis: Axis): ImPlotPlotRect;
-}
-
-declare interface ImPlot {
-  CancelPlotSelection(this: void): void;
-}
-
-declare interface ImPlot {
-  HideNextItem(this: void): void;
-  HideNextItem(this: void, hidden: boolean): void;
-  HideNextItem(this: void, hidden: boolean, cond: PlotCond): void;
-}
-
-declare interface ImPlot {
-  BeginAlignedPlots(this: void, group_id: string): boolean;
-  BeginAlignedPlots(this: void, group_id: string, vertical: boolean): boolean;
-}
-
-declare interface ImPlot {
-  EndAlignedPlots(this: void): void;
-}
-
-declare interface ImPlot {
-  BeginLegendPopup(this: void, label_id: string): boolean;
-  BeginLegendPopup(
-    this: void,
-    label_id: string,
-    mouse_button: MouseButton,
-  ): boolean;
-}
-
-declare interface ImPlot {
-  EndLegendPopup(this: void): void;
-}
-
-declare interface ImPlot {
-  IsLegendEntryHovered(this: void, label_id: string): boolean;
-}
-
-declare interface ImPlot {
-  BeginDragDropTargetPlot(this: void): boolean;
-}
-
-declare interface ImPlot {
-  BeginDragDropTargetAxis(this: void, axis: Axis): boolean;
-}
-
-declare interface ImPlot {
-  BeginDragDropTargetLegend(this: void): boolean;
-}
-
-declare interface ImPlot {
-  EndDragDropTarget(this: void): void;
-}
-
-declare interface ImPlot {
-  PushStyleColor(
-    this: void,
-    idx: PlotCol,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-  ): void;
-  PushStyleColor(this: void, idx: PlotCol, col: number): void;
-}
-
-declare interface ImPlot {
-  PopStyleColor(this: void): void;
-  PopStyleColor(this: void, count: number): void;
-}
-
-declare interface ImPlot {
-  PushStyleVarFloat(this: void, idx: PlotStyleVar, val: number): void;
-}
-
-declare interface ImPlot {
-  PushStyleVarInt(this: void, idx: PlotStyleVar, val: number): void;
-}
-
-declare interface ImPlot {
-  PushStyleVarVec2(this: void, idx: PlotStyleVar, x: number, y: number): void;
-}
-
-declare interface ImPlot {
-  PopStyleVar(this: void): void;
-  PopStyleVar(this: void, count: number): void;
-}
-
-declare interface ImPlot {
-  SetNextLineStyle(
-    this: void,
-    r?: number,
-    g?: number,
-    b?: number,
-    a?: number,
-    weight?: number,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetNextFillStyle(
-    this: void,
-    r?: number,
-    g?: number,
-    b?: number,
-    a?: number,
-    alpha_mod?: number,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetNextMarkerStyle(
-    this: void,
-    marker?: PlotMarker,
-    size?: number,
-    fill_r?: number,
-    fill_g?: number,
-    fill_b?: number,
-    fill_a?: number,
-    weight?: number,
-    outline_r?: number,
-    outline_g?: number,
-    outline_b?: number,
-    outline_a?: number,
-  ): void;
-}
-
-declare interface ImPlot {
-  SetNextErrorBarStyle(
-    this: void,
-    r?: number,
-    g?: number,
-    b?: number,
-    a?: number,
-    size?: number,
-    weight?: number,
-  ): void;
-}
-
-declare interface ImPlot {
-  GetLastItemColor(
-    this: void,
-  ): LuaMultiReturn<[number, number, number, number]>;
-}
-
-declare interface ImPlot {
-  GetStyleColorName(this: void, idx: PlotCol): string;
-}
-
-declare interface ImPlot {
-  GetMarkerName(this: void, idx: PlotMarker): string;
-}
-
-declare interface ImPlot {
-  ItemIcon(this: void, col: number): void;
-  ItemIcon(this: void, r: number, g: number, b: number, a: number): void;
-}
-
-declare interface ImPlot {
-  ColormapIcon(this: void, cmap: PlotColormap): void;
-}
-
-declare interface ImPlot {
-  PushPlotClipRect(this: void): void;
-  PushPlotClipRect(this: void, expand: number): void;
-}
-
-declare interface ImPlot {
-  PopPlotClipRect(this: void): void;
-}
-
-declare interface ImPlot {
-  ShowStyleSelector(this: void, label: string): boolean;
-}
-
-declare interface ImPlot {
-  ShowColormapSelector(this: void, label: string): boolean;
-}
-
-declare interface ImPlot {
-  ShowInputMapSelector(this: void, label: string): boolean;
-}
-
-declare interface ImPlot {
-  ShowUserGuide(this: void): void;
-}
-
-declare interface ImPlot {
-  ShowMetricsWindow(this: void): void;
-  ShowMetricsWindow(this: void, open: boolean): boolean;
-}
-
-declare interface ImPlot {
-  ShowDemoWindow(this: void): void;
-  ShowDemoWindow(this: void, open: boolean): boolean;
 }
 
 declare enum DockNodeFlags {
@@ -3570,84 +921,6 @@ declare enum DockNodeFlags {
   NoResize = 32,
   AutoHideTabBar = 64,
   NoUndocking = 128,
-}
-declare interface ImGui {
-  readonly DockNodeFlags: typeof DockNodeFlags;
-}
-
-declare interface ImGui {
-  GetWindowDockID(this: void): number;
-}
-
-declare interface ImGui {
-  SetNextWindowDockID(this: void, dock_id: number, cond?: Cond): void;
-}
-
-declare interface ImGui {
-  DockBuilderDockWindow(this: void, window_name: string, node_id: number): void;
-}
-
-declare interface ImGui {
-  DockBuilderAddNode(
-    this: void,
-    node_id?: number,
-    flags?: DockNodeFlags,
-  ): number;
-}
-
-declare interface ImGui {
-  DockBuilderRemoveNode(this: void, node_id: number): void;
-}
-
-declare interface ImGui {
-  DockBuilderRemoveNodeDockedWindows(
-    this: void,
-    node_id: number,
-    clear_settings_ref?: boolean,
-  ): void;
-}
-
-declare interface ImGui {
-  DockBuilderRemoveNodeChildNodes(this: void, node_id: number): void;
-}
-
-declare interface ImGui {
-  DockBuilderSetNodePos(
-    this: void,
-    node_id: number,
-    x: number,
-    y: number,
-  ): void;
-}
-
-declare interface ImGui {
-  DockBuilderSetNodeSize(
-    this: void,
-    node_id: number,
-    width: number,
-    height: number,
-  ): void;
-}
-
-declare interface ImGui {
-  DockBuilderSplitNode(
-    this: void,
-    node_id: number,
-    split_dir: Dir,
-    size_ratio_for_node_at_dir: number,
-  ): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  DockBuilderCopyWindowSettings(
-    this: void,
-    src_name: string,
-    dst_name: string,
-  ): void;
-}
-
-declare interface ImGui {
-  DockBuilderFinish(this: void, node_id: number): void;
 }
 
 declare enum Key {
@@ -3809,9 +1082,6 @@ declare enum Key {
   ModSuper = 32768,
   KeyPadEnter = 627,
 }
-declare interface ImGui {
-  readonly Key: typeof Key;
-}
 
 declare enum Mod {
   None = 0,
@@ -3821,232 +1091,6 @@ declare enum Mod {
   Super = 32768,
   Shortcut = 4096,
   Mask_ = 61440,
-}
-declare interface ImGui {
-  readonly Mod: typeof Mod;
-}
-
-declare interface ImGui {
-  IsKeyDown(this: void, key: Key): boolean;
-}
-
-declare interface ImGui {
-  IsKeyPressed(this: void, key: Key): boolean;
-  IsKeyPressed(this: void, key: Key, repeat: boolean): boolean;
-}
-
-declare interface ImGui {
-  IsKeyReleased(this: void, key: Key): boolean;
-}
-
-declare interface ImGui {
-  GetKeyPressedAmount(
-    this: void,
-    key: Key,
-    repeat_delay: number,
-    rate: number,
-  ): number;
-}
-
-declare interface ImGui {
-  GetKeyName(this: void, key: Key): string;
-}
-
-declare interface ImGui {
-  SetNextFrameWantCaptureKeyboard(
-    this: void,
-    want_capture_keyboard: boolean,
-  ): void;
-}
-
-declare interface ImGui {
-  PushTabStop(this: void, tab_stop: boolean): void;
-}
-
-declare interface ImGui {
-  PopTabStop(this: void): void;
-}
-
-declare interface ImGui {
-  SetKeyboardFocusHere(this: void): void;
-  SetKeyboardFocusHere(this: void, offset: number): void;
-}
-
-declare interface ImGui {
-  Separator(this: void): void;
-}
-
-declare interface ImGui {
-  SameLine(this: void): void;
-  SameLine(this: void, offset_from_start_x: number): void;
-  SameLine(this: void, offset_from_start_x: number, spacing: number): void;
-}
-
-declare interface ImGui {
-  NewLine(this: void): void;
-}
-
-declare interface ImGui {
-  Spacing(this: void): void;
-}
-
-declare interface ImGui {
-  Dummy(this: void, size_x: number, size_y: number): void;
-}
-
-declare interface ImGui {
-  Indent(this: void): void;
-  Indent(this: void, indent_w: number): void;
-}
-
-declare interface ImGui {
-  Unindent(this: void): void;
-  Unindent(this: void, indent_w: number): void;
-}
-
-declare interface ImGui {
-  BeginGroup(this: void): void;
-}
-
-declare interface ImGui {
-  EndGroup(this: void): void;
-}
-
-declare interface ImGui {
-  GetCursorPos(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetCursorPosX(this: void): number;
-}
-
-declare interface ImGui {
-  GetCursorPosY(this: void): number;
-}
-
-declare interface ImGui {
-  SetCursorPos(this: void, local_pos_x: number, local_pos_y: number): void;
-}
-
-declare interface ImGui {
-  SetCursorPosX(this: void, local_x: number): void;
-}
-
-declare interface ImGui {
-  SetCursorPosY(this: void, local_y: number): void;
-}
-
-declare interface ImGui {
-  GetCursorStartPos(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetCursorScreenPos(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  SetCursorScreenPos(this: void, size_x: number, size_y: number): void;
-}
-
-declare interface ImGui {
-  AlignTextToFramePadding(this: void): void;
-}
-
-declare interface ImGui {
-  GetTextLineHeight(this: void): number;
-}
-
-declare interface ImGui {
-  GetTextLineHeightWithSpacing(this: void): number;
-}
-
-declare interface ImGui {
-  GetFrameHeight(this: void): number;
-}
-
-declare interface ImGui {
-  GetFrameHeightWithSpacing(this: void): number;
-}
-
-declare interface ImGui {
-  GetIO(this: void): ImGuiGuiIO;
-}
-
-declare interface ImGuiFont {
-  CalcTextSizeA(
-    size: number,
-    max_width: number,
-    wrap_width: number,
-    text: string,
-    length?: number,
-  ): LuaMultiReturn<[number, number, number]>;
-}
-
-declare interface ImGuiFont {
-  CalcWordWrapPositionA(
-    scale: number,
-    text: string,
-    length: number | undefined,
-    wrap_width: number,
-  ): number;
-}
-
-declare interface ImGui {
-  GetFontIndex(this: void, font_index: number): ImGuiFont;
-}
-
-declare interface ImGui {
-  GetNoitaFont(this: void): ImGuiFont;
-}
-
-declare interface ImGui {
-  GetNoitaFont1_4x(this: void): ImGuiFont;
-}
-
-declare interface ImGui {
-  GetNoitaFont1_8x(this: void): ImGuiFont;
-}
-
-declare interface ImGui {
-  GetImGuiFont(this: void): ImGuiFont;
-}
-
-declare interface ImGui {
-  GetMonospaceFont(this: void): ImGuiFont;
-}
-
-declare interface ImGui {
-  GetGlyphFont(this: void): ImGuiFont;
-}
-
-declare interface ImGui {
-  GetNotoFont(this: void): ImGuiFont;
-}
-
-declare interface ImGui {
-  PushFont(this: void, font: ImGuiFont): void;
-}
-
-declare interface ImGui {
-  PopFont(this: void): void;
-}
-
-declare interface ImGui {
-  GetFont(this: void): ImGuiFont;
-}
-
-declare interface ImGui {
-  GetFontSize(this: void): number;
-}
-
-declare interface ImGui {
-  CalcTextSize(
-    this: void,
-    text: string,
-    length?: number,
-    hide_text_after_double_hash?: boolean,
-    wrap_width?: number,
-  ): LuaMultiReturn<[number, number]>;
 }
 
 declare enum WindowFlags {
@@ -4075,9 +1119,6 @@ declare enum WindowFlags {
   NoDecoration = 43,
   NoInputs = 197120,
 }
-declare interface ImGui {
-  readonly WindowFlags: typeof WindowFlags;
-}
 
 declare enum FocusedFlags {
   None = 0,
@@ -4087,9 +1128,6 @@ declare enum FocusedFlags {
   NoPopupHierarchy = 8,
   DockHierarchy = 16,
   RootAndChildWindows = 3,
-}
-declare interface ImGui {
-  readonly FocusedFlags: typeof FocusedFlags;
 }
 
 declare enum ChildFlags {
@@ -4103,219 +1141,6 @@ declare enum ChildFlags {
   AlwaysAutoResize = 64,
   FrameStyle = 128,
   NavFlattened = 256,
-}
-declare interface ImGui {
-  readonly ChildFlags: typeof ChildFlags;
-}
-
-declare interface ImGui {
-  Begin(
-    this: void,
-    name: string,
-    open?: boolean,
-    flags?: WindowFlags,
-  ): LuaMultiReturn<[boolean, boolean | undefined]>;
-}
-
-declare interface ImGui {
-  End(this: void): void;
-}
-
-declare interface ImGui {
-  EndChild(this: void): void;
-}
-
-declare interface ImGui {
-  IsWindowAppearing(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsWindowCollapsed(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsWindowFocused(this: void): boolean;
-  IsWindowFocused(this: void, flags: FocusedFlags): boolean;
-}
-
-declare interface ImGui {
-  IsWindowHovered(this: void): boolean;
-  IsWindowHovered(this: void, flags: HoveredFlags): boolean;
-}
-
-declare interface ImGui {
-  GetWindowPos(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetWindowSize(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetWindowWidth(this: void): number;
-}
-
-declare interface ImGui {
-  GetWindowHeight(this: void): number;
-}
-
-declare interface ImGui {
-  SetNextWindowPos(this: void, pos_x: number, pos_y: number): void;
-  SetNextWindowPos(this: void, pos_x: number, pos_y: number, cond: Cond): void;
-  SetNextWindowPos(
-    this: void,
-    pos_x: number,
-    pos_y: number,
-    cond: Cond,
-    pivot_x: number,
-    pivot_y: number,
-  ): void;
-}
-
-declare interface ImGui {
-  SetNextWindowSize(this: void, size_x: number, size_y: number): void;
-  SetNextWindowSize(
-    this: void,
-    size_x: number,
-    size_y: number,
-    cond: Cond,
-  ): void;
-}
-
-declare interface ImGui {
-  SetNextWindowSizeConstraints(
-    this: void,
-    min_x: number,
-    min_y: number,
-    max_x: number,
-    max_y: number,
-  ): void;
-}
-
-declare interface ImGui {
-  SetNextWindowContentSize(this: void, size_x: number, size_y: number): void;
-}
-
-declare interface ImGui {
-  SetNextWindowCollapsed(this: void, collapsed: boolean): void;
-  SetNextWindowCollapsed(this: void, collapsed: boolean, cond: Cond): void;
-}
-
-declare interface ImGui {
-  SetNextWindowFocus(this: void): void;
-}
-
-declare interface ImGui {
-  SetNextWindowBgAlpha(this: void, alpha: number): void;
-}
-
-declare interface ImGui {
-  SetNextWindowViewport(this: void, viewport_id: number): void;
-}
-
-declare interface ImGui {
-  SetWindowPos(this: void, pos_x: number, pos_y: number): void;
-  SetWindowPos(this: void, pos_x: number, pos_y: number, cond: Cond): void;
-  SetWindowPos(this: void, name: string, pos_x: number, pos_y: number): void;
-  SetWindowPos(
-    this: void,
-    name: string,
-    pos_x: number,
-    pos_y: number,
-    cond: Cond,
-  ): void;
-}
-
-declare interface ImGui {
-  SetWindowSize(this: void, pos_x: number, pos_y: number): void;
-  SetWindowSize(this: void, pos_x: number, pos_y: number, cond: Cond): void;
-  SetWindowSize(this: void, name: string, pos_x: number, pos_y: number): void;
-  SetWindowSize(
-    this: void,
-    name: string,
-    pos_x: number,
-    pos_y: number,
-    cond: Cond,
-  ): void;
-}
-
-declare interface ImGui {
-  SetWindowCollapsed(this: void, collapsed: boolean): void;
-  SetWindowCollapsed(this: void, collapsed: boolean, cond: Cond): void;
-  SetWindowCollapsed(this: void, name: string, collapsed: boolean): void;
-  SetWindowCollapsed(
-    this: void,
-    name: string,
-    collapsed: boolean,
-    cond: Cond,
-  ): void;
-}
-
-declare interface ImGui {
-  SetWindowFocus(this: void, name: string): void;
-  SetWindowFocus(this: void): void;
-}
-
-declare interface ImGui {
-  GetContentRegionAvail(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetContentRegionMax(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetWindowContentRegionMin(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetWindowContentRegionMax(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetScrollX(this: void): number;
-}
-
-declare interface ImGui {
-  GetScrollY(this: void): number;
-}
-
-declare interface ImGui {
-  SetScrollX(this: void, scroll_x: number): void;
-}
-
-declare interface ImGui {
-  SetScrollY(this: void, scroll_y: number): void;
-}
-
-declare interface ImGui {
-  GetScrollMaxX(this: void): number;
-}
-
-declare interface ImGui {
-  GetScrollMaxY(this: void): number;
-}
-
-declare interface ImGui {
-  SetScrollHereX(this: void, center_x_ratio: number): void;
-}
-
-declare interface ImGui {
-  SetScrollHereY(this: void, center_y_ratio: number): void;
-}
-
-declare interface ImGui {
-  SetScrollFromPosX(this: void, local_x: number): void;
-  SetScrollFromPosX(this: void, local_x: number, center_x_ratio: number): void;
-}
-
-declare interface ImGui {
-  SetScrollFromPosY(this: void, local_y: number): void;
-  SetScrollFromPosY(this: void, local_y: number, center_y_ratio: number): void;
-}
-
-declare interface ImGui {
-  SetNextWindowScroll(this: void, x: number, y: number): void;
 }
 
 declare enum TreeNodeFlags {
@@ -4338,66 +1163,6 @@ declare enum TreeNodeFlags {
   NavLeftJumpsBackHere = 32768,
   CollapsingHeader = 26,
 }
-declare interface ImGui {
-  readonly TreeNodeFlags: typeof TreeNodeFlags;
-}
-
-declare interface ImGui {
-  TreeNode(this: void, label: string): boolean;
-  TreeNode(this: void, label: string, flags: TreeNodeFlags): boolean;
-  TreeNode(
-    this: void,
-    label: string,
-    flags: TreeNodeFlags,
-    text: string,
-  ): boolean;
-}
-
-declare interface ImGui {
-  TreePush(this: void, str_id: string): void;
-}
-
-declare interface ImGui {
-  TreePop(this: void): void;
-}
-
-declare interface ImGui {
-  GetTreeNodeToLabelSpacing(this: void): number;
-}
-
-declare interface ImGui {
-  CollapsingHeader(this: void, label: string): boolean;
-  CollapsingHeader(this: void, label: string, flags: TreeNodeFlags): boolean;
-  CollapsingHeader(
-    this: void,
-    label: string,
-    visible: boolean,
-  ): LuaMultiReturn<[boolean, boolean]>;
-  CollapsingHeader(
-    this: void,
-    label: string,
-    visible: boolean,
-    flags: TreeNodeFlags,
-  ): LuaMultiReturn<[boolean, boolean]>;
-}
-
-declare interface ImGui {
-  SetNextItemOpen(this: void, is_open: boolean): void;
-  SetNextItemOpen(this: void, is_open: boolean, cond: Cond): void;
-}
-
-declare interface ImGui {
-  SetNextItemStorageID(this: void, storage_id: number): void;
-}
-
-declare interface ImGui {
-  BeginDisabled(this: void): void;
-  BeginDisabled(this: void, disabled: boolean): void;
-}
-
-declare interface ImGui {
-  EndDisabled(this: void): void;
-}
 
 declare enum DrawFlags {
   None = 0,
@@ -4412,450 +1177,6 @@ declare enum DrawFlags {
   RoundCornersLeft = 80,
   RoundCornersRight = 160,
   RoundCornersAll = 240,
-}
-declare interface ImGui {
-  readonly DrawFlags: typeof DrawFlags;
-}
-
-declare interface ImGuiDrawList {
-  PushClipRect(
-    clip_rect_min_x: number,
-    clip_rect_min_y: number,
-    clip_rect_max_x: number,
-    clip_rect_max_y: number,
-    intersect_with_current_clip_rect?: boolean,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  PushClipRectFullScreen(): void;
-}
-
-declare interface ImGuiDrawList {
-  PopClipRect(): void;
-}
-
-declare interface ImGuiDrawList {
-  PushTextureID(img: ImGuiLuaImage): void;
-}
-
-declare interface ImGuiDrawList {
-  PopTextureID(): void;
-}
-
-declare interface ImGuiDrawList {
-  GetClipRectMin(): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGuiDrawList {
-  GetClipRectMax(): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGuiDrawList {
-  AddLine(
-    p1_x: number,
-    p1_y: number,
-    p2_x: number,
-    p2_y: number,
-    col: number,
-    thickness?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddRect(
-    p_min_x: number,
-    p_min_y: number,
-    p_max_x: number,
-    p_max_y: number,
-    col: number,
-    rounding?: number,
-    flags?: number,
-    thickness?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddRectFilled(
-    p_min_x: number,
-    p_min_y: number,
-    p_max_x: number,
-    p_max_y: number,
-    col: number,
-    rounding?: number,
-    flags?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddRectFilledMultiColor(
-    p_min_x: number,
-    p_min_y: number,
-    p_max_x: number,
-    p_max_y: number,
-    col_upr_left: number,
-    col_upr_right: number,
-    col_bot_right: number,
-    col_bot_left: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddQuad(
-    p1_x: number,
-    p1_y: number,
-    p2_x: number,
-    p2_y: number,
-    p3_x: number,
-    p3_y: number,
-    p4_x: number,
-    p4_y: number,
-    col: number,
-    thickness?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddQuadFilled(
-    p1_x: number,
-    p1_y: number,
-    p2_x: number,
-    p2_y: number,
-    p3_x: number,
-    p3_y: number,
-    p4_x: number,
-    p4_y: number,
-    col: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddTriangle(
-    p1_x: number,
-    p1_y: number,
-    p2_x: number,
-    p2_y: number,
-    p3_x: number,
-    p3_y: number,
-    col: number,
-    thickness?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddTriangleFilled(
-    p1_x: number,
-    p1_y: number,
-    p2_x: number,
-    p2_y: number,
-    p3_x: number,
-    p3_y: number,
-    col: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddCircle(
-    center_x: number,
-    center_y: number,
-    radius: number,
-    col: number,
-    num_segments?: number,
-    thickness?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddCircleFilled(
-    center_x: number,
-    center_y: number,
-    radius: number,
-    col: number,
-    num_segments?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddNgon(
-    center_x: number,
-    center_y: number,
-    radius: number,
-    col: number,
-    num_segments?: number,
-    thickness?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddNgonFilled(
-    center_x: number,
-    center_y: number,
-    radius: number,
-    col: number,
-    num_segments?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddEllipse(
-    center_x: number,
-    center_y: number,
-    radius_x: number,
-    radius_y: number,
-    col: number,
-    rot?: number,
-    num_segments?: number,
-    thickness?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddEllipseFilled(
-    center_x: number,
-    center_y: number,
-    radius_x: number,
-    radius_y: number,
-    col: number,
-    rot?: number,
-    num_segments?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddText(pos_x: number, pos_y: number, col: number, text: string): void;
-  AddText(
-    font: ImGuiFont,
-    font_size: number,
-    pos_x: number,
-    pos_y: number,
-    col: number,
-    text: string,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddBezierCubic(
-    p1_x: number,
-    p1_y: number,
-    p2_x: number,
-    p2_y: number,
-    p3_x: number,
-    p3_y: number,
-    p4_x: number,
-    p4_y: number,
-    col: number,
-    thickness: number,
-    num_segments?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddBezierQuadratic(
-    p1_x: number,
-    p1_y: number,
-    p2_x: number,
-    p2_y: number,
-    p3_x: number,
-    p3_y: number,
-    col: number,
-    thickness: number,
-    num_segments?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddImage(
-    img: ImGuiLuaImage,
-    p_min_x: number,
-    p_min_y: number,
-    p_max_x: number,
-    p_max_y: number,
-    uv_min_x?: number,
-    uv_min_y?: number,
-    uv_max_x?: number,
-    uv_max_y?: number,
-    col?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddImageQuad(
-    img: ImGuiLuaImage,
-    p1_x: number,
-    p1_y: number,
-    p2_x: number,
-    p2_y: number,
-    p3_x: number,
-    p3_y: number,
-    p4_x: number,
-    p4_y: number,
-    uv1_x?: number,
-    uv1_y?: number,
-    uv2_x?: number,
-    uv2_y?: number,
-    uv3_x?: number,
-    uv3_y?: number,
-    uv4_x?: number,
-    uv4_y?: number,
-    col?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  AddImageRounded(
-    img: ImGuiLuaImage,
-    p_min_x: number,
-    p_min_y: number,
-    p_max_x: number,
-    p_max_y: number,
-    uv_min_x: number,
-    uv_min_y: number,
-    uv_max_x: number,
-    uv_max_y: number,
-    col: number,
-    rounding: number,
-    flags?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  PathClear(): void;
-}
-
-declare interface ImGuiDrawList {
-  PathLineTo(pos_x: number, pos_y: number): void;
-}
-
-declare interface ImGuiDrawList {
-  PathLineToMergeDuplicate(pos_x: number, pos_y: number): void;
-}
-
-declare interface ImGuiDrawList {
-  PathFillConvex(col: number): void;
-}
-
-declare interface ImGuiDrawList {
-  PathFillConcave(col: number): void;
-}
-
-declare interface ImGuiDrawList {
-  PathStroke(col: number, flags?: number, thickness?: number): void;
-}
-
-declare interface ImGuiDrawList {
-  PathArcTo(
-    center_x: number,
-    center_y: number,
-    radius: number,
-    a_min: number,
-    a_max: number,
-    num_segments?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  PathArcToFast(
-    center_x: number,
-    center_y: number,
-    radius: number,
-    a_min_of_12: number,
-    a_max_of_12: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  PathEllipticalArcTo(
-    center_x: number,
-    center_y: number,
-    radius_x: number,
-    radius_y: number,
-    rot: number,
-    a_min: number,
-    a_max: number,
-    num_segments?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  PathBezierCubicCurveTo(
-    p2_x: number,
-    p2_y: number,
-    p3_x: number,
-    p3_y: number,
-    p4_x: number,
-    p4_y: number,
-    num_segments?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  PathBezierQuadraticCurveTo(
-    p2_x: number,
-    p2_y: number,
-    p3_x: number,
-    p3_y: number,
-    num_segments?: number,
-  ): void;
-}
-
-declare interface ImGuiDrawList {
-  PathRect(
-    rect_min_x: number,
-    rect_min_y: number,
-    rect_max_x: number,
-    rect_max_y: number,
-    rounding?: number,
-    flags?: number,
-  ): void;
-}
-
-declare interface ImGui {
-  GetWindowDrawList(this: void): ImGuiDrawList;
-}
-
-declare interface ImGui {
-  GetBackgroundDrawList(this: void): ImGuiDrawList;
-  GetBackgroundDrawList(this: void, viewport: ImGuiViewport): ImGuiDrawList;
-}
-
-declare interface ImGui {
-  GetForegroundDrawList(this: void): ImGuiDrawList;
-  GetForegroundDrawList(this: void, viewport: ImGuiViewport): ImGuiDrawList;
-}
-
-declare interface ImGui {
-  ColorConvertU32ToFloat4(
-    this: void,
-    in_: number,
-  ): LuaMultiReturn<[number, number, number, number]>;
-}
-
-declare interface ImGui {
-  ColorConvertFloat4ToU32(
-    this: void,
-    x: number,
-    y: number,
-    z: number,
-    w: number,
-  ): number;
-}
-
-declare interface ImGui {
-  ColorConvertRGBtoHSV(
-    this: void,
-    r: number,
-    g: number,
-    b: number,
-  ): LuaMultiReturn<[number, number, number]>;
-}
-
-declare interface ImGui {
-  ColorConvertHSVtoRGB(
-    this: void,
-    h: number,
-    s: number,
-    v: number,
-  ): LuaMultiReturn<[number, number, number]>;
 }
 
 declare enum HoveredFlags {
@@ -4881,83 +1202,6 @@ declare enum HoveredFlags {
   DelayNormal = 65536,
   NoSharedDelay = 131072,
 }
-declare interface ImGui {
-  readonly HoveredFlags: typeof HoveredFlags;
-}
-
-declare interface ImGui {
-  IsItemHovered(this: void): boolean;
-  IsItemHovered(this: void, flags: HoveredFlags): boolean;
-}
-
-declare interface ImGui {
-  IsItemActive(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsItemFocused(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsItemClicked(this: void): boolean;
-  IsItemClicked(this: void, mouse_button: MouseButton): boolean;
-}
-
-declare interface ImGui {
-  IsItemVisible(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsItemEdited(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsItemActivated(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsItemDeactivated(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsItemDeactivatedAfterEdit(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsItemToggledOpen(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsAnyItemHovered(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsAnyItemActive(this: void): boolean;
-}
-
-declare interface ImGui {
-  IsAnyItemFocused(this: void): boolean;
-}
-
-declare interface ImGui {
-  GetItemID(this: void): number;
-}
-
-declare interface ImGui {
-  GetItemRectMin(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetItemRectMax(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  GetItemRectSize(this: void): LuaMultiReturn<[number, number]>;
-}
-
-declare interface ImGui {
-  SetNextItemAllowOverlap(this: void): void;
-}
 
 declare enum PopupFlags {
   None = 0,
@@ -4972,89 +1216,6 @@ declare enum PopupFlags {
   AnyPopupId = 1024,
   AnyPopupLevel = 2048,
   AnyPopup = 3072,
-}
-declare interface ImGui {
-  readonly PopupFlags: typeof PopupFlags;
-}
-
-declare interface ImGui {
-  BeginPopup(this: void, str_id: string): boolean;
-  BeginPopup(this: void, str_id: string, flags: WindowFlags): boolean;
-}
-
-declare interface ImGui {
-  BeginPopupModal(this: void, str_id: string): boolean;
-  BeginPopupModal(
-    this: void,
-    str_id: string,
-    open: boolean,
-  ): LuaMultiReturn<[boolean, boolean]>;
-  BeginPopupModal(
-    this: void,
-    str_id: string,
-    open: boolean,
-    flags: WindowFlags,
-  ): LuaMultiReturn<[boolean, boolean]>;
-}
-
-declare interface ImGui {
-  EndPopup(this: void): void;
-}
-
-declare interface ImGui {
-  OpenPopup(this: void, str_id: string): void;
-  OpenPopup(this: void, str_id: string, popup_flags: PopupFlags): void;
-  OpenPopup(this: void, id: number): void;
-  OpenPopup(this: void, id: number, popup_flags: PopupFlags): void;
-}
-
-declare interface ImGui {
-  OpenPopupOnItemClick(this: void): void;
-  OpenPopupOnItemClick(this: void, str_id: string): void;
-  OpenPopupOnItemClick(
-    this: void,
-    str_id: string,
-    popup_flags: PopupFlags,
-  ): void;
-}
-
-declare interface ImGui {
-  CloseCurrentPopup(this: void): void;
-}
-
-declare interface ImGui {
-  BeginPopupContextItem(this: void): boolean;
-  BeginPopupContextItem(this: void, str_id: string): boolean;
-  BeginPopupContextItem(
-    this: void,
-    str_id: string,
-    popup_flags: PopupFlags,
-  ): boolean;
-}
-
-declare interface ImGui {
-  BeginPopupContextWindow(this: void): boolean;
-  BeginPopupContextWindow(this: void, str_id: string): boolean;
-  BeginPopupContextWindow(
-    this: void,
-    str_id: string,
-    popup_flags: PopupFlags,
-  ): boolean;
-}
-
-declare interface ImGui {
-  BeginPopupContextVoid(this: void): boolean;
-  BeginPopupContextVoid(this: void, str_id: string): boolean;
-  BeginPopupContextVoid(
-    this: void,
-    str_id: string,
-    popup_flags: PopupFlags,
-  ): boolean;
-}
-
-declare interface ImGui {
-  IsPopupOpen(this: void, str_id: string): boolean;
-  IsPopupOpen(this: void, str_id: string, flags: PopupFlags): boolean;
 }
 
 declare enum ColorEditFlags {
@@ -5084,11 +1245,1795 @@ declare enum ColorEditFlags {
   InputHSV = 268435456,
   DefaultOptions_ = 177209344,
 }
+
 declare interface ImGui {
+  readonly Cond: typeof Cond;
+
+  readonly TableFlags: typeof TableFlags;
+
+  readonly TableRowFlags: typeof TableRowFlags;
+
+  readonly TableColumnFlags: typeof TableColumnFlags;
+
+  readonly TableBgTarget: typeof TableBgTarget;
+
+  readonly SortDirection: typeof SortDirection;
+
+  BeginTable(this: void, str_id: string, columns: number): boolean;
+  BeginTable(
+    this: void,
+    str_id: string,
+    columns: number,
+    flags: TableFlags,
+  ): boolean;
+  BeginTable(
+    this: void,
+    str_id: string,
+    columns: number,
+    flags: TableFlags,
+    outer_size_x: number,
+    outer_size_y: number,
+  ): boolean;
+  BeginTable(
+    this: void,
+    str_id: string,
+    columns: number,
+    flags: TableFlags,
+    outer_size_x: number,
+    outer_size_y: number,
+    inner_size: number,
+  ): boolean;
+
+  EndTable(this: void): void;
+
+  TableNextRow(this: void): void;
+  TableNextRow(this: void, row_flags: TableRowFlags): void;
+  TableNextRow(
+    this: void,
+    row_flags: TableRowFlags,
+    min_row_height: number,
+  ): void;
+
+  TableNextColumn(this: void): boolean;
+
+  TableSetColumnIndex(this: void, column_n: number): boolean;
+
+  TableSetupColumn(this: void, label: string): void;
+  TableSetupColumn(this: void, label: string, flags: TableColumnFlags): void;
+  TableSetupColumn(
+    this: void,
+    label: string,
+    flags: TableColumnFlags,
+    init_width_or_weight: number,
+  ): void;
+  TableSetupColumn(
+    this: void,
+    label: string,
+    flags: TableColumnFlags,
+    init_width_or_weight: number,
+    user_id: number,
+  ): void;
+
+  TableSetupScrollFreeze(this: void, cols: number, rows: number): void;
+
+  TableHeadersRow(this: void): void;
+
+  TableAngledHeadersRow(this: void): void;
+
+  TableHeader(this: void, label: string): void;
+
+  TableGetColumnCount(this: void): number;
+
+  TableGetColumnIndex(this: void): number;
+
+  TableGetRowIndex(this: void): number;
+
+  TableGetColumnName(this: void): string;
+  TableGetColumnName(this: void, column_n: number): string;
+
+  TableGetColumnFlags(this: void): number;
+  TableGetColumnFlags(this: void, column_n: number): TableColumnFlags;
+
+  TableSetColumnEnabled(this: void, column_n: number, v: boolean): void;
+
+  TableGetHoveredColumn(this: void): number;
+
+  TableSetBgColor(
+    this: void,
+    target: TableBgTarget,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+  ): void;
+  TableSetBgColor(
+    this: void,
+    target: TableBgTarget,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    column_n: number,
+  ): void;
+
+  TableGetSortSpecs(
+    this: void,
+  ): LuaMultiReturn<[boolean | undefined, ImGuiTableSortSpecs | undefined]>;
+
+  TableSortSpecsMarkClean(this: void): void;
+
+  readonly Col: typeof Col;
+
+  readonly StyleVar: typeof StyleVar;
+
+  readonly ItemFlags: typeof ItemFlags;
+
+  PushStyleColor(this: void, idx: Col, r: number, g: number, b: number): void;
+  PushStyleColor(
+    this: void,
+    idx: Col,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+  ): void;
+
+  PopStyleColor(this: void): void;
+  PopStyleColor(this: void, count: number): void;
+
+  PushStyleVar(this: void, idx: StyleVar, val: number): void;
+  PushStyleVar(this: void, idx: StyleVar, valx: number, valy: number): void;
+
+  PopStyleVar(this: void): void;
+  PopStyleVar(this: void, count: number): void;
+
+  PushButtonRepeat(this: void, repeat: boolean): void;
+
+  PopButtonRepeat(this: void): void;
+
+  PushItemFlag(this: void, option: ItemFlags, enabled: boolean): void;
+
+  PopItemFlag(this: void): void;
+
+  PushItemWidth(this: void, item_width: number): void;
+
+  PopItemWidth(this: void): void;
+
+  SetNextItemWidth(this: void, item_width: number): void;
+
+  CalcItemWidth(this: void): number;
+
+  PushTextWrapPos(this: void): void;
+  PushTextWrapPos(this: void, wrap_local_pos_x: number): void;
+
+  PopTextWrapPos(this: void): void;
+
+  readonly InputTextFlags: typeof InputTextFlags;
+
+  InputText(
+    this: void,
+    label: string,
+    str: string,
+  ): LuaMultiReturn<[boolean, string]>;
+  InputText(
+    this: void,
+    label: string,
+    str: string,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, string]>;
+
+  InputTextMultiline(
+    this: void,
+    label: string,
+    str: string,
+  ): LuaMultiReturn<[boolean, string]>;
+  InputTextMultiline(
+    this: void,
+    label: string,
+    str: string,
+    size_x: number,
+    size_y: number,
+  ): LuaMultiReturn<[boolean, string]>;
+  InputTextMultiline(
+    this: void,
+    label: string,
+    str: string,
+    size_x: number,
+    size_y: number,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, string]>;
+
+  InputTextWithHint(
+    this: void,
+    label: string,
+    hint: string,
+    str: string,
+  ): LuaMultiReturn<[boolean, string]>;
+  InputTextWithHint(
+    this: void,
+    label: string,
+    hint: string,
+    str: string,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, string]>;
+
+  InputFloat(
+    this: void,
+    label: string,
+    v: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  InputFloat(
+    this: void,
+    label: string,
+    v: number,
+    step: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  InputFloat(
+    this: void,
+    label: string,
+    v: number,
+    step: number,
+    step_fast: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  InputFloat(
+    this: void,
+    label: string,
+    v: number,
+    step: number,
+    step_fast: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number]>;
+  InputFloat(
+    this: void,
+    label: string,
+    v: number,
+    step: number,
+    step_fast: number,
+    format: string,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, number]>;
+
+  InputFloat2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  InputFloat2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  InputFloat2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    format: string,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, number, number]>;
+
+  InputFloat3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  InputFloat3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  InputFloat3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    format: string,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+
+  InputFloat4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  InputFloat4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  InputFloat4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    format: string,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+
+  InputInt(
+    this: void,
+    label: string,
+    v: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  InputInt(
+    this: void,
+    label: string,
+    v: number,
+    step: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  InputInt(
+    this: void,
+    label: string,
+    v: number,
+    step: number,
+    step_fast: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  InputInt(
+    this: void,
+    label: string,
+    v: number,
+    step: number,
+    step_fast: number,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, number]>;
+
+  InputInt2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  InputInt2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, number, number]>;
+
+  InputInt3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  InputInt3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+
+  InputInt4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  InputInt4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+
+  InputDouble(
+    this: void,
+    label: string,
+    v: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  InputDouble(
+    this: void,
+    label: string,
+    v: number,
+    step: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  InputDouble(
+    this: void,
+    label: string,
+    v: number,
+    step: number,
+    step_fast: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  InputDouble(
+    this: void,
+    label: string,
+    v: number,
+    step: number,
+    step_fast: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number]>;
+  InputDouble(
+    this: void,
+    label: string,
+    v: number,
+    step: number,
+    step_fast: number,
+    format: string,
+    flags: InputTextFlags,
+  ): LuaMultiReturn<[boolean, number]>;
+
+  readonly MouseButton: typeof MouseButton;
+
+  IsMouseDown(this: void, button: MouseButton): boolean;
+
+  IsMouseClicked(this: void, button: MouseButton): boolean;
+  IsMouseClicked(this: void, button: MouseButton, repeat: boolean): boolean;
+
+  IsMouseReleased(this: void, button: MouseButton): boolean;
+
+  IsMouseDoubleClicked(this: void, button: MouseButton): boolean;
+
+  GetMouseClickedCount(this: void, button: MouseButton): number;
+
+  IsMousePosValid(this: void): boolean;
+  IsMousePosValid(this: void, posx: number, posy: number): boolean;
+
+  GetMousePos(this: void): LuaMultiReturn<[number, number]>;
+
+  GetMousePosOnOpeningCurrentPopup(
+    this: void,
+  ): LuaMultiReturn<[number, number]>;
+
+  IsMouseDragging(this: void, button: MouseButton): boolean;
+  IsMouseDragging(
+    this: void,
+    button: MouseButton,
+    lock_threshold: number,
+  ): boolean;
+
+  GetMouseDragDelta(this: void): LuaMultiReturn<[number, number]>;
+  GetMouseDragDelta(
+    this: void,
+    button: MouseButton,
+  ): LuaMultiReturn<[number, number]>;
+  GetMouseDragDelta(
+    this: void,
+    button: MouseButton,
+    lock_threshold: number,
+  ): LuaMultiReturn<[number, number]>;
+
+  ResetMouseDragDelta(this: void): void;
+  ResetMouseDragDelta(this: void, button: MouseButton): void;
+
+  readonly MouseCursor: typeof MouseCursor;
+
+  GetMouseCursor(this: void): MouseCursor;
+
+  SetMouseCursor(this: void, cursor_type: MouseCursor): void;
+
+  SetNextFrameWantCaptureMouse(this: void, want_capture_mouse: boolean): void;
+
+  readonly DragDropFlags: typeof DragDropFlags;
+
+  BeginDragDropSource(this: void): boolean;
+  BeginDragDropSource(this: void, flags: DragDropFlags): boolean;
+
+  SetDragDropPayload(this: void, type: string, payload: any): boolean;
+  SetDragDropPayload(
+    this: void,
+    type: string,
+    payload: any,
+    cond: Cond,
+  ): boolean;
+
+  EndDragDropSource(this: void): void;
+
+  AcceptDragDropPayload(this: void, type: string): any;
+  AcceptDragDropPayload(this: void, type: string, flags: DragDropFlags): any;
+
+  BeginDragDropTarget(this: void): boolean;
+
+  EndDragDropTarget(this: void): void;
+
+  GetDragDropPayload(this: void): any;
+
+  readonly Dir: typeof Dir;
+
+  GetStyle(this: void): ImGuiStyle;
+
+  readonly ButtonFlags: typeof ButtonFlags;
+
+  Button(this: void, label: string): boolean;
+  Button(this: void, label: string, width: number, height: number): boolean;
+
+  SmallButton(this: void, label: string): boolean;
+
+  InvisibleButton(
+    this: void,
+    str_id: string,
+    size_x: number,
+    size_y: number,
+  ): boolean;
+  InvisibleButton(
+    this: void,
+    str_id: string,
+    size_x: number,
+    size_y: number,
+    flags: ButtonFlags,
+  ): boolean;
+
+  ArrowButton(this: void, str_id: string, dir: Dir): boolean;
+
+  Checkbox(
+    this: void,
+    label: string,
+    value: boolean,
+  ): LuaMultiReturn<[boolean, boolean]>;
+
+  CheckboxFlags(
+    this: void,
+    label: string,
+    flags: number,
+    flags_value: number,
+  ): LuaMultiReturn<[boolean, number]>;
+
+  RadioButton(this: void, label: string, active: boolean): boolean;
+
+  ProgressBar(this: void, fraction: number): void;
+  ProgressBar(this: void, fraction: number, size_x: number): void;
+  ProgressBar(
+    this: void,
+    fraction: number,
+    size_x: number,
+    size_y: number,
+  ): void;
+  ProgressBar(
+    this: void,
+    fraction: number,
+    size_x: number,
+    size_y: number,
+    overlay: string,
+  ): void;
+
+  Bullet(this: void): void;
+
+  TextLink(this: void, label: string): boolean;
+
+  TextLinkOpenURL(this: void, label: string): void;
+  TextLinkOpenURL(this: void, label: string, url: string): void;
+
+  BeginTooltip(this: void): boolean;
+
+  BeginItemTooltip(this: void): boolean;
+
+  EndTooltip(this: void): void;
+
+  SetTooltip(this: void, text: string): void;
+
+  BeginMenuBar(this: void): boolean;
+
+  EndMenuBar(this: void): void;
+
+  BeginMainMenuBar(this: void): boolean;
+
+  EndMainMenuBar(this: void): void;
+
+  BeginMenu(this: void, label: string): boolean;
+  BeginMenu(this: void, label: string, enabled: boolean): boolean;
+
+  EndMenu(this: void): void;
+
+  MenuItem(this: void, label: string): boolean;
+  MenuItem(this: void, label: string, shortcut: string): boolean;
+  MenuItem(
+    this: void,
+    label: string,
+    shortcut: string,
+    selected: boolean,
+  ): LuaMultiReturn<[boolean, boolean]>;
+  MenuItem(
+    this: void,
+    label: string,
+    shortcut: string,
+    selected: boolean,
+    enabled: boolean,
+  ): LuaMultiReturn<[boolean, boolean]>;
+
+  readonly TabBarFlags: typeof TabBarFlags;
+
+  BeginTabBar(this: void, str_id: string): boolean;
+  BeginTabBar(this: void, str_id: string, flags: TabBarFlags): boolean;
+
+  EndTabBar(this: void): void;
+
+  readonly TabItemFlags: typeof TabItemFlags;
+
+  BeginTabItem(
+    this: void,
+    label: string,
+    open?: boolean,
+    flags?: TabItemFlags,
+  ): LuaMultiReturn<[boolean, boolean | undefined]>;
+
+  EndTabItem(this: void): void;
+
+  TabItemButton(this: void, label: string): boolean;
+  TabItemButton(this: void, label: string, flags: TabItemFlags): boolean;
+
+  SetTabItemClosed(this: void, tab_or_docked_window_label: string): void;
+
+  as_vector_float(this: void, vec: number[] | Vector<number>): Vector<number>;
+
+  readonly ComboFlags: typeof ComboFlags;
+
+  BeginCombo(this: void, label: string, preview_value: string): boolean;
+  BeginCombo(
+    this: void,
+    label: string,
+    preview_value: string,
+    flags: ComboFlags,
+  ): boolean;
+
+  EndCombo(this: void): void;
+
+  Combo(
+    this: void,
+    label: string,
+    current_item: number,
+    items: object,
+  ): LuaMultiReturn<[boolean, number]>;
+  Combo(
+    this: void,
+    label: string,
+    current_item: number,
+    items: object,
+    popup_max_height_in_items: number,
+  ): LuaMultiReturn<[boolean, number]>;
+
+  readonly SelectableFlags: typeof SelectableFlags;
+
+  Selectable(this: void, label: string): boolean;
+  Selectable(this: void, label: string, selected: boolean): boolean;
+  Selectable(
+    this: void,
+    label: string,
+    selected: boolean,
+    flags: SelectableFlags,
+  ): boolean;
+  Selectable(
+    this: void,
+    label: string,
+    selected: boolean,
+    flags: SelectableFlags,
+    size_x: number,
+    size_y: number,
+  ): boolean;
+
+  GetClipboardText(this: void): string;
+
+  SetClipboardText(this: void, text: string): void;
+
+  readonly SliderFlags: typeof SliderFlags;
+
+  DragFloat(
+    this: void,
+    label: string,
+    v: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  DragFloat(
+    this: void,
+    label: string,
+    v: number,
+    v_speed: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  DragFloat(
+    this: void,
+    label: string,
+    v: number,
+    v_speed: number,
+    v_min: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  DragFloat(
+    this: void,
+    label: string,
+    v: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  DragFloat(
+    this: void,
+    label: string,
+    v: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number]>;
+  DragFloat(
+    this: void,
+    label: string,
+    v: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    flags: SliderFlags,
+  ): LuaMultiReturn<[boolean, number]>;
+
+  DragFloat2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragFloat2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v_speed: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragFloat2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v_speed: number,
+    v_min: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragFloat2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragFloat2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragFloat2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    flags: SliderFlags,
+  ): LuaMultiReturn<[boolean, number, number]>;
+
+  DragFloat3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  DragFloat3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v_speed: number,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  DragFloat3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v_speed: number,
+    v_min: number,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  DragFloat3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  DragFloat3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  DragFloat3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    flags: SliderFlags,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+
+  DragFloat4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  DragFloat4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    v_speed: number,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  DragFloat4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    v_speed: number,
+    v_min: number,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  DragFloat4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  DragFloat4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  DragFloat4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    flags: SliderFlags,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+
+  DragFloatRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragFloatRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragFloatRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+    v_min: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragFloatRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragFloatRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragFloatRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    format_max: string,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragFloatRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    format_max: string,
+    flags: SliderFlags,
+  ): LuaMultiReturn<[boolean, number, number]>;
+
+  DragInt(
+    this: void,
+    label: string,
+    v: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  DragInt(
+    this: void,
+    label: string,
+    v: number,
+    v_speed: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  DragInt(
+    this: void,
+    label: string,
+    v: number,
+    v_speed: number,
+    v_min: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  DragInt(
+    this: void,
+    label: string,
+    v: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+  ): LuaMultiReturn<[boolean, number]>;
+  DragInt(
+    this: void,
+    label: string,
+    v: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number]>;
+  DragInt(
+    this: void,
+    label: string,
+    v: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    flags: SliderFlags,
+  ): LuaMultiReturn<[boolean, number]>;
+
+  DragInt2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragInt2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v_speed: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragInt2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v_speed: number,
+    v_min: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragInt2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragInt2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragInt2(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    flags: SliderFlags,
+  ): LuaMultiReturn<[boolean, number, number]>;
+
+  DragInt3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  DragInt3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v_speed: number,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  DragInt3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v_speed: number,
+    v_min: number,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  DragInt3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  DragInt3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+  DragInt3(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    flags: SliderFlags,
+  ): LuaMultiReturn<[boolean, number, number, number]>;
+
+  DragInt4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  DragInt4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    v_speed: number,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  DragInt4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    v_speed: number,
+    v_min: number,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  DragInt4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  DragInt4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+  DragInt4(
+    this: void,
+    label: string,
+    v1: number,
+    v2: number,
+    v3: number,
+    v4: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    flags: SliderFlags,
+  ): LuaMultiReturn<[boolean, number, number, number, number]>;
+
+  DragIntRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragIntRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragIntRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+    v_min: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragIntRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragIntRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragIntRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    format_max: string,
+  ): LuaMultiReturn<[boolean, number, number]>;
+  DragIntRange2(
+    this: void,
+    label: string,
+    v_current_min: number,
+    v_current_max: number,
+    v_speed: number,
+    v_min: number,
+    v_max: number,
+    format: string,
+    format_max: string,
+    flags: SliderFlags,
+  ): LuaMultiReturn<[boolean, number, number]>;
+
+  PushID(this: void, str_id: string): void;
+  PushID(this: void, int_id: number): void;
+
+  PopID(this: void): void;
+
+  GetID(this: void, str_id: string): number;
+  GetID(this: void, int_id: number): number;
+
+  GetMainViewport(this: void): ImGuiViewport;
+
+  GetMainViewportID(this: void): number;
+
+  GetMainViewportWorkPos(this: void): LuaMultiReturn<[number, number]>;
+
+  GetMainViewportPos(this: void): LuaMultiReturn<[number, number]>;
+
+  GetMainViewportSize(this: void): LuaMultiReturn<[number, number]>;
+
+  GetMainViewportWorkSize(this: void): LuaMultiReturn<[number, number]>;
+
+  TextUnformatted(this: void, text: string): void;
+
+  Text(this: void, text: string): void;
+
+  TextColored(
+    this: void,
+    colr: number,
+    colg: number,
+    colb: number,
+    cola: number,
+    text: string,
+  ): void;
+
+  TextDisabled(this: void, text: string): void;
+
+  TextWrapped(this: void, text: string): void;
+
+  LabelText(this: void, label: string, text: string): void;
+
+  BulletText(this: void, text: string): void;
+
+  SeparatorText(this: void, text: string): void;
+
+  readonly DockNodeFlags: typeof DockNodeFlags;
+
+  GetWindowDockID(this: void): number;
+
+  SetNextWindowDockID(this: void, dock_id: number, cond?: Cond): void;
+
+  DockBuilderDockWindow(this: void, window_name: string, node_id: number): void;
+
+  DockBuilderAddNode(
+    this: void,
+    node_id?: number,
+    flags?: DockNodeFlags,
+  ): number;
+
+  DockBuilderRemoveNode(this: void, node_id: number): void;
+
+  DockBuilderRemoveNodeDockedWindows(
+    this: void,
+    node_id: number,
+    clear_settings_ref?: boolean,
+  ): void;
+
+  DockBuilderRemoveNodeChildNodes(this: void, node_id: number): void;
+
+  DockBuilderSetNodePos(
+    this: void,
+    node_id: number,
+    x: number,
+    y: number,
+  ): void;
+
+  DockBuilderSetNodeSize(
+    this: void,
+    node_id: number,
+    width: number,
+    height: number,
+  ): void;
+
+  DockBuilderSplitNode(
+    this: void,
+    node_id: number,
+    split_dir: Dir,
+    size_ratio_for_node_at_dir: number,
+  ): LuaMultiReturn<[number, number]>;
+
+  DockBuilderCopyWindowSettings(
+    this: void,
+    src_name: string,
+    dst_name: string,
+  ): void;
+
+  DockBuilderFinish(this: void, node_id: number): void;
+
+  readonly Key: typeof Key;
+
+  readonly Mod: typeof Mod;
+
+  IsKeyDown(this: void, key: Key): boolean;
+
+  IsKeyPressed(this: void, key: Key): boolean;
+  IsKeyPressed(this: void, key: Key, repeat: boolean): boolean;
+
+  IsKeyReleased(this: void, key: Key): boolean;
+
+  GetKeyPressedAmount(
+    this: void,
+    key: Key,
+    repeat_delay: number,
+    rate: number,
+  ): number;
+
+  GetKeyName(this: void, key: Key): string;
+
+  SetNextFrameWantCaptureKeyboard(
+    this: void,
+    want_capture_keyboard: boolean,
+  ): void;
+
+  PushTabStop(this: void, tab_stop: boolean): void;
+
+  PopTabStop(this: void): void;
+
+  SetKeyboardFocusHere(this: void): void;
+  SetKeyboardFocusHere(this: void, offset: number): void;
+
+  Separator(this: void): void;
+
+  SameLine(this: void): void;
+  SameLine(this: void, offset_from_start_x: number): void;
+  SameLine(this: void, offset_from_start_x: number, spacing: number): void;
+
+  NewLine(this: void): void;
+
+  Spacing(this: void): void;
+
+  Dummy(this: void, size_x: number, size_y: number): void;
+
+  Indent(this: void): void;
+  Indent(this: void, indent_w: number): void;
+
+  Unindent(this: void): void;
+  Unindent(this: void, indent_w: number): void;
+
+  BeginGroup(this: void): void;
+
+  EndGroup(this: void): void;
+
+  GetCursorPos(this: void): LuaMultiReturn<[number, number]>;
+
+  GetCursorPosX(this: void): number;
+
+  GetCursorPosY(this: void): number;
+
+  SetCursorPos(this: void, local_pos_x: number, local_pos_y: number): void;
+
+  SetCursorPosX(this: void, local_x: number): void;
+
+  SetCursorPosY(this: void, local_y: number): void;
+
+  GetCursorStartPos(this: void): LuaMultiReturn<[number, number]>;
+
+  GetCursorScreenPos(this: void): LuaMultiReturn<[number, number]>;
+
+  SetCursorScreenPos(this: void, size_x: number, size_y: number): void;
+
+  AlignTextToFramePadding(this: void): void;
+
+  GetTextLineHeight(this: void): number;
+
+  GetTextLineHeightWithSpacing(this: void): number;
+
+  GetFrameHeight(this: void): number;
+
+  GetFrameHeightWithSpacing(this: void): number;
+
+  GetIO(this: void): ImGuiGuiIO;
+
+  GetFontIndex(this: void, font_index: number): ImGuiFont;
+
+  GetNoitaFont(this: void): ImGuiFont;
+
+  GetNoitaFont1_4x(this: void): ImGuiFont;
+
+  GetNoitaFont1_8x(this: void): ImGuiFont;
+
+  GetImGuiFont(this: void): ImGuiFont;
+
+  GetMonospaceFont(this: void): ImGuiFont;
+
+  GetGlyphFont(this: void): ImGuiFont;
+
+  GetNotoFont(this: void): ImGuiFont;
+
+  PushFont(this: void, font: ImGuiFont): void;
+
+  PopFont(this: void): void;
+
+  GetFont(this: void): ImGuiFont;
+
+  GetFontSize(this: void): number;
+
+  CalcTextSize(
+    this: void,
+    text: string,
+    length?: number,
+    hide_text_after_double_hash?: boolean,
+    wrap_width?: number,
+  ): LuaMultiReturn<[number, number]>;
+
+  readonly WindowFlags: typeof WindowFlags;
+
+  readonly FocusedFlags: typeof FocusedFlags;
+
+  readonly ChildFlags: typeof ChildFlags;
+
+  Begin(
+    this: void,
+    name: string,
+    open?: boolean,
+    flags?: WindowFlags,
+  ): LuaMultiReturn<[boolean, boolean | undefined]>;
+
+  End(this: void): void;
+
+  EndChild(this: void): void;
+
+  IsWindowAppearing(this: void): boolean;
+
+  IsWindowCollapsed(this: void): boolean;
+
+  IsWindowFocused(this: void): boolean;
+  IsWindowFocused(this: void, flags: FocusedFlags): boolean;
+
+  IsWindowHovered(this: void): boolean;
+  IsWindowHovered(this: void, flags: HoveredFlags): boolean;
+
+  GetWindowPos(this: void): LuaMultiReturn<[number, number]>;
+
+  GetWindowSize(this: void): LuaMultiReturn<[number, number]>;
+
+  GetWindowWidth(this: void): number;
+
+  GetWindowHeight(this: void): number;
+
+  SetNextWindowPos(this: void, pos_x: number, pos_y: number): void;
+  SetNextWindowPos(this: void, pos_x: number, pos_y: number, cond: Cond): void;
+  SetNextWindowPos(
+    this: void,
+    pos_x: number,
+    pos_y: number,
+    cond: Cond,
+    pivot_x: number,
+    pivot_y: number,
+  ): void;
+
+  SetNextWindowSize(this: void, size_x: number, size_y: number): void;
+  SetNextWindowSize(
+    this: void,
+    size_x: number,
+    size_y: number,
+    cond: Cond,
+  ): void;
+
+  SetNextWindowSizeConstraints(
+    this: void,
+    min_x: number,
+    min_y: number,
+    max_x: number,
+    max_y: number,
+  ): void;
+
+  SetNextWindowContentSize(this: void, size_x: number, size_y: number): void;
+
+  SetNextWindowCollapsed(this: void, collapsed: boolean): void;
+  SetNextWindowCollapsed(this: void, collapsed: boolean, cond: Cond): void;
+
+  SetNextWindowFocus(this: void): void;
+
+  SetNextWindowBgAlpha(this: void, alpha: number): void;
+
+  SetNextWindowViewport(this: void, viewport_id: number): void;
+
+  SetWindowPos(this: void, pos_x: number, pos_y: number): void;
+  SetWindowPos(this: void, pos_x: number, pos_y: number, cond: Cond): void;
+  SetWindowPos(this: void, name: string, pos_x: number, pos_y: number): void;
+  SetWindowPos(
+    this: void,
+    name: string,
+    pos_x: number,
+    pos_y: number,
+    cond: Cond,
+  ): void;
+
+  SetWindowSize(this: void, pos_x: number, pos_y: number): void;
+  SetWindowSize(this: void, pos_x: number, pos_y: number, cond: Cond): void;
+  SetWindowSize(this: void, name: string, pos_x: number, pos_y: number): void;
+  SetWindowSize(
+    this: void,
+    name: string,
+    pos_x: number,
+    pos_y: number,
+    cond: Cond,
+  ): void;
+
+  SetWindowCollapsed(this: void, collapsed: boolean): void;
+  SetWindowCollapsed(this: void, collapsed: boolean, cond: Cond): void;
+  SetWindowCollapsed(this: void, name: string, collapsed: boolean): void;
+  SetWindowCollapsed(
+    this: void,
+    name: string,
+    collapsed: boolean,
+    cond: Cond,
+  ): void;
+
+  SetWindowFocus(this: void, name: string): void;
+  SetWindowFocus(this: void): void;
+
+  GetContentRegionAvail(this: void): LuaMultiReturn<[number, number]>;
+
+  GetContentRegionMax(this: void): LuaMultiReturn<[number, number]>;
+
+  GetWindowContentRegionMin(this: void): LuaMultiReturn<[number, number]>;
+
+  GetWindowContentRegionMax(this: void): LuaMultiReturn<[number, number]>;
+
+  GetScrollX(this: void): number;
+
+  GetScrollY(this: void): number;
+
+  SetScrollX(this: void, scroll_x: number): void;
+
+  SetScrollY(this: void, scroll_y: number): void;
+
+  GetScrollMaxX(this: void): number;
+
+  GetScrollMaxY(this: void): number;
+
+  SetScrollHereX(this: void, center_x_ratio: number): void;
+
+  SetScrollHereY(this: void, center_y_ratio: number): void;
+
+  SetScrollFromPosX(this: void, local_x: number): void;
+  SetScrollFromPosX(this: void, local_x: number, center_x_ratio: number): void;
+
+  SetScrollFromPosY(this: void, local_y: number): void;
+  SetScrollFromPosY(this: void, local_y: number, center_y_ratio: number): void;
+
+  SetNextWindowScroll(this: void, x: number, y: number): void;
+
+  readonly TreeNodeFlags: typeof TreeNodeFlags;
+
+  TreeNode(this: void, label: string): boolean;
+  TreeNode(this: void, label: string, flags: TreeNodeFlags): boolean;
+  TreeNode(
+    this: void,
+    label: string,
+    flags: TreeNodeFlags,
+    text: string,
+  ): boolean;
+
+  TreePush(this: void, str_id: string): void;
+
+  TreePop(this: void): void;
+
+  GetTreeNodeToLabelSpacing(this: void): number;
+
+  CollapsingHeader(this: void, label: string): boolean;
+  CollapsingHeader(this: void, label: string, flags: TreeNodeFlags): boolean;
+  CollapsingHeader(
+    this: void,
+    label: string,
+    visible: boolean,
+  ): LuaMultiReturn<[boolean, boolean]>;
+  CollapsingHeader(
+    this: void,
+    label: string,
+    visible: boolean,
+    flags: TreeNodeFlags,
+  ): LuaMultiReturn<[boolean, boolean]>;
+
+  SetNextItemOpen(this: void, is_open: boolean): void;
+  SetNextItemOpen(this: void, is_open: boolean, cond: Cond): void;
+
+  SetNextItemStorageID(this: void, storage_id: number): void;
+
+  BeginDisabled(this: void): void;
+  BeginDisabled(this: void, disabled: boolean): void;
+
+  EndDisabled(this: void): void;
+
+  readonly DrawFlags: typeof DrawFlags;
+
+  GetWindowDrawList(this: void): ImGuiDrawList;
+
+  GetBackgroundDrawList(this: void): ImGuiDrawList;
+  GetBackgroundDrawList(this: void, viewport: ImGuiViewport): ImGuiDrawList;
+
+  GetForegroundDrawList(this: void): ImGuiDrawList;
+  GetForegroundDrawList(this: void, viewport: ImGuiViewport): ImGuiDrawList;
+
+  ColorConvertU32ToFloat4(
+    this: void,
+    in_: number,
+  ): LuaMultiReturn<[number, number, number, number]>;
+
+  ColorConvertFloat4ToU32(
+    this: void,
+    x: number,
+    y: number,
+    z: number,
+    w: number,
+  ): number;
+
+  ColorConvertRGBtoHSV(
+    this: void,
+    r: number,
+    g: number,
+    b: number,
+  ): LuaMultiReturn<[number, number, number]>;
+
+  ColorConvertHSVtoRGB(
+    this: void,
+    h: number,
+    s: number,
+    v: number,
+  ): LuaMultiReturn<[number, number, number]>;
+
+  readonly HoveredFlags: typeof HoveredFlags;
+
+  IsItemHovered(this: void): boolean;
+  IsItemHovered(this: void, flags: HoveredFlags): boolean;
+
+  IsItemActive(this: void): boolean;
+
+  IsItemFocused(this: void): boolean;
+
+  IsItemClicked(this: void): boolean;
+  IsItemClicked(this: void, mouse_button: MouseButton): boolean;
+
+  IsItemVisible(this: void): boolean;
+
+  IsItemEdited(this: void): boolean;
+
+  IsItemActivated(this: void): boolean;
+
+  IsItemDeactivated(this: void): boolean;
+
+  IsItemDeactivatedAfterEdit(this: void): boolean;
+
+  IsItemToggledOpen(this: void): boolean;
+
+  IsAnyItemHovered(this: void): boolean;
+
+  IsAnyItemActive(this: void): boolean;
+
+  IsAnyItemFocused(this: void): boolean;
+
+  GetItemID(this: void): number;
+
+  GetItemRectMin(this: void): LuaMultiReturn<[number, number]>;
+
+  GetItemRectMax(this: void): LuaMultiReturn<[number, number]>;
+
+  GetItemRectSize(this: void): LuaMultiReturn<[number, number]>;
+
+  SetNextItemAllowOverlap(this: void): void;
+
+  readonly PopupFlags: typeof PopupFlags;
+
+  BeginPopup(this: void, str_id: string): boolean;
+  BeginPopup(this: void, str_id: string, flags: WindowFlags): boolean;
+
+  BeginPopupModal(this: void, str_id: string): boolean;
+  BeginPopupModal(
+    this: void,
+    str_id: string,
+    open: boolean,
+  ): LuaMultiReturn<[boolean, boolean]>;
+  BeginPopupModal(
+    this: void,
+    str_id: string,
+    open: boolean,
+    flags: WindowFlags,
+  ): LuaMultiReturn<[boolean, boolean]>;
+
+  EndPopup(this: void): void;
+
+  OpenPopup(this: void, str_id: string): void;
+  OpenPopup(this: void, str_id: string, popup_flags: PopupFlags): void;
+  OpenPopup(this: void, id: number): void;
+  OpenPopup(this: void, id: number, popup_flags: PopupFlags): void;
+
+  OpenPopupOnItemClick(this: void): void;
+  OpenPopupOnItemClick(this: void, str_id: string): void;
+  OpenPopupOnItemClick(
+    this: void,
+    str_id: string,
+    popup_flags: PopupFlags,
+  ): void;
+
+  CloseCurrentPopup(this: void): void;
+
+  BeginPopupContextItem(this: void): boolean;
+  BeginPopupContextItem(this: void, str_id: string): boolean;
+  BeginPopupContextItem(
+    this: void,
+    str_id: string,
+    popup_flags: PopupFlags,
+  ): boolean;
+
+  BeginPopupContextWindow(this: void): boolean;
+  BeginPopupContextWindow(this: void, str_id: string): boolean;
+  BeginPopupContextWindow(
+    this: void,
+    str_id: string,
+    popup_flags: PopupFlags,
+  ): boolean;
+
+  BeginPopupContextVoid(this: void): boolean;
+  BeginPopupContextVoid(this: void, str_id: string): boolean;
+  BeginPopupContextVoid(
+    this: void,
+    str_id: string,
+    popup_flags: PopupFlags,
+  ): boolean;
+
+  IsPopupOpen(this: void, str_id: string): boolean;
+  IsPopupOpen(this: void, str_id: string, flags: PopupFlags): boolean;
+
   readonly ColorEditFlags: typeof ColorEditFlags;
-}
 
-declare interface ImGui {
   ColorEdit3(
     this: void,
     label: string,
@@ -5104,9 +3049,7 @@ declare interface ImGui {
     b: number,
     flags: ColorEditFlags,
   ): LuaMultiReturn<[boolean, number, number, number]>;
-}
 
-declare interface ImGui {
   ColorEdit4(
     this: void,
     label: string,
@@ -5124,9 +3067,7 @@ declare interface ImGui {
     a: number,
     flags: ColorEditFlags,
   ): LuaMultiReturn<[boolean, number, number, number, number]>;
-}
 
-declare interface ImGui {
   ColorPicker3(
     this: void,
     label: string,
@@ -5142,9 +3083,7 @@ declare interface ImGui {
     b: number,
     flags: ColorEditFlags,
   ): LuaMultiReturn<[boolean, number, number, number]>;
-}
 
-declare interface ImGui {
   ColorPicker4(
     this: void,
     label: string,
@@ -5162,9 +3101,7 @@ declare interface ImGui {
     a: number,
     flags: ColorEditFlags,
   ): LuaMultiReturn<[boolean, number, number, number, number]>;
-}
 
-declare interface ImGui {
   ColorButton(
     this: void,
     desc_id: string,
@@ -5193,9 +3130,7 @@ declare interface ImGui {
     size_x: number,
     size_y: number,
   ): boolean;
-}
 
-declare interface ImGui {
   SliderFloat(
     this: void,
     label: string,
@@ -5220,9 +3155,7 @@ declare interface ImGui {
     format: string,
     flags: SliderFlags,
   ): LuaMultiReturn<[boolean, number]>;
-}
 
-declare interface ImGui {
   SliderFloat2(
     this: void,
     label: string,
@@ -5250,9 +3183,7 @@ declare interface ImGui {
     format: string,
     flags: SliderFlags,
   ): LuaMultiReturn<[boolean, number, number]>;
-}
 
-declare interface ImGui {
   SliderFloat3(
     this: void,
     label: string,
@@ -5283,9 +3214,7 @@ declare interface ImGui {
     format: string,
     flags: SliderFlags,
   ): LuaMultiReturn<[boolean, number, number, number]>;
-}
 
-declare interface ImGui {
   SliderFloat4(
     this: void,
     label: string,
@@ -5319,9 +3248,7 @@ declare interface ImGui {
     format: string,
     flags: SliderFlags,
   ): LuaMultiReturn<[boolean, number, number, number, number]>;
-}
 
-declare interface ImGui {
   SliderInt(
     this: void,
     label: string,
@@ -5346,9 +3273,7 @@ declare interface ImGui {
     format: string,
     flags: SliderFlags,
   ): LuaMultiReturn<[boolean, number]>;
-}
 
-declare interface ImGui {
   SliderInt2(
     this: void,
     label: string,
@@ -5376,9 +3301,7 @@ declare interface ImGui {
     format: string,
     flags: SliderFlags,
   ): LuaMultiReturn<[boolean, number, number]>;
-}
 
-declare interface ImGui {
   SliderInt3(
     this: void,
     label: string,
@@ -5409,9 +3332,7 @@ declare interface ImGui {
     format: string,
     flags: SliderFlags,
   ): LuaMultiReturn<[boolean, number, number, number]>;
-}
 
-declare interface ImGui {
   SliderInt4(
     this: void,
     label: string,
@@ -5445,13 +3366,9 @@ declare interface ImGui {
     format: string,
     flags: SliderFlags,
   ): LuaMultiReturn<[boolean, number, number, number, number]>;
-}
 
-declare interface ImGui {
   LoadImage(this: void, image_path: string): ImGuiLuaImage | undefined;
-}
 
-declare interface ImGui {
   Image(this: void, img: ImGuiLuaImage, size_w: number, size_h: number): void;
   Image(
     this: void,
@@ -5503,9 +3420,7 @@ declare interface ImGui {
     border_col_b: number,
     border_col_a: number,
   ): void;
-}
 
-declare interface ImGui {
   ImageButton(
     this: void,
     str_id: string,
@@ -5567,4 +3482,1201 @@ declare interface ImGui {
     tint_col_b: number,
     tint_col_a: number,
   ): boolean | undefined;
+}
+
+declare interface ImPlot {
+  readonly Axis: typeof Axis;
+
+  readonly PlotFlags: typeof PlotFlags;
+
+  readonly PlotAxisFlags: typeof PlotAxisFlags;
+
+  readonly PlotSubplotFlags: typeof PlotSubplotFlags;
+
+  readonly PlotLegendFlags: typeof PlotLegendFlags;
+
+  readonly PlotMouseTextFlags: typeof PlotMouseTextFlags;
+
+  readonly PlotDragToolFlags: typeof PlotDragToolFlags;
+
+  readonly PlotColormapScaleFlags: typeof PlotColormapScaleFlags;
+
+  readonly PlotItemFlags: typeof PlotItemFlags;
+
+  readonly PlotLineFlags: typeof PlotLineFlags;
+
+  readonly PlotScatterFlags: typeof PlotScatterFlags;
+
+  readonly PlotStairsFlags: typeof PlotStairsFlags;
+
+  readonly PlotShadedFlags: typeof PlotShadedFlags;
+
+  readonly PlotBarsFlags: typeof PlotBarsFlags;
+
+  readonly PlotBarGroupsFlags: typeof PlotBarGroupsFlags;
+
+  readonly PlotErrorBarsFlags: typeof PlotErrorBarsFlags;
+
+  readonly PlotStemsFlags: typeof PlotStemsFlags;
+
+  readonly PlotInfLinesFlags: typeof PlotInfLinesFlags;
+
+  readonly PlotPieChartFlags: typeof PlotPieChartFlags;
+
+  readonly PlotHeatmapFlags: typeof PlotHeatmapFlags;
+
+  readonly PlotHistogramFlags: typeof PlotHistogramFlags;
+
+  readonly PlotDigitalFlags: typeof PlotDigitalFlags;
+
+  readonly PlotImageFlags: typeof PlotImageFlags;
+
+  readonly PlotTextFlags: typeof PlotTextFlags;
+
+  readonly PlotDummyFlags: typeof PlotDummyFlags;
+
+  readonly PlotCond: typeof PlotCond;
+
+  readonly PlotCol: typeof PlotCol;
+
+  readonly PlotStyleVar: typeof PlotStyleVar;
+
+  readonly PlotScale: typeof PlotScale;
+
+  readonly PlotMarker: typeof PlotMarker;
+
+  readonly PlotColormap: typeof PlotColormap;
+
+  readonly PlotLocation: typeof PlotLocation;
+
+  readonly PlotBin: typeof PlotBin;
+
+  BeginPlot(this: void, title_id: string): boolean;
+  BeginPlot(
+    this: void,
+    title_id: string,
+    size_x: number,
+    size_y: number,
+  ): boolean;
+  BeginPlot(
+    this: void,
+    title_id: string,
+    size_x: number,
+    size_y: number,
+    flags: PlotFlags,
+  ): boolean;
+
+  EndPlot(this: void): void;
+
+  BeginSubplots(
+    this: void,
+    title_id: string,
+    rows: number,
+    cols: number,
+    size_x: number,
+    size_y: number,
+  ): boolean;
+  BeginSubplots(
+    this: void,
+    title_id: string,
+    rows: number,
+    cols: number,
+    size_x: number,
+    size_y: number,
+    flags: PlotSubplotFlags,
+  ): boolean;
+
+  EndSubplots(this: void): void;
+
+  SetupAxis(this: void, axis: Axis): void;
+  SetupAxis(this: void, axis: Axis, label: string): void;
+  SetupAxis(this: void, axis: Axis, label: string, flags: PlotAxisFlags): void;
+  SetupAxis(this: void, axis: Axis, label: string, flags: PlotAxisFlags): void;
+
+  SetupAxisLimits(this: void, axis: Axis, v_min: number, v_max: number): void;
+  SetupAxisLimits(
+    this: void,
+    axis: Axis,
+    v_min: number,
+    v_max: number,
+    cond: PlotCond,
+  ): void;
+
+  SetupAxisFormat(this: void, axis: Axis, fmt: string): void;
+
+  SetupAxisTicks(
+    this: void,
+    axis: Axis,
+    values: number[] | Vector<number>,
+    labels?: string[],
+    keep_default?: boolean,
+  ): void;
+  SetupAxisTicks(
+    this: void,
+    axis: Axis,
+    v_min: number,
+    v_max: number,
+    n_ticks: number,
+    labels?: string[],
+    keep_default?: boolean,
+  ): void;
+
+  SetupAxisScale(this: void, axis: Axis, scale: PlotScale): void;
+
+  SetupAxisLimitsConstraints(
+    this: void,
+    axis: Axis,
+    v_min: number,
+    v_max: number,
+  ): void;
+
+  SetupAxisZoomConstraints(
+    this: void,
+    axis: Axis,
+    z_min: number,
+    z_max: number,
+  ): void;
+
+  SetupAxes(this: void, x_label: string, y_label: string): void;
+  SetupAxes(
+    this: void,
+    x_label: string,
+    y_label: string,
+    x_flags: PlotAxisFlags,
+  ): void;
+  SetupAxes(
+    this: void,
+    x_label: string,
+    y_label: string,
+    x_flags: PlotAxisFlags,
+    y_flags: PlotAxisFlags,
+  ): void;
+
+  SetupAxesLimits(
+    this: void,
+    x_min: number,
+    x_max: number,
+    y_min: number,
+    y_max: number,
+  ): void;
+  SetupAxesLimits(
+    this: void,
+    x_min: number,
+    x_max: number,
+    y_min: number,
+    y_max: number,
+    cond: PlotCond,
+  ): void;
+
+  SetupLegend(this: void, location: PlotLocation): void;
+  SetupLegend(this: void, location: PlotLocation, flags: PlotLegendFlags): void;
+
+  SetupMouseText(this: void, location: PlotLocation): void;
+  SetupMouseText(
+    this: void,
+    location: PlotLocation,
+    flags: PlotMouseTextFlags,
+  ): void;
+
+  SetupFinish(this: void): void;
+
+  SetNextAxisLimits(this: void, axis: Axis, v_min: number, v_max: number): void;
+  SetNextAxisLimits(
+    this: void,
+    axis: Axis,
+    v_min: number,
+    v_max: number,
+    cond: PlotCond,
+  ): void;
+
+  SetNextAxisToFit(this: void, axis: Axis): void;
+
+  SetNextAxesLimits(
+    this: void,
+    x_min: number,
+    x_max: number,
+    y_min: number,
+    y_max: number,
+  ): void;
+  SetNextAxesLimits(
+    this: void,
+    x_min: number,
+    x_max: number,
+    y_min: number,
+    y_max: number,
+    cond: PlotCond,
+  ): void;
+
+  SetNextAxesToFit(this: void): void;
+
+  PlotLine(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+  ): void;
+  PlotLine(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    xscale: number,
+  ): void;
+  PlotLine(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    xscale: number,
+    xstart: number,
+  ): void;
+  PlotLine(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    xscale: number,
+    xstart: number,
+    flags: PlotLineFlags,
+  ): void;
+  PlotLine(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+  ): void;
+  PlotLine(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+    flags: PlotLineFlags,
+  ): void;
+
+  PlotScatter(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+  ): void;
+  PlotScatter(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    xscale: number,
+  ): void;
+  PlotScatter(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    xscale: number,
+    xstart: number,
+  ): void;
+  PlotScatter(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    xscale: number,
+    xstart: number,
+    flags: PlotScatterFlags,
+  ): void;
+  PlotScatter(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+  ): void;
+  PlotScatter(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+    flags: PlotScatterFlags,
+  ): void;
+
+  PlotStairs(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+  ): void;
+  PlotStairs(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    xscale: number,
+  ): void;
+  PlotStairs(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    xscale: number,
+    xstart: number,
+  ): void;
+  PlotStairs(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    xscale: number,
+    xstart: number,
+    flags: PlotStairsFlags,
+  ): void;
+  PlotStairs(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+  ): void;
+  PlotStairs(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+    flags: PlotStairsFlags,
+  ): void;
+
+  PlotBars(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+  ): void;
+  PlotBars(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    bar_size: number,
+  ): void;
+  PlotBars(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    bar_size: number,
+    shift: number,
+  ): void;
+  PlotBars(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    bar_size: number,
+    shift: number,
+    flags: PlotBarsFlags,
+  ): void;
+  PlotBars(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+    bar_size: number,
+  ): void;
+  PlotBars(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+    flags: PlotBarsFlags,
+    bar_size: number,
+  ): void;
+
+  PlotBarGroups(
+    this: void,
+    labels: string[],
+    values: number[] | Vector<number>,
+    item_count: number,
+    group_count: number,
+    group_size?: number,
+    shift?: number,
+    flags?: PlotBarGroupsFlags,
+  ): void;
+
+  PlotErrorBars(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+    err: number[] | Vector<number>,
+    flags?: PlotErrorBarsFlags,
+  ): void;
+  PlotErrorBars(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+    neg: number[] | Vector<number>,
+    pos: number[] | Vector<number>,
+    flags?: PlotErrorBarsFlags,
+  ): void;
+
+  PlotStems(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    ref?: number,
+    scale?: number,
+    start?: number,
+    flags?: PlotStemsFlags,
+  ): void;
+  PlotStems(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+    ref?: number,
+    flags?: PlotStemsFlags,
+  ): void;
+
+  PlotInfLines(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    flags?: PlotInfLinesFlags,
+  ): void;
+
+  PlotPieChart(
+    this: void,
+    label_ids: string[],
+    values: number[] | Vector<number>,
+    x: number,
+    y: number,
+    radius: number,
+    label_fmt?: string,
+    angle0?: number,
+    flags?: PlotPieChartFlags,
+  ): void;
+
+  PlotHeatmap(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    rows: number,
+    cols: number,
+    scale_min?: number,
+    scale_max?: number,
+    label_fmt?: string,
+    bounds_min?: ImPlotPlotPoint,
+    bounds_max?: ImPlotPlotPoint,
+    flags?: PlotHeatmapFlags,
+  ): void;
+
+  PlotHistogram(
+    this: void,
+    label_id: string,
+    values: number[] | Vector<number>,
+    bins?: PlotBin,
+    bar_scale?: number,
+    range?: ImPlotPlotRange,
+    flags?: PlotHistogramFlags,
+  ): number;
+
+  PlotHistogram2D(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+    x_bins?: PlotBin,
+    y_bins?: PlotBin,
+    range?: ImPlotPlotRect,
+    flags?: PlotHistogramFlags,
+  ): number;
+
+  PlotDigital(
+    this: void,
+    label_id: string,
+    xs: number[] | Vector<number>,
+    ys: number[] | Vector<number>,
+    flags?: PlotDigitalFlags,
+  ): void;
+
+  PlotText(this: void, text: string, x: number, y: number): void;
+  PlotText(
+    this: void,
+    text: string,
+    x: number,
+    y: number,
+    pix_offset_x: number,
+    pix_offset_y: number,
+  ): void;
+  PlotText(
+    this: void,
+    text: string,
+    x: number,
+    y: number,
+    pix_offset_x: number,
+    pix_offset_y: number,
+    flags: PlotTextFlags,
+  ): void;
+
+  PlotDummy(this: void, label_id: string): void;
+  PlotDummy(this: void, label_id: string, flags: PlotDummyFlags): void;
+
+  DragPoint(
+    this: void,
+    id: number,
+    x: number,
+    y: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    size?: number,
+    flags?: PlotDragToolFlags,
+  ): LuaMultiReturn<[boolean, number, number, boolean, boolean, boolean]>;
+
+  DragLineX(
+    this: void,
+    id: number,
+    x: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    thickness?: number,
+    flags?: PlotDragToolFlags,
+  ): LuaMultiReturn<[boolean, number, boolean, boolean, boolean]>;
+
+  DragLineY(
+    this: void,
+    id: number,
+    y: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    thickness?: number,
+    flags?: PlotDragToolFlags,
+  ): LuaMultiReturn<[boolean, number, boolean, boolean, boolean]>;
+
+  DragRect(
+    this: void,
+    id: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    flags?: PlotDragToolFlags,
+  ): LuaMultiReturn<
+    [boolean, number, number, number, number, boolean, boolean, boolean]
+  >;
+
+  Annotation(
+    this: void,
+    x: number,
+    y: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    pix_offset_x: number,
+    pix_offset_y: number,
+    clamp: boolean,
+  ): void;
+  Annotation(
+    this: void,
+    x: number,
+    y: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    pix_offset_x: number,
+    pix_offset_y: number,
+    clamp: boolean,
+    round: boolean,
+  ): void;
+  Annotation(
+    this: void,
+    x: number,
+    y: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    pix_offset_x: number,
+    pix_offset_y: number,
+    clamp: boolean,
+    text: string,
+  ): void;
+
+  TagX(this: void, x: number, r: number, g: number, b: number, a: number): void;
+  TagX(
+    this: void,
+    x: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    round: boolean,
+  ): void;
+  TagX(
+    this: void,
+    x: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    text: string,
+  ): void;
+
+  TagY(this: void, y: number, r: number, g: number, b: number, a: number): void;
+  TagY(
+    this: void,
+    y: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    round: boolean,
+  ): void;
+  TagY(
+    this: void,
+    y: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    text: string,
+  ): void;
+
+  SetAxis(this: void, axis: Axis): void;
+
+  SetAxes(this: void, x_axis: Axis, y_axis: Axis): void;
+
+  PixelsToPlot(
+    this: void,
+    x: number,
+    y: number,
+  ): LuaMultiReturn<[number, number]>;
+  PixelsToPlot(
+    this: void,
+    x: number,
+    y: number,
+    x_axis: Axis,
+  ): LuaMultiReturn<[number, number]>;
+  PixelsToPlot(
+    this: void,
+    x: number,
+    y: number,
+    x_axis: Axis,
+    y_axis: Axis,
+  ): LuaMultiReturn<[number, number]>;
+
+  PlotToPixels(
+    this: void,
+    x: number,
+    y: number,
+  ): LuaMultiReturn<[number, number]>;
+  PlotToPixels(
+    this: void,
+    x: number,
+    y: number,
+    x_axis: Axis,
+  ): LuaMultiReturn<[number, number]>;
+  PlotToPixels(
+    this: void,
+    x: number,
+    y: number,
+    x_axis: Axis,
+    y_axis: Axis,
+  ): LuaMultiReturn<[number, number]>;
+  PlotToPixels(
+    this: void,
+    plt: ImPlotPlotPoint,
+  ): LuaMultiReturn<[number, number]>;
+  PlotToPixels(
+    this: void,
+    plt: ImPlotPlotPoint,
+    x_axis: Axis,
+  ): LuaMultiReturn<[number, number]>;
+  PlotToPixels(
+    this: void,
+    plt: ImPlotPlotPoint,
+    x_axis: Axis,
+    y_axis: Axis,
+  ): LuaMultiReturn<[number, number]>;
+
+  GetPlotPos(this: void): LuaMultiReturn<[number, number]>;
+
+  GetPlotSize(this: void): LuaMultiReturn<[number, number]>;
+
+  GetPlotMousePos(this: void): LuaMultiReturn<[number, number]>;
+  GetPlotMousePos(this: void, x_axis: Axis): LuaMultiReturn<[number, number]>;
+  GetPlotMousePos(
+    this: void,
+    x_axis: Axis,
+    y_axis: Axis,
+  ): LuaMultiReturn<[number, number]>;
+
+  GetPlotLimits(this: void): ImPlotPlotRect;
+  GetPlotLimits(this: void, x_axis: Axis): ImPlotPlotRect;
+  GetPlotLimits(this: void, x_axis: Axis, y_axis: Axis): ImPlotPlotRect;
+
+  IsPlotHovered(this: void): boolean;
+
+  IsAxisHovered(this: void, axis: Axis): boolean;
+
+  IsSubplotsHovered(this: void): boolean;
+
+  IsPlotSelected(this: void): boolean;
+
+  GetPlotSelection(this: void): ImPlotPlotRect;
+  GetPlotSelection(this: void, x_axis: Axis): ImPlotPlotRect;
+  GetPlotSelection(this: void, x_axis: Axis, y_axis: Axis): ImPlotPlotRect;
+  GetPlotSelection(this: void, x_axis: Axis, y_axis: Axis): ImPlotPlotRect;
+
+  CancelPlotSelection(this: void): void;
+
+  HideNextItem(this: void): void;
+  HideNextItem(this: void, hidden: boolean): void;
+  HideNextItem(this: void, hidden: boolean, cond: PlotCond): void;
+
+  BeginAlignedPlots(this: void, group_id: string): boolean;
+  BeginAlignedPlots(this: void, group_id: string, vertical: boolean): boolean;
+
+  EndAlignedPlots(this: void): void;
+
+  BeginLegendPopup(this: void, label_id: string): boolean;
+  BeginLegendPopup(
+    this: void,
+    label_id: string,
+    mouse_button: MouseButton,
+  ): boolean;
+
+  EndLegendPopup(this: void): void;
+
+  IsLegendEntryHovered(this: void, label_id: string): boolean;
+
+  BeginDragDropTargetPlot(this: void): boolean;
+
+  BeginDragDropTargetAxis(this: void, axis: Axis): boolean;
+
+  BeginDragDropTargetLegend(this: void): boolean;
+
+  EndDragDropTarget(this: void): void;
+
+  PushStyleColor(
+    this: void,
+    idx: PlotCol,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+  ): void;
+  PushStyleColor(this: void, idx: PlotCol, col: number): void;
+
+  PopStyleColor(this: void): void;
+  PopStyleColor(this: void, count: number): void;
+
+  PushStyleVarFloat(this: void, idx: PlotStyleVar, val: number): void;
+
+  PushStyleVarInt(this: void, idx: PlotStyleVar, val: number): void;
+
+  PushStyleVarVec2(this: void, idx: PlotStyleVar, x: number, y: number): void;
+
+  PopStyleVar(this: void): void;
+  PopStyleVar(this: void, count: number): void;
+
+  SetNextLineStyle(
+    this: void,
+    r?: number,
+    g?: number,
+    b?: number,
+    a?: number,
+    weight?: number,
+  ): void;
+
+  SetNextFillStyle(
+    this: void,
+    r?: number,
+    g?: number,
+    b?: number,
+    a?: number,
+    alpha_mod?: number,
+  ): void;
+
+  SetNextMarkerStyle(
+    this: void,
+    marker?: PlotMarker,
+    size?: number,
+    fill_r?: number,
+    fill_g?: number,
+    fill_b?: number,
+    fill_a?: number,
+    weight?: number,
+    outline_r?: number,
+    outline_g?: number,
+    outline_b?: number,
+    outline_a?: number,
+  ): void;
+
+  SetNextErrorBarStyle(
+    this: void,
+    r?: number,
+    g?: number,
+    b?: number,
+    a?: number,
+    size?: number,
+    weight?: number,
+  ): void;
+
+  GetLastItemColor(
+    this: void,
+  ): LuaMultiReturn<[number, number, number, number]>;
+
+  GetStyleColorName(this: void, idx: PlotCol): string;
+
+  GetMarkerName(this: void, idx: PlotMarker): string;
+
+  ItemIcon(this: void, col: number): void;
+  ItemIcon(this: void, r: number, g: number, b: number, a: number): void;
+
+  ColormapIcon(this: void, cmap: PlotColormap): void;
+
+  PushPlotClipRect(this: void): void;
+  PushPlotClipRect(this: void, expand: number): void;
+
+  PopPlotClipRect(this: void): void;
+
+  ShowStyleSelector(this: void, label: string): boolean;
+
+  ShowColormapSelector(this: void, label: string): boolean;
+
+  ShowInputMapSelector(this: void, label: string): boolean;
+
+  ShowUserGuide(this: void): void;
+
+  ShowMetricsWindow(this: void): void;
+  ShowMetricsWindow(this: void, open: boolean): boolean;
+
+  ShowDemoWindow(this: void): void;
+  ShowDemoWindow(this: void, open: boolean): boolean;
+}
+
+declare interface ImGuiFont {
+  CalcTextSizeA(
+    size: number,
+    max_width: number,
+    wrap_width: number,
+    text: string,
+    length?: number,
+  ): LuaMultiReturn<[number, number, number]>;
+
+  CalcWordWrapPositionA(
+    scale: number,
+    text: string,
+    length: number | undefined,
+    wrap_width: number,
+  ): number;
+}
+
+declare interface ImGuiDrawList {
+  PushClipRect(
+    clip_rect_min_x: number,
+    clip_rect_min_y: number,
+    clip_rect_max_x: number,
+    clip_rect_max_y: number,
+    intersect_with_current_clip_rect?: boolean,
+  ): void;
+
+  PushClipRectFullScreen(): void;
+
+  PopClipRect(): void;
+
+  PushTextureID(img: ImGuiLuaImage): void;
+
+  PopTextureID(): void;
+
+  GetClipRectMin(): LuaMultiReturn<[number, number]>;
+
+  GetClipRectMax(): LuaMultiReturn<[number, number]>;
+
+  AddLine(
+    p1_x: number,
+    p1_y: number,
+    p2_x: number,
+    p2_y: number,
+    col: number,
+    thickness?: number,
+  ): void;
+
+  AddRect(
+    p_min_x: number,
+    p_min_y: number,
+    p_max_x: number,
+    p_max_y: number,
+    col: number,
+    rounding?: number,
+    flags?: number,
+    thickness?: number,
+  ): void;
+
+  AddRectFilled(
+    p_min_x: number,
+    p_min_y: number,
+    p_max_x: number,
+    p_max_y: number,
+    col: number,
+    rounding?: number,
+    flags?: number,
+  ): void;
+
+  AddRectFilledMultiColor(
+    p_min_x: number,
+    p_min_y: number,
+    p_max_x: number,
+    p_max_y: number,
+    col_upr_left: number,
+    col_upr_right: number,
+    col_bot_right: number,
+    col_bot_left: number,
+  ): void;
+
+  AddQuad(
+    p1_x: number,
+    p1_y: number,
+    p2_x: number,
+    p2_y: number,
+    p3_x: number,
+    p3_y: number,
+    p4_x: number,
+    p4_y: number,
+    col: number,
+    thickness?: number,
+  ): void;
+
+  AddQuadFilled(
+    p1_x: number,
+    p1_y: number,
+    p2_x: number,
+    p2_y: number,
+    p3_x: number,
+    p3_y: number,
+    p4_x: number,
+    p4_y: number,
+    col: number,
+  ): void;
+
+  AddTriangle(
+    p1_x: number,
+    p1_y: number,
+    p2_x: number,
+    p2_y: number,
+    p3_x: number,
+    p3_y: number,
+    col: number,
+    thickness?: number,
+  ): void;
+
+  AddTriangleFilled(
+    p1_x: number,
+    p1_y: number,
+    p2_x: number,
+    p2_y: number,
+    p3_x: number,
+    p3_y: number,
+    col: number,
+  ): void;
+
+  AddCircle(
+    center_x: number,
+    center_y: number,
+    radius: number,
+    col: number,
+    num_segments?: number,
+    thickness?: number,
+  ): void;
+
+  AddCircleFilled(
+    center_x: number,
+    center_y: number,
+    radius: number,
+    col: number,
+    num_segments?: number,
+  ): void;
+
+  AddNgon(
+    center_x: number,
+    center_y: number,
+    radius: number,
+    col: number,
+    num_segments?: number,
+    thickness?: number,
+  ): void;
+
+  AddNgonFilled(
+    center_x: number,
+    center_y: number,
+    radius: number,
+    col: number,
+    num_segments?: number,
+  ): void;
+
+  AddEllipse(
+    center_x: number,
+    center_y: number,
+    radius_x: number,
+    radius_y: number,
+    col: number,
+    rot?: number,
+    num_segments?: number,
+    thickness?: number,
+  ): void;
+
+  AddEllipseFilled(
+    center_x: number,
+    center_y: number,
+    radius_x: number,
+    radius_y: number,
+    col: number,
+    rot?: number,
+    num_segments?: number,
+  ): void;
+
+  AddText(pos_x: number, pos_y: number, col: number, text: string): void;
+  AddText(
+    font: ImGuiFont,
+    font_size: number,
+    pos_x: number,
+    pos_y: number,
+    col: number,
+    text: string,
+  ): void;
+
+  AddBezierCubic(
+    p1_x: number,
+    p1_y: number,
+    p2_x: number,
+    p2_y: number,
+    p3_x: number,
+    p3_y: number,
+    p4_x: number,
+    p4_y: number,
+    col: number,
+    thickness: number,
+    num_segments?: number,
+  ): void;
+
+  AddBezierQuadratic(
+    p1_x: number,
+    p1_y: number,
+    p2_x: number,
+    p2_y: number,
+    p3_x: number,
+    p3_y: number,
+    col: number,
+    thickness: number,
+    num_segments?: number,
+  ): void;
+
+  AddImage(
+    img: ImGuiLuaImage,
+    p_min_x: number,
+    p_min_y: number,
+    p_max_x: number,
+    p_max_y: number,
+    uv_min_x?: number,
+    uv_min_y?: number,
+    uv_max_x?: number,
+    uv_max_y?: number,
+    col?: number,
+  ): void;
+
+  AddImageQuad(
+    img: ImGuiLuaImage,
+    p1_x: number,
+    p1_y: number,
+    p2_x: number,
+    p2_y: number,
+    p3_x: number,
+    p3_y: number,
+    p4_x: number,
+    p4_y: number,
+    uv1_x?: number,
+    uv1_y?: number,
+    uv2_x?: number,
+    uv2_y?: number,
+    uv3_x?: number,
+    uv3_y?: number,
+    uv4_x?: number,
+    uv4_y?: number,
+    col?: number,
+  ): void;
+
+  AddImageRounded(
+    img: ImGuiLuaImage,
+    p_min_x: number,
+    p_min_y: number,
+    p_max_x: number,
+    p_max_y: number,
+    uv_min_x: number,
+    uv_min_y: number,
+    uv_max_x: number,
+    uv_max_y: number,
+    col: number,
+    rounding: number,
+    flags?: number,
+  ): void;
+
+  PathClear(): void;
+
+  PathLineTo(pos_x: number, pos_y: number): void;
+
+  PathLineToMergeDuplicate(pos_x: number, pos_y: number): void;
+
+  PathFillConvex(col: number): void;
+
+  PathFillConcave(col: number): void;
+
+  PathStroke(col: number, flags?: number, thickness?: number): void;
+
+  PathArcTo(
+    center_x: number,
+    center_y: number,
+    radius: number,
+    a_min: number,
+    a_max: number,
+    num_segments?: number,
+  ): void;
+
+  PathArcToFast(
+    center_x: number,
+    center_y: number,
+    radius: number,
+    a_min_of_12: number,
+    a_max_of_12: number,
+  ): void;
+
+  PathEllipticalArcTo(
+    center_x: number,
+    center_y: number,
+    radius_x: number,
+    radius_y: number,
+    rot: number,
+    a_min: number,
+    a_max: number,
+    num_segments?: number,
+  ): void;
+
+  PathBezierCubicCurveTo(
+    p2_x: number,
+    p2_y: number,
+    p3_x: number,
+    p3_y: number,
+    p4_x: number,
+    p4_y: number,
+    num_segments?: number,
+  ): void;
+
+  PathBezierQuadraticCurveTo(
+    p2_x: number,
+    p2_y: number,
+    p3_x: number,
+    p3_y: number,
+    num_segments?: number,
+  ): void;
+
+  PathRect(
+    rect_min_x: number,
+    rect_min_y: number,
+    rect_max_x: number,
+    rect_max_y: number,
+    rounding?: number,
+    flags?: number,
+  ): void;
 }
