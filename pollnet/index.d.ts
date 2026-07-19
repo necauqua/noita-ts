@@ -146,11 +146,17 @@ declare namespace pollnet {
       callback?: (sock: Socket, addr: string) => void,
     ): this;
 
-    /** Sets a connection handler */
+    /** Sets a connection handler for server sockets */
     on_connection(callback: (sock: Socket, addr: string) => void): this;
 
-    /** Polls for socket events */
-    poll(): LuaMultiReturn<[true, undefined]> | LuaMultiReturn<[false, string]>;
+    /**
+     * Polls for socket events.
+     * Returns [ok, message], where on success the message may or may not be
+     * available (non-blocking), and on failure the message is an error string.
+     */
+    poll():
+      | LuaMultiReturn<[true, string | undefined]>
+      | LuaMultiReturn<[false, string]>;
 
     /** Awaits a message (coroutine.yield) */
     await():
