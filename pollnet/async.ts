@@ -119,7 +119,6 @@ export class HttpResponse {
     this.body = body;
   }
 
-  /** @noSelf */
   static read(socket: pollnet.Socket): HttpResponse {
     const [msgs, error] = socket.await_n(3);
     if (!msgs) {
@@ -191,5 +190,75 @@ export class HttpClient {
     return this.reactor.spawn(() =>
       HttpResponse.read(pollnet.http_post(url, headers, body, false)),
     );
+  }
+}
+
+/**
+ * Async WebSocket client built on top of an {@link AsyncReactor}.
+ * Messages are delivered via the `onmessage` callback, and errors via
+ * `onerror`.
+ * Call {@link send} to send a message, and {@link close} to close the
+ * connection and cleanup.
+ */
+export class WebSocket {
+  private socket: pollnet.Socket | null;
+
+  timeout = 3600; // 1 minute at 60 ups
+  onmessage: ((msg: string) => void) | null = null;
+  onerror: ((msg: string) => void) | null = null;
+
+  constructor(reactor: AsyncReactor, url: string) {
+    this.socket = pollnet.open_ws(url);
+
+    reactor.spawn(() => {
+      let timer = 0;
+      while (!!this.socket) {
+        let ok = true;
+        let msg: string | undefined;
+
+        // drain the queue
+        while (true) {
+          [ok, msg] = this.socket.poll();
+          if (!ok || !msg) {
+            break;
+          }
+          timer = 0;
+          this.onmessage?.(msg);
+          // onmessage may have called close()
+          if (!this.socket) {
+            return;
+          }
+        }
+
+        if (ok && ++timer < this.timeout) {
+          coroutine.yield();
+          continue;
+        }
+
+        timer = 0;
+        this.socket.close();
+        this.onerror?.(msg ?? "timeout");
+        for (let i = 0; i < 60; i++) {
+          coroutine.yield();
+        }
+        // close() may have been called in the yields
+        if (!!this.socket) {
+          this.socket = pollnet.open_ws(url);
+        }
+      }
+    });
+  }
+
+  send(message: string) {
+    this.socket?.send(message);
+  }
+
+  send_binary(data: string) {
+    this.socket?.send_binary(data);
+  }
+
+  close() {
+    this.socket?.close();
+    this.socket = null;
   }
 }
