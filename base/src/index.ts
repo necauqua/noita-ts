@@ -8,7 +8,7 @@ namespace mod {
     BiomeConfigLoaded(this: void): void;
 
     /** The first number to return is the total and the second is the number of secrets found. */
-    OnCountSecrets(this: void): LuaMultiReturn<[number, number]>;
+    CountSecrets(this: void): LuaMultiReturn<[number, number]>;
 
     MagicNumbersAndWorldSeedInitialized(this: void): void;
 
