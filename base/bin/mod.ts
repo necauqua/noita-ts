@@ -19,7 +19,7 @@ function transpile(
   buildData: BuildData,
 ): readonly ts.Diagnostic[] {
   const luaPlugins: tstl.InMemoryLuaPlugin[] = [
-    { plugin: new JsonPlugin("@noita-ts/base/dist/json", verbose) },
+    { plugin: new JsonPlugin("@noita-ts/base/json", verbose) },
     {
       plugin: new IncludePlugin(
         "noita-ts-include",

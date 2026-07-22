@@ -9,7 +9,7 @@
     "types": [
       "lua-types/jit",
       "@typescript-to-lua/language-extensions",
-      "@noita-ts/base/types/api"
+      "@noita-ts/base/types"
     ]
   },
   "tstl": {

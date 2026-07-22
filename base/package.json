@@ -10,6 +10,22 @@
   "type": "module",
   "main": "dist/index",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index"
+    },
+    "./types": {
+      "types": "./types/api.d.ts"
+    },
+    "./json": {
+      "default": "./dist/json"
+    },
+    "./async": {
+      "types": "./dist/async.d.ts",
+      "default": "./dist/async"
+    }
+  },
   "bin": {
     "nts": "dist/bin/index.js"
   },
