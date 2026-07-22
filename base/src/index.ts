@@ -55,9 +55,28 @@ namespace mod {
 
   /**
    * A helper typesafe function to register standard Noita mod hooks.
+   *
+   * When called multiple times for the same event, all callbacks will be called
+   * in order of registration.
    */
   export function on<T extends keyof NoitaEvent>(name: T, cb: NoitaEvent[T]) {
-    (globalThis as any)[`On${name}`] = cb;
+    const on = `On${name}`;
+    const prev = (globalThis as any)[on];
+    if (prev) {
+      (globalThis as any)[on] = (...args: any[]) => {
+        prev(...args);
+        (cb as (...args: any[]) => void)(...args);
+      };
+    } else {
+      (globalThis as any)[on] = cb;
+    }
+  }
+
+  /**
+   * Remove all callbacks registered for the specified event.
+   */
+  export function reset<T extends keyof NoitaEvent>(name: T) {
+    (globalThis as any)[`On${name}`] = undefined;
   }
 
   /**
