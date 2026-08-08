@@ -207,8 +207,12 @@ declare interface ModSpec {
   version: string;
 }
 
-/** Grants access to the imgui bindings */
-declare function load_imgui(this: void, modspec: ModSpec): ImGui;
+/**
+  * Grants access to the imgui bindings.
+  *
+  * @returns An ImGui object if the mod if Noita-Dear-ImGui is available, otherwise undefined.
+  */
+declare const load_imgui: (this: void, modspec: ModSpec) => ImGui | undefined;
 
 declare interface ImGui {
   BeginChild(this: void, str_id: string): boolean;
