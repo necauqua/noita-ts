@@ -4,11 +4,7 @@
     "target": "ESNext",
     "lib": ["ESNext"],
     "moduleResolution": "bundler",
-    "types": [
-      "lua-types/jit",
-      "@typescript-to-lua/language-extensions",
-      "./types/api",
-    ],
+    "types": ["noita-ts"],
     "strict": true,
     "declaration": true,
     "rootDir": "src",

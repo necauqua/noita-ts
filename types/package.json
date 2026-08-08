@@ -1,0 +1,26 @@
+{
+  "name": "@types/noita-ts",
+  "version": "0.8.1",
+  "description": "Global ambient typings for Noita TypeScript mods (Noita API, Lua stdlib, TSTL language extensions).",
+  "types": "index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "typegen": "npm run typegen:api && npm run typegen:components",
+    "typegen:api": "tsx bin/main.ts lua bin/lua_api_documentation.txt -f fixups.d.ts -o generated/lua_api.d.ts",
+    "typegen:components": "tsx bin/main.ts components -i bin/component_documentation.txt -o generated/components.d.ts",
+    "prepublishOnly": "npm run typegen"
+  },
+  "dependencies": {
+    "@typescript-to-lua/language-extensions": "^1.19.0",
+    "lua-types": "^2.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "commander": "^14.0.2",
+    "tsx": "^4.20.6"
+  },
+  "files": [
+    "*.d.ts",
+    "generated/*.d.ts"
+  ]
+}

@@ -9,12 +9,13 @@
 //     }
 //   }
 //
-// For precise per-file types, opt in by adding the `noita-asm` ambient-types
-// package to your tsconfig `types`. The plugin maintains it at
-// `<project>/node_modules/@types/noita-asm`: a postinstall seeds a loose
-// fallback, and each build regenerates it with a *concrete* block per imported
-// .asm (precise `vars`/`labels` keys), so types get sharper after the first
-// build. (For zero-setup loose types instead, reference @noita-ts/ffi/asm.)
+// Types need no setup: `@noita-ts/ffi` depends on `@types/noita-ffi-asm`, which
+// ships a generic `*.asm` fallback and is auto-discovered (base's mod-tsconfig
+// uses `"types": ["*"]`). This plugin overwrites the installed copy at
+// `<project>/node_modules/@types/noita-ffi-asm` on each build with a *concrete*
+// block per imported .asm (precise `vars`/`labels` keys), so types sharpen after
+// the first build. (For zero-setup loose types instead, reference
+// @noita-ts/ffi/asm.)
 //
 // The Lua module itself is served entirely from memory (via the emit host) at a
 // virtual `<file>.asm.lua` path next to the source: nothing is written to the
@@ -58,14 +59,14 @@ function patchEmitHost(emitHost) {
     virtualModules.has(path) ? virtualModules.get(path) : originalReadFile(path);
 }
 
-/** Regenerate <project>/node_modules/@types/noita-asm from the seen modules. */
+/** Regenerate <project>/node_modules/@types/noita-ffi-asm from the seen modules. */
 function writeTypesPackage(projectDir) {
-  const dir = join(projectDir, 'node_modules', '@types', 'noita-asm');
+  const dir = join(projectDir, 'node_modules', '@types', 'noita-ffi-asm');
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, 'package.json'),
     JSON.stringify(
-      { name: '@types/noita-asm', version: '0.0.0', types: 'index.d.ts' },
+      { name: '@types/noita-ffi-asm', version: '0.0.0', types: 'index.d.ts' },
       null,
       2,
     ) + '\n',

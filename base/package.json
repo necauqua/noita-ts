@@ -3,7 +3,6 @@
   "version": "0.8.1",
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "files": [
-    "types/**/*.d.ts",
     "dist/**/*.{js,lua,d.ts}",
     "mod-tsconfig.json"
   ],
@@ -18,9 +17,6 @@
     "./mod-tsconfig.json": {
       "default": "./mod-tsconfig.json"
     },
-    "./types": {
-      "types": "./types/api.d.ts"
-    },
     "./json": {
       "default": "./dist/json"
     },
@@ -34,15 +30,13 @@
   },
   "scripts": {
     "prepublishOnly": "rm -rf dist && npm run build",
-    "build": "npm run typegen && npm run build:lua && npm run build:bin && npm run build:noita-api",
+    "build": "npm run build:lua && npm run build:bin && npm run build:noita-api",
     "build:lua": "tstl -p . && cp src/*.lua dist/",
     "build:noita-api": "test -f dist/noita.d.lua || curl -Lo dist/noita.d.lua https://raw.githubusercontent.com/NathanSnail/AutoLuaAPI/c8947a4977cff16148a7e7f574721b5decaf2463/out.lua",
-    "build:bin": "tsc -p ./tsconfig.bin.json",
-    "typegen": "npm run typegen:api && npm run typegen:components",
-    "typegen:api": "cd ../typegen; npm run typegen -- lua -f ../base/types/fixups.d.ts -o ../base/types/generated/lua_api.d.ts",
-    "typegen:components": "cd ../typegen; npm run typegen -- components -o ../base/types/generated/components.d.ts"
+    "build:bin": "tsc -p ./tsconfig.bin.json"
   },
   "dependencies": {
+    "@types/noita-ts": "file:../types",
     "@typescript-to-lua/language-extensions": "^1.19.0",
     "archiver": "^7.0.1",
     "commander": "^14.0.2",

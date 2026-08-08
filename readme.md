@@ -39,9 +39,14 @@ Mod metadata (id, name, description, workshop settings, etc.) lives in
 
 ## Packages
 
-- [`@noita-ts/base`](base) - the core: generated type definitions for the
-  Noita Lua API and all components, typed mod hooks, settings support, and the
-  `nts` CLI (build/run/publish/unpak).
+- [`@noita-ts/base`](base) - the core: typed mod hooks, settings support, and
+  the `nts` CLI (build/run/publish/unpak). Depends on `@types/noita-ts` for the
+  ambient API typings.
+- [`@types/noita-ts`](types) - global ambient typings for mods (Noita Lua API +
+  components, Lua stdlib, TSTL language extensions). Its `bin/` holds the
+  internal generator that produces the definitions from Noita's Lua API docs.
+- [`@types/noita-ffi-asm`](ffi-asm-types) - ambient types for `*.asm` x86-patch
+  imports assembled by `@noita-ts/ffi`.
 - [`@noita-ts/create-mod`](create-mod) - the `npm create` scaffolder.
 - [`@noita-ts/nxml`](nxml) - types and packaging for
   [luanxml](https://github.com/NathanSnail/luanxml), a parser for Noita's
@@ -53,8 +58,6 @@ Mod metadata (id, name, description, workshop settings, etc.) lives in
 - [`@noita-ts/noita-dear-imgui-types`](noita-dear-imgui-types) - type
   definitions for [Noita-Dear-ImGui](https://github.com/dextercd/Noita-Dear-ImGui)
   (ImGui 1.26.0).
-- [`typegen`](typegen) - internal tool that generates the TypeScript
-  definitions from Noita's Lua API documentation.
 
 ## Licence
 Just MIT, see the LICENSE file.

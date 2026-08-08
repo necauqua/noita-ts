@@ -54,31 +54,23 @@ and rewrites the require to it.
 
 #### Types
 
-Two options, pick one (don't combine — two `*.asm` blocks in one program collide):
+Nothing to configure. `@noita-ts/ffi` depends on **`@types/noita-ffi-asm`**, which
+installs into `node_modules/@types/noita-ffi-asm` and is picked up automatically
+(`@noita-ts/base/mod-tsconfig.json` sets `"types": ["*"]`, so any installed
+`@types/*` contributes globally). No postinstall, no manual reference:
 
-**Loose (zero setup, fully transparent).** Reference the shipped fallback; no
-install scripts, works on a fresh checkout:
+- **Before the first build** it ships a generic fallback (`vars`/`labels` typed
+  as `Record<...>`), so `.asm` imports type-check immediately — even with install
+  scripts disabled, since it arrives as a normal dependency, not a postinstall.
+- **Each `nts build`** the asm-plugin overwrites the installed copy with a
+  **concrete block per imported `.asm`** (exact `vars`/`labels` keys) placed
+  before the generic `*.asm` fallback so it wins the wildcard match — types
+  sharpen automatically after the first build.
 
-```ts
-/// <reference types="@noita-ts/ffi/asm" />
-```
-
-**Concrete (precise per-file `vars`/`labels`).** The plugin maintains a
-`noita-asm` ambient-types package at `node_modules/@types/noita-asm`: a
-`postinstall` seeds a loose fallback, and every build regenerates it with a
-**concrete block per imported `.asm`** placed before the generic `*.asm` fallback
-so it wins the wildcard match (types sharpen after the first build). Opt in by
-adding it to your `tsconfig.json`:
-
-```jsonc
-{ "compilerOptions": { "types": ["noita-asm"] } }
-```
-
-> If your package manager runs with install scripts disabled, the postinstall
-> won't seed the stub, so `types: ["noita-asm"]` errors until it exists. Seed it
-> once with `node node_modules/@noita-ts/ffi/nasm/install-asm-types.mjs` (or just
-> run one build — the plugin writes it during `beforeEmit`). Prefer the loose
-> option above if you'd rather avoid that.
+> Escape hatch: if you've pinned an explicit `types` array (dropping `"*"`), add
+> `"noita-ffi-asm"` to it, or reference the shipped loose block directly with
+> `/// <reference types="@noita-ts/ffi/asm" />`. Don't combine the loose block
+> with `@types/noita-ffi-asm` — two generic `*.asm` blocks in one program collide.
 
 ## nasm binary
 

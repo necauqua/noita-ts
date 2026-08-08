@@ -6,11 +6,10 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "strict": true,
-    "types": [
-      "lua-types/jit",
-      "@typescript-to-lua/language-extensions",
-      "@noita-ts/base/types"
-    ]
+    // TypeScript 6 stopped automatically including everyhing from `@types/*`
+    // Restore that to include noita-ts *and* stuff like noita-ffi-asm etc
+    // You can explicitly add "noita-ts" to the "types" array instead.
+    "types": ["*"]
   },
   "tstl": {
     "noResolvePaths": ["$mod", "**.lua", "ffi", "bit"],
