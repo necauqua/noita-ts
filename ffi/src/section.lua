@@ -32,6 +32,11 @@ ffi.cdef [[
     unsigned int hde32_len(const void* addr);
 ]]
 
+-- to be exported by ffi
+function Section._hde32_len(ptr)
+    return hde32.hde32_len(ptr)
+end
+
 --- @param condition boolean
 --- @param message string
 --- @param name string

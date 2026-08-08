@@ -54,12 +54,38 @@ export interface Section {
 }
 
 declare const _default: {
+
+  /** The base address of the module, without ASLR enabled this is 0x00400000 */
+  base: number,
+
   /** The `.data` memory address range */
   data: Section;
   /** The `.rdata` memory address range */
   rdata: Section;
   /** The `.text` memory address range */
   text: Section;
+
+  /**
+   * Fixes an address that was hardcoded for 0x00400000 base to the actual base
+   * address of the module.
+   * Basically a convenient shortcut for `addr - 0x00400000 + ffi.base`.
+   *
+   * @param addr The address to rebase
+   * @return The rebased address
+   */
+  rebase(this: void, addr: number): number;
+
+  /**
+   * Calculates the length of the instruction at the given address.
+   *
+   * `@noita-ts/ffi` bundles a size-optimized build of HDE32 (a minimal 32-bit
+   * instruction length disassembler) to calculate instruction lengths, this is
+   * an API for calling it directly.
+   *
+   * @param addr The address to calculate the instruction length for
+   * @return The length of the instruction at the given address
+   */
+  instrLen(this: void, addr: Ptr<any> | number): number;
 
   /**
    * Locate a string in `.rdata`.

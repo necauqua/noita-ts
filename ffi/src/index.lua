@@ -83,10 +83,25 @@ if not data or not rdata or not text then
 end
 
 local M = {
+    base = base,
     data = data,
     rdata = rdata,
     text = text,
 }
+
+--- Fixes an address that was hardcoded for 0x00400000 base to the actual base address of the module.
+--- @param addr any
+--- @return unknown
+function M.rebase(addr)
+    return addr - 0x00400000 + base
+end
+
+--- Calculates the length of the instruction at the given address.
+--- @param addr ffi.cdata* | number
+--- @return number
+function M.instrLen(addr)
+    return Section._hde32_len(addr)
+end
 
 --- @param str string
 --- @return number
