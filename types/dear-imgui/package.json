@@ -1,5 +1,5 @@
 {
-  "name": "@noita-ts/noita-dear-imgui-types",
+  "name": "@types/noita-ts-dear-imgui",
   "version": "0.1.1",
   "description": "TypeScript type definitions for Noita-Dear-ImGui, for use with noita-ts / TypeScriptToLua.",
   "files": [
