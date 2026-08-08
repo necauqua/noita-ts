@@ -25,7 +25,7 @@ ffi.cdef [[
     int memcmp(const void *buffer1, const void *buffer2, size_t count);
 ]]
 
---- @noita-ts-include ./hde32.dll
+--- @noita-ts-include ../hde32.dll
 local hde32 = ffi.load('mods/' .. require('$mod').MOD_ID .. '/lua_modules/@noita-ts/ffi/hde32.dll')
 
 ffi.cdef [[

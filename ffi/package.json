@@ -7,16 +7,16 @@
     "hde32.dll"
   ],
   "type": "module",
-  "main": "index",
-  "types": "index.d.ts",
+  "main": "src/index",
+  "types": "src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./index.d.ts",
-      "default": "./index"
+      "types": "./src/index.d.ts",
+      "default": "./src/index"
     },
     "./global_stats": {
-      "types": "./global_stats.d.ts",
-      "default": "./global_stats"
+      "types": "./src/global_stats.d.ts",
+      "default": "./src/global_stats"
     }
   },
   "scripts": {

@@ -157,6 +157,10 @@ declare const _default: {
   C: Record<string, any>;
 
   load(this: void, libName: string): Record<string, any>;
+
+  ["new"](this: void, ct: string, init?: unknown): any;
+
+  string(this: void, ptr: any, len?: number): string;
 };
 
 export type Ptr<T> = {
