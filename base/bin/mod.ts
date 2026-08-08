@@ -18,7 +18,7 @@ function transpile(
   verbose: boolean,
   buildData: BuildData,
 ): readonly ts.Diagnostic[] {
-  const luaPlugins: tstl.InMemoryLuaPlugin[] = [
+  const luaPlugins: Array<tstl.LuaPluginImport | tstl.InMemoryLuaPlugin> = [
     { plugin: new JsonPlugin("@noita-ts/base/json", verbose) },
     {
       plugin: new IncludePlugin(
@@ -39,7 +39,6 @@ function transpile(
     {
       tstlVerbose: verbose,
       // sourceMapTraceback: dev, // requires "debug", so only works for unsafe mods
-      luaPlugins,
       rootDir: "src",
     },
   );
@@ -47,6 +46,9 @@ function transpile(
   if (config.errors.length > 0) {
     return config.errors;
   }
+
+  luaPlugins.push(...(config.options.luaPlugins ?? []));
+  config.options.luaPlugins = luaPlugins;
 
   const diagnostics: ts.Diagnostic[] = [];
 
