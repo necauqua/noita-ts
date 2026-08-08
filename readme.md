@@ -40,12 +40,12 @@ Mod metadata (id, name, description, workshop settings, etc.) lives in
 ## Packages
 
 - [`@noita-ts/base`](base) - the core: typed mod hooks, settings support, and
-  the `nts` CLI (build/run/publish/unpak). Depends on `@types/noita-ts` for the
+  the `nts` CLI (build/run/publish/unpak). Depends on `@noita-ts/types` for the
   ambient API typings.
-- [`@types/noita-ts`](types) - global ambient typings for mods (Noita Lua API +
+- [`@noita-ts/types`](types) - global ambient typings for mods (Noita Lua API +
   components, Lua stdlib, TSTL language extensions). Its `bin/` holds the
   internal generator that produces the definitions from Noita's Lua API docs.
-- [`@types/noita-ffi-asm`](types/ffi-asm-types) - ambient types for `*.asm` x86-patch
+- [`@noita-ts/ffi-asm-types`](types/ffi-asm) - ambient types for `*.asm` x86-patch
   imports assembled by `@noita-ts/ffi`.
 - [`@noita-ts/create-mod`](create-mod) - the `npm create` scaffolder.
 - [`@noita-ts/nxml`](nxml) - types and packaging for
@@ -55,7 +55,7 @@ Mod metadata (id, name, description, workshop settings, etc.) lives in
   [pollnet](https://github.com/probable-basilisk/pollnet), bundling the 32-bit
   dll and a Noita-specific loader.
 - [`@noita-ts/ffi`](ffi) - LuaJIT FFI helpers/types for unsafe mods.
-- [`@types/noita-ts-dear-imgui`](types/noita-ts-dear-imgui) - type
+- [`@noita-ts/dear-imgui-types`](types/dear-imgui) - type
   definitions for [Noita-Dear-ImGui](https://github.com/dextercd/Noita-Dear-ImGui)
   (ImGui 1.26.0).
 

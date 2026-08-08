@@ -1,6 +1,6 @@
 {
-  "name": "@types/noita-ts-ffi-asm",
-  "version": "0.8.1",
+  "name": "@noita-ts/ffi-asm-types",
+  "version": "0.1.0",
   "description": "Ambient types for `*.asm` x86 patch imports assembled by @noita-ts/ffi. Ships a generic fallback; each `nts build` enriches the installed copy with concrete per-file types.",
   "types": "index.d.ts",
   "license": "MIT",

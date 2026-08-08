@@ -47,6 +47,15 @@ function transpile(
     return config.errors;
   }
 
+  config.options.luaTarget ??= tstl.LuaTarget.LuaJIT;
+  config.options.luaLibImport ??= tstl.LuaLibImportKind.RequireMinimal;
+  config.options.noImplicitSelf ??= true;
+
+  // $mod, explicit .lua imports and ffi are special-cased by the require shim
+  config.options.noResolvePaths = [
+    ...new Set([...(config.options.noResolvePaths ?? []), "$mod", "**.lua", "ffi"]),
+  ];
+
   luaPlugins.push(...(config.options.luaPlugins ?? []));
   config.options.luaPlugins = luaPlugins;
 

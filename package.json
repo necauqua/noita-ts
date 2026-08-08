@@ -1,0 +1,14 @@
+{
+  "name": "noita-ts",
+  "private": true,
+  "workspaces": [
+    "types",
+    "types/dear-imgui",
+    "types/ffi-asm",
+    "base",
+    "ffi",
+    "nxml",
+    "pollnet",
+    "create-mod"
+  ]
+}

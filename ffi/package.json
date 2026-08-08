@@ -34,7 +34,7 @@
     "prepublishOnly": "docker build --output . hde32 && tsc -p ."
   },
   "dependencies": {
-    "@types/noita-ffi-asm": "file:../types/ffi-asm-types",
+    "@noita-ts/ffi-asm-types": "^0.1.0",
     "@typescript-to-lua/language-extensions": "^1.19.0"
   },
   "peerDependencies": {

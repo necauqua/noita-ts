@@ -1,3 +1,5 @@
+/// <reference types="@noita-ts/types" />
+
 /** @noSelfInFile */
 
 import { MOD_ID } from "$mod";

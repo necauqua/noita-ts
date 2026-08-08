@@ -1,6 +1,6 @@
 {
-  "name": "@types/noita-ts",
-  "version": "0.8.1",
+  "name": "@noita-ts/types",
+  "version": "0.1.0",
   "description": "Global ambient typings for Noita TypeScript mods (Noita API, Lua stdlib, TSTL language extensions).",
   "types": "index.d.ts",
   "license": "MIT",

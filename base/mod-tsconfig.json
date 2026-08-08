@@ -5,16 +5,6 @@
     "lib": ["ESNext"],
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "strict": true,
-    // TypeScript 6 stopped automatically including everyhing from `@types/*`
-    // Restore that to include noita-ts *and* stuff like noita-ffi-asm etc
-    // You can explicitly add "noita-ts" to the "types" array instead.
-    "types": ["*"]
-  },
-  "tstl": {
-    "noResolvePaths": ["$mod", "**.lua", "ffi", "bit"],
-    "luaTarget": "JIT",
-    "luaLibImport": "require-minimal",
-    "noImplicitSelf": true
+    "strict": true
   }
 }

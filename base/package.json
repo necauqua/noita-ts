@@ -31,12 +31,12 @@
   "scripts": {
     "prepublishOnly": "rm -rf dist && npm run build",
     "build": "npm run build:lua && npm run build:bin && npm run build:noita-api",
-    "build:lua": "tstl -p . && cp src/*.lua dist/",
+    "build:lua": "tstl -p . && cp src/*.lua dist/ && sed -i '1i /// <reference types=\"@noita-ts/types\" />' dist/index.d.ts",
     "build:noita-api": "test -f dist/noita.d.lua || curl -Lo dist/noita.d.lua https://raw.githubusercontent.com/NathanSnail/AutoLuaAPI/c8947a4977cff16148a7e7f574721b5decaf2463/out.lua",
     "build:bin": "tsc -p ./tsconfig.bin.json"
   },
   "dependencies": {
-    "@types/noita-ts": "file:../types",
+    "@noita-ts/types": "^0.1.0",
     "@typescript-to-lua/language-extensions": "^1.19.0",
     "archiver": "^7.0.1",
     "commander": "^14.0.2",

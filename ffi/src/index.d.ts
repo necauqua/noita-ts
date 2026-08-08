@@ -1,3 +1,4 @@
+/// <reference types="@noita-ts/ffi-asm-types" />
 /** @noSelfInFile */
 
 interface ScanParams {
