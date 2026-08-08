@@ -9,20 +9,22 @@
 //     }
 //   }
 //
-// and reference the ambient types so TypeScript accepts `.asm` imports:
+// For precise per-file types, opt in by adding the `noita-asm` ambient-types
+// package to your tsconfig `types`. The plugin maintains it at
+// `<project>/node_modules/@types/noita-asm`: a postinstall seeds a loose
+// fallback, and each build regenerates it with a *concrete* block per imported
+// .asm (precise `vars`/`labels` keys), so types get sharper after the first
+// build. (For zero-setup loose types instead, reference @noita-ts/ffi/asm.)
 //
-//   /// <reference types="@noita-ts/ffi/asm" />
-//
-// When TSTL resolves the `require("./file.asm")` emitted for such an import, the
-// `moduleResolution` hook assembles the .asm and serves the resulting Lua module
-// entirely from memory (via the emit host) at a virtual `<file>.asm.lua` path
-// next to the source. Nothing is written to the source tree or to disk: TSTL
-// emits the module into the build output like any other dependency, mirroring
-// the source layout, and rewrites the require to point at it.
+// The Lua module itself is served entirely from memory (via the emit host) at a
+// virtual `<file>.asm.lua` path next to the source: nothing is written to the
+// source tree. TSTL emits it into the build output like any other dependency,
+// mirroring the source layout, and rewrites the require to point at it.
 
-import { isAbsolute, resolve, dirname } from 'node:path';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { assemble } from './assemble.mjs';
-import { emitLua } from './codegen.mjs';
+import { emitLua, emitTypesIndex, patternFor } from './codegen.mjs';
 
 // virtual lua path -> generated module source
 const virtualModules = new Map();
@@ -56,6 +58,21 @@ function patchEmitHost(emitHost) {
     virtualModules.has(path) ? virtualModules.get(path) : originalReadFile(path);
 }
 
+/** Regenerate <project>/node_modules/@types/noita-asm from the seen modules. */
+function writeTypesPackage(projectDir) {
+  const dir = join(projectDir, 'node_modules', '@types', 'noita-asm');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    join(dir, 'package.json'),
+    JSON.stringify(
+      { name: '@types/noita-asm', version: '0.0.0', types: 'index.d.ts' },
+      null,
+      2,
+    ) + '\n',
+  );
+  writeFileSync(join(dir, 'index.d.ts'), emitTypesIndex(seenModules));
+}
+
 /** @type {import('typescript-to-lua').Plugin} */
 const plugin = {
   moduleResolution(moduleIdentifier, requiringFile, _options, emitHost) {
@@ -85,7 +102,7 @@ const plugin = {
     seenModules.set(patternFor(moduleIdentifier), patch);
     virtualModules.set(
       luaPath,
-      emitLua(assemble(asmPath), `AUTO-GENERATED from ${moduleIdentifier}. Do not edit.`),
+      emitLua(patch, `AUTO-GENERATED from ${moduleIdentifier}. Do not edit.`),
     );
     return luaPath;
   },

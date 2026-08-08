@@ -77,9 +77,9 @@ export function patternFor(specifier) {
 }
 
 /**
- * The aggregate `.d.ts` for `node_modules/@types/noita-asm`: every known patch as
- * a concrete block FIRST (so it wins the wildcard tie against the fallback), then
- * the generic `*.asm` fallback LAST for not-yet-built imports.
+ * The aggregate `.d.ts` for the `@types/noita-asm` package: every known
+ * patch as a concrete block FIRST (so it wins the wildcard tie against the
+ * fallback), then the generic `*.asm` fallback LAST for not-yet-built imports.
  *
  * `modules` is an iterable of `[pattern, patch]`.
  */

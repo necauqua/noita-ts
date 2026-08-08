@@ -40,12 +40,6 @@ Import `.asm` files directly. Wire the plugin in `tsconfig.json`:
 }
 ```
 
-reference the ambient types once (e.g. in a `global.d.ts`):
-
-```ts
-/// <reference types="@noita-ts/ffi/asm" />
-```
-
 then:
 
 ```ts
@@ -57,6 +51,34 @@ The plugin assembles on resolve and serves the generated module entirely from
 memory (nothing is written to the source tree or to disk); TSTL emits it into the
 build output mirroring the source layout (`patches/my_patch.asm` → `patches/my_patch_asm.lua`)
 and rewrites the require to it.
+
+#### Types
+
+Two options, pick one (don't combine — two `*.asm` blocks in one program collide):
+
+**Loose (zero setup, fully transparent).** Reference the shipped fallback; no
+install scripts, works on a fresh checkout:
+
+```ts
+/// <reference types="@noita-ts/ffi/asm" />
+```
+
+**Concrete (precise per-file `vars`/`labels`).** The plugin maintains a
+`noita-asm` ambient-types package at `node_modules/@types/noita-asm`: a
+`postinstall` seeds a loose fallback, and every build regenerates it with a
+**concrete block per imported `.asm`** placed before the generic `*.asm` fallback
+so it wins the wildcard match (types sharpen after the first build). Opt in by
+adding it to your `tsconfig.json`:
+
+```jsonc
+{ "compilerOptions": { "types": ["noita-asm"] } }
+```
+
+> If your package manager runs with install scripts disabled, the postinstall
+> won't seed the stub, so `types: ["noita-asm"]` errors until it exists. Seed it
+> once with `node node_modules/@noita-ts/ffi/nasm/install-asm-types.mjs` (or just
+> run one build — the plugin writes it during `beforeEmit`). Prefer the loose
+> option above if you'd rather avoid that.
 
 ## nasm binary
 
