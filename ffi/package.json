@@ -4,12 +4,7 @@
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "files": [
     "**/*.{lua,d.ts}",
-    "hde32.dll",
-    "asm-plugin.js",
-    "nasm/*.mjs",
-    "nasm/reloc.asm",
-    "nasm/nasm",
-    "nasm/nasm.exe"
+    "hde32.dll"
   ],
   "type": "module",
   "main": "src/index",
@@ -22,12 +17,6 @@
     "./global_stats": {
       "types": "./src/global_stats.d.ts",
       "default": "./src/global_stats"
-    },
-    "./asm-plugin": {
-      "default": "./nasm/asm-plugin.mjs"
-    },
-    "./asm": {
-      "types": "./nasm/asm.d.ts"
     }
   },
   "scripts": {
@@ -35,14 +24,6 @@
   },
   "dependencies": {
     "@typescript-to-lua/language-extensions": "^1.19.0"
-  },
-  "peerDependencies": {
-    "typescript-to-lua": ">=1.36.0"
-  },
-  "peerDependenciesMeta": {
-    "typescript-to-lua": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "typescript": "^6.0.2"

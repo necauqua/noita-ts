@@ -1,0 +1,12 @@
+{
+  "name": "@noita-ts/nasm-win32-x64",
+  "version": "0.1.0",
+  "description": "The win32-x64 NASM binary for @noita-ts/nasm.",
+  "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
+  "license": "MIT",
+  "os": ["win32"],
+  "cpu": ["x64"],
+  "files": [
+    "nasm.exe"
+  ]
+}

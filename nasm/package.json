@@ -1,0 +1,46 @@
+{
+  "name": "@noita-ts/nasm",
+  "version": "0.1.0",
+  "description": "The NASM assembler as a platform-gated npm package, plus the TSTL plugin that assembles `*.asm` x86 patches into Lua modules.",
+  "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.mjs",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs",
+      "require": "./index.cjs"
+    },
+    "./asm-plugin": {
+      "default": "./asm-plugin.mjs"
+    },
+    "./asm": {
+      "types": "./asm.d.ts"
+    }
+  },
+  "files": [
+    "index.mjs",
+    "index.cjs",
+    "index.d.ts",
+    "asm-plugin.js",
+    "asm-plugin.mjs",
+    "assemble.mjs",
+    "codegen.mjs",
+    "asm.d.ts",
+    "reloc.asm"
+  ],
+  "peerDependencies": {
+    "typescript-to-lua": ">=1.36.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript-to-lua": {
+      "optional": true
+    }
+  },
+  "optionalDependencies": {
+    "@noita-ts/nasm-linux-x64": "0.1.0",
+    "@noita-ts/nasm-win32-x64": "0.1.0"
+  }
+}

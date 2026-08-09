@@ -1,7 +1,7 @@
 // Assemble an x86 patch .asm into { asm, vars, labels }.
 //
-// Runs the bundled nasm with `%use masm` and reloc.asm pre-included, then parses
-// the resulting ELF32 object:
+// Runs this package's nasm binary with `%use masm` and reloc.asm pre-included,
+// then parses the resulting ELF32 object:
 //   - asm    : the raw .text machine code as a byte array, with every reloc's
 //              magic dword zeroed out (the caller injects the real 32-bit value
 //              at runtime).
@@ -22,9 +22,9 @@ import { readFileSync, unlinkSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { nasmPath } from './index.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const NASM = resolve(HERE, process.platform === 'win32' ? 'nasm.exe' : 'nasm');
 const RELOC = resolve(HERE, 'reloc.asm');
 const RELOC_MAGIC_BASE = 0xd1be7700;
 
@@ -39,7 +39,7 @@ function runNasm(input) {
   const out = resolve(tmpdir(), `noita-asm-${process.pid}-${Date.now()}.o`);
   try {
     try {
-      execFileSync(NASM, [
+      execFileSync(nasmPath, [
         '--before', '%use masm',
         '--before', `%include "${RELOC}"`,
         '--bits', '32',

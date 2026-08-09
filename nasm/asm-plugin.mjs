@@ -5,17 +5,17 @@
 //
 //   {
 //     "tstl": {
-//       "luaPlugins": [{ "name": "@noita-ts/ffi/asm-plugin" }]
+//       "luaPlugins": [{ "name": "@noita-ts/nasm/asm-plugin" }]
 //     }
 //   }
 //
-// Types need no setup: `@noita-ts/ffi`'s own `src/index.d.ts` references
-// `@noita-ts/ffi/asm`, which ships a generic `*.asm` fallback, so `.asm` imports
-// type-check right after install. This plugin overwrites that shipped file in
-// the installed copy (`<project>/node_modules/@noita-ts/ffi/nasm/asm.d.ts`) on
-// each build, prepending a *concrete* block per imported .asm (precise
-// `vars`/`labels` keys) before the generic fallback, so types sharpen after the
-// first build.
+// Types need no setup: this package's `asm.d.ts` (exported as
+// `@noita-ts/nasm/asm`) ships a generic `*.asm` fallback, so `.asm` imports
+// type-check right after install. On each build the plugin rewrites that file
+// in the installed copy (`<project>/node_modules/@noita-ts/nasm/asm.d.ts`),
+// prepending a *concrete* block per imported .asm (precise `vars`/`labels`
+// keys) before the generic fallback, so types sharpen after the first build.
+// Only this package's own files are ever written.
 //
 // The Lua module itself is served entirely from memory (via the emit host) at a
 // virtual `<file>.asm.lua` path next to the source: nothing is written to the
@@ -63,8 +63,8 @@ function patchEmitHost(emitHost) {
 }
 
 /**
- * Sharpen the `.asm` types of the installed `@noita-ts/ffi` by rewriting its
- * shipped `nasm/asm.d.ts` from the seen modules.
+ * Sharpen the `.asm` types by rewriting this package's own shipped `asm.d.ts`
+ * from the seen modules.
  *
  * Only ever touches a real installed copy: if the package is a symlink out of
  * `node_modules` (npm workspaces, `npm link`), the file belongs to a source
@@ -73,10 +73,10 @@ function patchEmitHost(emitHost) {
  */
 function writeAsmTypes(projectDir) {
   const nodeModules = join(projectDir, 'node_modules');
-  const pkgDir = join(nodeModules, '@noita-ts', 'ffi');
+  const pkgDir = join(nodeModules, '@noita-ts', 'nasm');
   if (!existsSync(pkgDir)) return;
   if (!realpathSync(pkgDir).startsWith(nodeModules + sep)) return;
-  writeFileSync(join(pkgDir, 'nasm', 'asm.d.ts'), emitTypesIndex(seenModules));
+  writeFileSync(join(pkgDir, 'asm.d.ts'), emitTypesIndex(seenModules));
 }
 
 /** @type {import('typescript-to-lua').Plugin} */

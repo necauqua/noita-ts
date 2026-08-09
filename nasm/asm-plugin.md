@@ -32,11 +32,18 @@ Assembly fails if the object contains any real relocations against `.text`
 
 ## Usage
 
+Install the assembler (it's an optional peer of `@noita-ts/ffi`, so it isn't
+downloaded unless you actually assemble patches):
+
+```sh
+npm i -D @noita-ts/nasm
+```
+
 Import `.asm` files directly. Wire the plugin in `tsconfig.json`:
 
 ```jsonc
 {
-  "tstl": { "luaPlugins": [{ "name": "@noita-ts/ffi/asm-plugin" }] }
+  "tstl": { "luaPlugins": [{ "name": "@noita-ts/nasm/asm-plugin" }] }
 }
 ```
 
@@ -54,26 +61,30 @@ and rewrites the require to it.
 
 #### Types
 
-Nothing to configure. `@noita-ts/ffi` ships the `.asm` ambient types itself, as
-`@noita-ts/ffi/asm`, and references them from its own `src/index.d.ts` — so
-importing anything from `@noita-ts/ffi` pulls them in:
+The `.asm` ambient types ship in this package as `@noita-ts/nasm/asm`. Reference
+them once, anywhere in your sources:
+
+```ts
+/// <reference types="@noita-ts/nasm/asm" />
+```
 
 - **Before the first build** the shipped file is a generic fallback
   (`vars`/`labels` typed as `Record<...>`), so `.asm` imports type-check
   immediately after install — no postinstall, no extra package.
-- **Each `nts build`** the asm-plugin rewrites `nasm/asm.d.ts` in the installed
-  `node_modules/@noita-ts/ffi`, prepending a **concrete block per imported
-  `.asm`** (exact `vars`/`labels` keys) before the generic `*.asm` fallback so it
-  wins the wildcard match — types sharpen automatically after the first build.
+- **Each `nts build`** the asm-plugin rewrites its own `asm.d.ts` in the
+  installed `node_modules/@noita-ts/nasm`, prepending a **concrete block per
+  imported `.asm`** (exact `vars`/`labels` keys) before the generic `*.asm`
+  fallback so it wins the wildcard match — types sharpen automatically after the
+  first build. The plugin only ever writes files inside its own package.
 
-> The plugin only rewrites a real installed copy: when `@noita-ts/ffi` is
+> The plugin only rewrites a real installed copy: when `@noita-ts/nasm` is
 > symlinked (workspaces, `npm link`), the file belongs to a shared source
 > checkout, so it's left alone and the generic fallback stays in effect.
->
-> If you don't import `@noita-ts/ffi` anywhere, reference the block directly with
-> `/// <reference types="@noita-ts/ffi/asm" />`.
 
 ## nasm binary
 
-`./nasm` (Linux) / `./nasm.exe` (Windows) is invoked directly; the platform
-binary is picked automatically.
+The real binaries live in per-platform packages (`@noita-ts/nasm-<os>-<cpu>`)
+declared here as `os`/`cpu`-gated optional dependencies, so npm fetches only the
+~460KB binary for the current machine and skips the others. Installing this
+package is what opts you into that download — mods that never assemble patches
+don't depend on it at all.

@@ -1,0 +1,12 @@
+{
+  "name": "@noita-ts/nasm-linux-x64",
+  "version": "0.1.0",
+  "description": "The linux-x64 NASM binary for @noita-ts/nasm.",
+  "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
+  "license": "MIT",
+  "os": ["linux"],
+  "cpu": ["x64"],
+  "files": [
+    "nasm"
+  ]
+}
