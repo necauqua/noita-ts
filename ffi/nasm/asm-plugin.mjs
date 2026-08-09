@@ -9,13 +9,13 @@
 //     }
 //   }
 //
-// Types need no setup: `@noita-ts/ffi` depends on `@types/noita-ffi-asm`, which
-// ships a generic `*.asm` fallback and is auto-discovered (base's mod-tsconfig
-// uses `"types": ["*"]`). This plugin overwrites the installed copy at
-// `<project>/node_modules/@types/noita-ffi-asm` on each build with a *concrete*
-// block per imported .asm (precise `vars`/`labels` keys), so types sharpen after
-// the first build. (For zero-setup loose types instead, reference
-// @noita-ts/ffi/asm.)
+// Types need no setup: `@noita-ts/ffi`'s own `src/index.d.ts` references
+// `@noita-ts/ffi/asm`, which ships a generic `*.asm` fallback, so `.asm` imports
+// type-check right after install. This plugin overwrites that shipped file in
+// the installed copy (`<project>/node_modules/@noita-ts/ffi/nasm/asm.d.ts`) on
+// each build, prepending a *concrete* block per imported .asm (precise
+// `vars`/`labels` keys) before the generic fallback, so types sharpen after the
+// first build.
 //
 // The Lua module itself is served entirely from memory (via the emit host) at a
 // virtual `<file>.asm.lua` path next to the source: nothing is written to the
@@ -25,8 +25,8 @@
 // The plugin also implements @noita-ts/base's `excludeAsset` hook, so the `.asm`
 // sources themselves are kept out of the packaged mod.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { existsSync, realpathSync, writeFileSync } from 'node:fs';
+import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { assemble } from './assemble.mjs';
 import { emitLua, emitTypesIndex, patternFor } from './codegen.mjs';
 
@@ -62,19 +62,21 @@ function patchEmitHost(emitHost) {
     virtualModules.has(path) ? virtualModules.get(path) : originalReadFile(path);
 }
 
-/** Regenerate <project>/node_modules/@types/noita-ffi-asm from the seen modules. */
-function writeTypesPackage(projectDir) {
-  const dir = join(projectDir, 'node_modules', '@types', 'noita-ffi-asm');
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(
-    join(dir, 'package.json'),
-    JSON.stringify(
-      { name: '@types/noita-ffi-asm', version: '0.0.0', types: 'index.d.ts' },
-      null,
-      2,
-    ) + '\n',
-  );
-  writeFileSync(join(dir, 'index.d.ts'), emitTypesIndex(seenModules));
+/**
+ * Sharpen the `.asm` types of the installed `@noita-ts/ffi` by rewriting its
+ * shipped `nasm/asm.d.ts` from the seen modules.
+ *
+ * Only ever touches a real installed copy: if the package is a symlink out of
+ * `node_modules` (npm workspaces, `npm link`), the file belongs to a source
+ * checkout shared by other projects, so it is left alone and the generic
+ * fallback stays in effect.
+ */
+function writeAsmTypes(projectDir) {
+  const nodeModules = join(projectDir, 'node_modules');
+  const pkgDir = join(nodeModules, '@noita-ts', 'ffi');
+  if (!existsSync(pkgDir)) return;
+  if (!realpathSync(pkgDir).startsWith(nodeModules + sep)) return;
+  writeFileSync(join(pkgDir, 'nasm', 'asm.d.ts'), emitTypesIndex(seenModules));
 }
 
 /** @type {import('typescript-to-lua').Plugin} */
@@ -113,7 +115,7 @@ const plugin = {
 
   beforeEmit(_program, _options, emitHost) {
     if (seenModules.size > 0) {
-      writeTypesPackage(emitHost.getCurrentDirectory());
+      writeAsmTypes(emitHost.getCurrentDirectory());
     }
     if (failures.length > 0) {
       return failures.splice(0);

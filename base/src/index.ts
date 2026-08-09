@@ -1,4 +1,4 @@
-/// <reference types="@noita-ts/types" />
+/// <reference types="@noita-ts/base/types" />
 
 /** @noSelfInFile */
 

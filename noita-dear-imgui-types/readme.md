@@ -1,4 +1,4 @@
-# @types/noita-ts-dear-imgui
+# @types/noita-ts-dear-imgui-types
 
 TypeScript type definitions for
 [Noita-Dear-ImGui](https://github.com/dextercd/Noita-Dear-ImGui) (ImGui version

@@ -2,9 +2,7 @@
   "name": "noita-ts",
   "private": true,
   "workspaces": [
-    "types",
-    "types/dear-imgui",
-    "types/ffi-asm",
+    "noita-dear-imgui-types",
     "base",
     "ffi",
     "nxml",
