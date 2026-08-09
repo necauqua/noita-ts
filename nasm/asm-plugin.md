@@ -1,4 +1,4 @@
-# x86 patch assembly (`.asm` → `{ asm, vars, labels }`)
+# x86 patch assembly (`.asm` → callable `{ raw, vars, labels }`)
 
 Assembles small x86 machine-code patches (for runtime code injection) from NASM
 sources, with runtime-injected 32-bit fields.
@@ -21,11 +21,25 @@ sources need neither.
 
 ## Output
 
-Assembling produces `{ asm, vars, labels }`:
+Assembling produces a callable `{ raw, vars, labels }`:
 
-- `asm`    – raw patch bytes (reloc fields zeroed)
-- `vars`   – reloc name → byte offsets of its 32-bit field(s) in `asm`
-- `labels` – every other `.text` label → its byte offset in `asm`
+- `raw`    – raw patch bytes (reloc fields zeroed)
+- `vars`   – reloc name → byte offsets of its 32-bit field(s) in `raw`
+- `labels` – every other `.text` label → its byte offset in `raw`
+
+Calling the patch **links** it: it returns a fresh copy of `raw` with each
+reloc's value written little-endian at every offset recorded for it in `vars`.
+`raw` itself is never mutated, so one patch can be linked repeatedly with
+different values.
+
+```ts
+import patch from './patches/my_patch.asm';
+
+ffi.cave(addr, patch({ c075: someAddr, c5: 0x3f800000 }));
+```
+
+Every reloc must be given a value; a missing one is an error. For a patch with
+no relocs the argument is optional, so `patch()` just yields a copy of `raw`.
 
 Assembly fails if the object contains any real relocations against `.text`
 (absolute label refs or externs), since such a patch is not self-contained.
@@ -51,13 +65,18 @@ then:
 
 ```ts
 import patch from './patches/my_patch.asm';
-// patch.asm, patch.vars.<reloc>, patch.labels.<label>, ...
+// patch({ <reloc>: value, ... }), patch.raw, patch.vars.<reloc>, patch.labels.<label>
 ```
 
 The plugin assembles on resolve and serves the generated module entirely from
 memory (nothing is written to the source tree or to disk); TSTL emits it into the
 build output mirroring the source layout (`patches/my_patch.asm` → `patches/my_patch_asm.lua`)
 and rewrites the require to it.
+
+The linking runtime is **not** inlined into each patch: it is emitted once as a
+single `asm_link.lua` at the root of the output, and every generated patch just
+`require`s it. So a patch module is only its own bytes, offsets and labels,
+regardless of how many patches a mod has.
 
 #### Types
 

@@ -5,11 +5,16 @@
 declare module "*.asm" {
   const patch: {
     /** Raw x86 patch machine code; reloc fields are zeroed. */
-    readonly asm: number[];
-    /** Byte offsets of each reloc's 32-bit field within `asm`. */
+    readonly raw: number[];
+    /** Byte offsets of each reloc's 32-bit field within `raw`. */
     readonly vars: Record<string, number[]>;
-    /** Byte offset of each label within `asm`. */
+    /** Byte offset of each label within `raw`. */
     readonly labels: Record<string, number>;
+    /**
+     * Links the patch: a copy of `raw` with each reloc's value written
+     * little-endian at every offset recorded for it in `vars`.
+     */
+    (this: void, values: Record<string, number>): number[];
   };
   export default patch;
 }

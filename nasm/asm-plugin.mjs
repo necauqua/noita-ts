@@ -1,5 +1,5 @@
 // TSTL plugin: turn `import patch from './file.asm'` into a real Lua module
-// providing { asm, vars, labels } (see assemble.mjs).
+// providing a callable { raw, vars, labels } (see assemble.mjs and codegen.mjs).
 //
 // Wire it up in the consumer's tsconfig:
 //
@@ -22,13 +22,19 @@
 // source tree. TSTL emits it into the build output like any other dependency,
 // mirroring the source layout, and rewrites the require to point at it.
 //
+// The reloc linker shared by all patches is served the same way, as a single
+// virtual `asm_link.lua` at the source root: patches require it by the sentinel
+// specifier `@noita-ts/nasm/asm_link`, which this plugin resolves. TSTL scans
+// emitted Lua for requires and runs them back through `moduleResolution`, so
+// the module is emitted once and every patch's require is rewritten to it.
+//
 // The plugin also implements @noita-ts/base's `excludeAsset` hook, so the `.asm`
 // sources themselves are kept out of the packaged mod.
 
 import { existsSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { assemble } from './assemble.mjs';
-import { emitLua, emitTypesIndex, patternFor } from './codegen.mjs';
+import { emitLinkLua, emitLua, emitTypesIndex, LINK_MODULE, patternFor } from './codegen.mjs';
 
 // virtual lua path -> generated module source
 const virtualModules = new Map();
@@ -79,9 +85,37 @@ function writeAsmTypes(projectDir) {
   writeFileSync(join(pkgDir, 'asm.d.ts'), emitTypesIndex(seenModules));
 }
 
+/**
+ * Where TSTL bases emitted paths on: `rootDir` when set, else the project root.
+ *
+ * Mirrors TSTL's own `getSourceDir`, so a virtual module placed here lands at
+ * the top of the output directory and gets a flat, stable require path.
+ */
+function sourceDir(options, emitHost) {
+  const projectRoot = options?.configFilePath
+    ? dirname(options.configFilePath)
+    : emitHost.getCurrentDirectory();
+  const rootDir = options?.rootDir;
+  if (rootDir) {
+    return isAbsolute(rootDir) ? rootDir : resolve(projectRoot, rootDir);
+  }
+  return projectRoot;
+}
+
 /** @type {import('typescript-to-lua').Plugin} */
 const plugin = {
-  moduleResolution(moduleIdentifier, requiringFile, _options, emitHost) {
+  moduleResolution(moduleIdentifier, requiringFile, options, emitHost) {
+    // The linker shared by every generated patch. Emitted at the source root so
+    // its require path is stable no matter how deep the requiring patch sits.
+    if (moduleIdentifier === LINK_MODULE) {
+      patchEmitHost(emitHost);
+      const luaPath = join(sourceDir(options, emitHost), 'asm_link.lua');
+      if (!virtualModules.has(luaPath)) {
+        virtualModules.set(luaPath, emitLinkLua());
+      }
+      return luaPath;
+    }
+
     if (!moduleIdentifier.endsWith('.asm')) return undefined;
 
     const asmPath = isAbsolute(moduleIdentifier)

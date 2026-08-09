@@ -19,7 +19,7 @@ npm i -D @noita-ts/nasm
 ```ts
 /// <reference types="@noita-ts/nasm/asm" />
 import patch from './patches/my_patch.asm';
-// patch.asm, patch.vars.<reloc>, patch.labels.<label>
+// patch({ <reloc>: value, ... }), patch.raw, patch.vars.<reloc>, patch.labels.<label>
 ```
 
 The assembled patches are plain `{ asm, vars, labels }` tables and don't depend
