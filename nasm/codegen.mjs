@@ -8,7 +8,13 @@ function luaKey(name) {
   return /^[A-Za-z_]\w*$/.test(name) ? name : `[${JSON.stringify(name)}]`;
 }
 
-/** A Lua module (`return { asm, vars, labels }`) for the assembled patch. */
+/**
+ * A Lua module (`return { asm, vars, labels }`) for the assembled patch.
+ *
+ * The table also points `default` at itself, since the ambient `.asm` types
+ * declare a default export and TSTL compiles `import patch from './x.asm'`
+ * into a `.default` lookup on the required module.
+ */
 export function emitLua({ asm, vars, labels }, banner = 'AUTO-GENERATED. Do not edit.') {
   const rows = [];
   for (let i = 0; i < asm.length; i += 12) {
@@ -21,7 +27,7 @@ export function emitLua({ asm, vars, labels }, banner = 'AUTO-GENERATED. Do not 
     ([name, off]) => `    ${luaKey(name)} = ${off},`,
   );
   return `-- ${banner}
-return {
+local patch = {
   asm = {
 ${rows.join('\n')}
   },
@@ -32,6 +38,8 @@ ${varLines.join('\n')}
 ${labelLines.join('\n')}
   },
 }
+patch.default = patch
+return patch
 `;
 }
 
