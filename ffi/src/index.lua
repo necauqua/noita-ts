@@ -16,6 +16,8 @@ ffi.cdef [[
 
     bool VirtualProtect(void* adress, size_t size, int new_protect, int* old_protect);
 
+    void* VirtualAlloc(void* address, size_t size, uint32_t allocation_type, uint32_t protect);
+
     typedef struct {
         char pad[60];
         uint32_t e_lfanew;
@@ -100,6 +102,9 @@ end
 --- @param addr ffi.cdata* | number
 --- @return number
 function M.instrLen(addr)
+    if type(addr) == 'number' then
+        addr = ffi.cast('void*', addr)
+    end
     return Section._hde32_len(addr)
 end
 
@@ -191,6 +196,86 @@ function M.patchRaw(addr, patch)
         restore_protection[0],
         restore_protection
     )
+end
+
+-- see https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc
+local MEM_COMMIT_RESERVE = 0x3000
+
+-- length of a `JMP rel32`
+local JMP_LEN = 5
+local JMP_OP = 0xE9
+local NOP = 0x90
+
+--- Encodes a `JMP rel32` placed at `from` that lands on `to`.
+--- @param from number
+--- @param to number
+--- @return number[]
+local function jmpRel32(from, to)
+    local rel = to - (from + JMP_LEN)
+    return {
+        JMP_OP,
+        bit.band(rel, 0xFF),
+        bit.band(bit.rshift(rel, 8), 0xFF),
+        bit.band(bit.rshift(rel, 16), 0xFF),
+        bit.band(bit.rshift(rel, 24), 0xFF),
+    }
+end
+
+--- Allocates an executable code cave holding `bytes`, and redirects `addr` to it
+--- with a `JMP rel32`.
+---
+--- The whole instructions covered by that jump are copied to the end of the
+--- cave, followed by a jump back to the instruction right after them, and any
+--- leftover bytes of a partially overwritten instruction are filled with NOPs.
+---
+--- Note that the displaced instructions are copied verbatim, so an instruction
+--- with a relative operand (`CALL rel32`, `JMP`/`Jcc`, RIP-less but
+--- offset-relative addressing) will not survive the move.
+---
+--- @param addr number the address to hook
+--- @param bytes ffi.cdata*|number[]|string the code to run in the cave
+--- @return number cave the address of the allocated cave
+function M.cave(addr, bytes)
+    if type(bytes) == 'table' or type(bytes) == 'string' then
+        bytes = ffi.new('char[?]', #bytes, bytes)
+    end
+    local size = ffi.sizeof(bytes) --[[ @as number ]]
+
+    -- walk instruction boundaries to see how much the jump displaces
+    local stolen = 0
+    while stolen < JMP_LEN do
+        local len = M.instrLen(addr + stolen)
+        if len == 0 then
+            error(string.format('could not decode the instruction at 0x%08X', addr + stolen))
+        end
+        stolen = stolen + len
+    end
+
+    local finalSize = size + stolen + JMP_LEN
+
+    local cave = ffi.C.VirtualAlloc(nil, finalSize, MEM_COMMIT_RESERVE, PAGE_EXECUTE_READ_WRITE)
+    if cave == nil then
+        error(string.format('could not allocate %d bytes for a code cave', finalSize))
+    end
+    local caveAddr = tonumber(ffi.cast('uint32_t', cave)) --[[ @as number ]]
+    local cavePtr = ffi.cast('char*', cave)
+
+    -- the payload, then the displaced instructions, then a jump back
+    ffi.copy(cavePtr, bytes, size)
+    ffi.copy(cavePtr + size, ffi.cast('char*', addr), stolen)
+
+    local back = jmpRel32(caveAddr + size + stolen, addr + stolen)
+    ffi.copy(cavePtr + size + stolen, ffi.new('char[?]', JMP_LEN, back), JMP_LEN)
+
+    -- and finally the jump into the cave, padded with NOPs
+    -- if it landed in the middle of an instruction
+    local patch = jmpRel32(addr, caveAddr)
+    for i = JMP_LEN + 1, stolen do
+        patch[i] = NOP
+    end
+    M.patchRaw(addr, patch)
+
+    return caveAddr
 end
 
 ---@param needle ffi.cdata* | number[] | number | string

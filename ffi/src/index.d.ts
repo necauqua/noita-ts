@@ -88,6 +88,24 @@ declare const _default: {
   instrLen(this: void, addr: Ptr<any> | number): number;
 
   /**
+   * Allocates an executable code cave holding `bytes`, and redirects `addr` to
+   * it with a `JMP rel32`.
+   *
+   * The whole instructions covered by that jump are copied to the end of the
+   * cave, followed by a jump back to the instruction right after them, and any
+   * leftover bytes of a partially overwritten instruction are filled with NOPs.
+   *
+   * Note that the displaced instructions are copied verbatim, so an instruction
+   * with a relative operand (`CALL rel32`, `JMP`/`Jcc`, or anything else
+   * offset-relative) will not survive the move.
+   *
+   * @param addr The address to hook
+   * @param bytes The code to run in the cave
+   * @return The address of the allocated cave
+   */
+  cave(this: void, addr: number, bytes: number[] | string): number;
+
+  /**
    * Locate a string in `.rdata`.
    * This adds a null terminator to the string before searching.
    *
