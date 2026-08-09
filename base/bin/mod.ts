@@ -2,6 +2,11 @@ import fs from "fs";
 import path from "path";
 import ts from "typescript";
 import tstl from "typescript-to-lua";
+// Not re-exported from tstl's entrypoint, but it's the only way to resolve the
+// `luaPlugins` option (a mix of inline instances and module names) into actual
+// plugin objects. Resolution is `require`-cached, so these are the very same
+// instances tstl itself uses during the emit.
+import { getPlugins } from "typescript-to-lua/dist/transpilation/plugins.js";
 import IncludePlugin from "./plugins/include.js";
 import JsonPlugin from "./plugins/json-polyfill.js";
 import NoitaRequirePlugin from "./plugins/noita-require.js";
@@ -13,11 +18,28 @@ export type BuildData = {
   dev: boolean;
 };
 
+/**
+ * Optional hook a tstl plugin may implement to exclude files from the built mod.
+ *
+ * Every file under `src/` that isn't a `.ts` source is normally copied into the
+ * mod. A plugin that processes some of those files into Lua at build time can
+ * implement this to prevent the originals from shipping.
+ */
+export interface AssetPlugin {
+  /**
+   * Returns `true` to exclude the file from the mod.
+   *
+   * @param relativePath path relative to `src/`
+   * @param fullPath absolute path on disk
+   */
+  excludeAsset?(relativePath: string, fullPath: string): boolean;
+}
+
 function transpile(
   vfs: VFS,
   verbose: boolean,
   buildData: BuildData,
-): readonly ts.Diagnostic[] {
+): { diagnostics: readonly ts.Diagnostic[]; plugins: tstl.Plugin[] } {
   const luaPlugins: Array<tstl.LuaPluginImport | tstl.InMemoryLuaPlugin> = [
     { plugin: new JsonPlugin("@noita-ts/base/json", verbose) },
     {
@@ -44,7 +66,7 @@ function transpile(
   );
 
   if (config.errors.length > 0) {
-    return config.errors;
+    return { diagnostics: config.errors, plugins: [] };
   }
 
   config.options.luaTarget ??= tstl.LuaTarget.LuaJIT;
@@ -66,6 +88,12 @@ function transpile(
 
   const res = new tstl.Transpiler().emit({ program, writeFile });
   diagnostics.push(...res.diagnostics);
+
+  // Resolved from the first program: it already carries every plugin, and the
+  // settings pass below only prepends one of ours (which has no asset hook).
+  const resolved = getPlugins(program);
+  diagnostics.push(...resolved.diagnostics);
+  const plugins = resolved.plugins;
 
   // Settings cannot dofile_once any non-vanilla files - including our own
   //  - but we allow to import own files by the magic of having an additional
@@ -97,7 +125,10 @@ function transpile(
     diagnostics.push(...res.diagnostics);
   }
 
-  return ts.sortAndDeduplicateDiagnostics(diagnostics);
+  return {
+    diagnostics: ts.sortAndDeduplicateDiagnostics(diagnostics),
+    plugins,
+  };
 }
 
 export default class NoitaMod {
@@ -137,7 +168,7 @@ export default class NoitaMod {
       dev: !!dev,
     };
 
-    const diagnostics = transpile(vfs, !!verbose, buildData);
+    const { diagnostics, plugins } = transpile(vfs, !!verbose, buildData);
     if (diagnostics.length > 0) {
       const reporter = tstl.createDiagnosticReporter(true);
       for (const diagnostic of diagnostics) {
@@ -145,6 +176,10 @@ export default class NoitaMod {
       }
       process.exit(1);
     }
+
+    const assetFilters = plugins
+      .map((p) => (p as AssetPlugin).excludeAsset?.bind(p))
+      .filter((f) => f !== undefined);
 
     const versionBuiltWith = packageJson?.["noita.compat"];
     if (versionBuiltWith) {
@@ -227,6 +262,9 @@ export default class NoitaMod {
       if (!file.endsWith(".ts")) {
         const fullPath = path.join(src, file);
         if (fs.statSync(fullPath).isFile()) {
+          if (assetFilters.some((filter) => filter(file, fullPath))) {
+            continue;
+          }
           vfs.write(file, fs.createReadStream(fullPath));
         }
       }

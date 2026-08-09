@@ -21,6 +21,9 @@
 // virtual `<file>.asm.lua` path next to the source: nothing is written to the
 // source tree. TSTL emits it into the build output like any other dependency,
 // mirroring the source layout, and rewrites the require to point at it.
+//
+// The plugin also implements @noita-ts/base's `excludeAsset` hook, so the `.asm`
+// sources themselves are kept out of the packaged mod.
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
@@ -115,6 +118,13 @@ const plugin = {
     if (failures.length > 0) {
       return failures.splice(0);
     }
+  },
+
+  // @noita-ts/base hook: .asm sources are assembled into Lua modules at build
+  // time, so the originals are build inputs and can be dropped from the final
+  // mod package
+  excludeAsset(relativePath) {
+    return relativePath.endsWith('.asm');
   },
 };
 
