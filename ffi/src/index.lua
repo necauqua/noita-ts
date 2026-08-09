@@ -91,6 +91,18 @@ local M = {
     text = text,
 }
 
+--- Splits a number into its 4 little-endian bytes.
+--- @param n number
+--- @return number[]
+function M.le32(n)
+    return {
+        bit.band(n, 0xFF),
+        bit.band(bit.rshift(n, 8), 0xFF),
+        bit.band(bit.rshift(n, 16), 0xFF),
+        bit.band(bit.rshift(n, 24), 0xFF),
+    }
+end
+
 --- Fixes an address that was hardcoded for 0x00400000 base to the actual base address of the module.
 --- @param addr any
 --- @return unknown
@@ -122,13 +134,11 @@ end
 --- @return number
 function M.locateStringPush(str)
     local addr = M.locateString(str)
-    return text:scanAll({
-        0x68, -- PUSH imm32
-        bit.band(addr, 0xFF),
-        bit.band(bit.rshift(addr, 8), 0xFF),
-        bit.band(bit.rshift(addr, 16), 0xFF),
-        bit.band(bit.rshift(addr, 24), 0xFF),
-    }, { name = string.format('PUSH 0x%08X ("%s")', addr, str) })
+    local imm = M.le32(addr)
+    return text:scanAll(
+        { 0x68, imm[1], imm[2], imm[3], imm[4] }, -- PUSH imm32
+        { name = string.format('PUSH 0x%08X ("%s")', addr, str) }
+    )
 end
 
 --- @param rtti_name string
@@ -198,28 +208,20 @@ function M.patchRaw(addr, patch)
     )
 end
 
--- see https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc
-local MEM_COMMIT_RESERVE = 0x3000
-
 -- length of a `JMP rel32`
 local JMP_LEN = 5
-local JMP_OP = 0xE9
-local NOP = 0x90
 
 --- Encodes a `JMP rel32` placed at `from` that lands on `to`.
 --- @param from number
 --- @param to number
 --- @return number[]
 local function jmpRel32(from, to)
-    local rel = to - (from + JMP_LEN)
-    return {
-        JMP_OP,
-        bit.band(rel, 0xFF),
-        bit.band(bit.rshift(rel, 8), 0xFF),
-        bit.band(bit.rshift(rel, 16), 0xFF),
-        bit.band(bit.rshift(rel, 24), 0xFF),
-    }
+    local rel = M.le32(to - (from + JMP_LEN))
+    return { 0xE9, rel[1], rel[2], rel[3], rel[4] }
 end
+
+-- see https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc
+local MEM_COMMIT_RESERVE = 0x3000
 
 --- Allocates an executable code cave holding `bytes`, and redirects `addr` to it
 --- with a `JMP rel32`.
@@ -271,7 +273,7 @@ function M.cave(addr, bytes)
     -- if it landed in the middle of an instruction
     local patch = jmpRel32(addr, caveAddr)
     for i = JMP_LEN + 1, stolen do
-        patch[i] = NOP
+        patch[i] = 0x90 -- NOP
     end
     M.patchRaw(addr, patch)
 

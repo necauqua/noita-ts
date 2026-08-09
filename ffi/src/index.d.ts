@@ -66,6 +66,14 @@ declare const _default: {
   text: Section;
 
   /**
+   * Splits a number into its 4 little-endian bytes.
+   *
+   * @param n The number to split
+   * @return The 4 bytes, least significant first
+   */
+  le32(this: void, n: number): number[];
+
+  /**
    * Fixes an address that was hardcoded for 0x00400000 base to the actual base
    * address of the module.
    * Basically a convenient shortcut for `addr - 0x00400000 + ffi.base`.
