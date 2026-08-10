@@ -114,26 +114,29 @@ const tsKey = (name) => (/^[A-Za-z_]\w*$/.test(name) ? name : JSON.stringify(nam
 /** `{ a: T; b: T }` for the given members, or `{}` when there are none. */
 const tsObject = (members) => (members.length > 0 ? `{ ${members.join('; ')} }` : '{}');
 
-/** The `{ raw, vars, labels }` type body, concrete when `patch` is given. */
+/**
+ * The `{ raw, vars, labels }` type body, concrete when `patch` is given.
+ * The call signature reuses the `vars` type (`Record<keyof Vars, number>`)
+ * rather than re-listing the reloc names.
+ */
 function typeBody(patch) {
   const names = patch && Object.keys(patch.vars);
-  const vars = patch
-    ? tsObject(names.map((n) => `${tsKey(n)}: number[]`))
-    : 'Record<string, number[]>';
   const labels = patch
     ? tsObject(Object.keys(patch.labels).map((n) => `${tsKey(n)}: number`))
     : 'Record<string, number>';
+  // For a concrete patch the link argument's keys are exactly `vars`' keys,
+  // so derive them from `Vars` instead of spelling them out again; the generic
+  // fallback keeps the loose `Record<string, number>`.
+  const values = patch ? 'Record<keyof Vars, number>' : 'Record<string, number>';
   // With no relocs the argument is pointless, so make it optional; otherwise
   // every reloc must be given a value.
-  const values = patch
-    ? tsObject(names.map((n) => `${tsKey(n)}: number`))
-    : 'Record<string, number>';
-  const arg = patch && names.length === 0 ? `values?: ${values}` : `values: ${values}`;  return (
+  const arg = patch && names.length === 0 ? `values?: ${values}` : `values: ${values}`;
+  return (
     `{\n` +
     `    /** Raw x86 patch machine code; reloc fields are zeroed. */\n` +
     `    readonly raw: number[];\n` +
     `    /** Byte offsets of each reloc's 32-bit field within \`raw\`. */\n` +
-    `    readonly vars: ${vars};\n` +
+    `    readonly vars: Vars;\n` +
     `    /** Byte offset of each label within \`raw\`. */\n` +
     `    readonly labels: ${labels};\n` +
     `    /**\n` +
@@ -145,13 +148,22 @@ function typeBody(patch) {
   );
 }
 
+/** The `Vars` alias body: the concrete `{ name: number[] }` map, or the loose fallback. */
+function varsType(patch) {
+  return patch
+    ? tsObject(Object.keys(patch.vars).map((n) => `${tsKey(n)}: number[]`))
+    : 'Record<string, number[]>';
+}
+
 /**
  * An ambient `declare module '<pattern>'` block. Concrete (precise `vars`/`labels`
- * keys) when `patch` is given, otherwise the loose generic fallback.
+ * keys) when `patch` is given, otherwise the loose generic fallback. A local
+ * `Vars` alias names the reloc map so the call signature can reuse its keys.
  */
 export function asmModuleBlock(pattern, patch) {
   return (
     `declare module ${JSON.stringify(pattern)} {\n` +
+    `  type Vars = ${varsType(patch)};\n` +
     `  const patch: ${typeBody(patch)};\n` +
     `  export default patch;\n` +
     `}`
