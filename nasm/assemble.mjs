@@ -13,9 +13,13 @@
 // an absolute symbol `__reloc_<name>` = index. We scan .text for those dwords,
 // record their offsets per name, and zero them.
 //
-// The object must be fully self-contained: if nasm emitted any real relocations
-// against .text (e.g. an absolute reference to a label or an undefined extern),
-// assembly throws, since such a field cannot be resolved at patch time.
+// Absolute references to the patch's own labels (`mulss xmm0, [float_16]`) leave
+// real R_386_32 relocations in .rel.text. Those are folded into an implicit
+// `BASE` reloc: the site keeps the label's offset within the patch as an addend,
+// and its offset is recorded under `BASE`, so linking with the patch's runtime
+// address turns each field into `BASE + offset`. Anything the assembler cannot
+// resolve this way (an extern, a symbol outside .text, a relocation type other
+// than R_386_32) is still a hard error: the patch must be self-contained.
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync, unlinkSync } from 'node:fs';
@@ -34,6 +38,10 @@ const SHT_SYMTAB = 2;
 const SHT_RELA = 4;
 const SHT_REL = 9;
 const STT_SECTION = 3;
+const R_386_32 = 1;
+
+/** Implicit reloc holding the patch's runtime base address. */
+const BASE = 'BASE';
 
 function runNasm(input) {
   const out = resolve(tmpdir(), `noita-asm-${process.pid}-${Date.now()}.o`);
@@ -99,27 +107,19 @@ function parseElf(buf) {
   if (textIndex < 0) throw new Error('no .text section found');
   const text = secs[textIndex];
 
-  // Reject any real relocations against .text -- the patch must be self-contained.
-  for (const s of secs) {
-    if ((s.type === SHT_REL || s.type === SHT_RELA) && s.info === textIndex && s.size > 0) {
-      throw new Error(
-        `patch has ${s.size / (s.entsize || 1)} unresolved relocation(s) in ` +
-          `${s.name}; x86 patches must not reference absolute addresses or externs`,
-      );
-    }
-  }
-
   const symtab = secs.find((s) => s.type === SHT_SYMTAB);
   if (!symtab) throw new Error('no symbol table found');
   const strtab = secs[symtab.link];
 
   const relocIndexToName = new Map();
   const labels = {};
+  const syms = [];
   for (let o = symtab.offset; o < symtab.offset + symtab.size; o += symtab.entsize) {
     const name = cstr(strtab.offset, buf.readUInt32LE(o + 0));
     const value = buf.readUInt32LE(o + 4);
     const info = buf[o + 12];
     const shndx = buf.readUInt16LE(o + 14);
+    syms.push({ name, value, shndx, type: info & 0xf });
     if (name.startsWith('__reloc_')) {
       relocIndexToName.set(value, name.slice('__reloc_'.length));
     } else if (
@@ -132,15 +132,46 @@ function parseElf(buf) {
     }
   }
 
+  // Relocations against .text: each must be an absolute reference to something
+  // defined inside this very patch, so it can be expressed as `BASE + addend`.
+  const rels = [];
+  for (const s of secs) {
+    if (s.type === SHT_RELA && s.info === textIndex && s.size > 0) {
+      throw new Error(`unsupported RELA relocations in ${s.name}`);
+    }
+    if (s.type !== SHT_REL || s.info !== textIndex) continue;
+    for (let o = s.offset; o < s.offset + s.size; o += s.entsize) {
+      const offset = buf.readUInt32LE(o + 0);
+      const info = buf.readUInt32LE(o + 4);
+      const sym = syms[info >>> 8] ?? { name: '?', value: 0, shndx: 0 };
+      const type = info & 0xff;
+      const what = sym.type === STT_SECTION ? `section ${sym.name}` : `'${sym.name}'`;
+      if (type !== R_386_32) {
+        throw new Error(
+          `patch has an unsupported relocation (type ${type}) against ${what}; ` +
+            `x86 patches may only reference their own labels absolutely`,
+        );
+      }
+      if (sym.shndx !== textIndex) {
+        throw new Error(
+          `patch references ${what}, which is not defined in its own .text; ` +
+            `x86 patches must not reference externs or other sections`,
+        );
+      }
+      rels.push({ offset, addend: sym.value });
+    }
+  }
+
   return {
     text: buf.subarray(text.offset, text.offset + text.size),
     relocIndexToName,
     labels,
+    rels,
   };
 }
 
 // --- scan for magic dwords, record offsets, zero them out ----------------
-function extract({ text, relocIndexToName, labels }) {
+function extract({ text, relocIndexToName, labels, rels }) {
   const asm = Buffer.from(text); // mutable copy
   const vars = {};
   for (let i = 0; i + 4 <= asm.length; i++) {
@@ -150,6 +181,12 @@ function extract({ text, relocIndexToName, labels }) {
     if (name === undefined) continue;
     (vars[name] ??= []).push(i);
     asm.writeUInt32LE(0, i); // zero the placeholder
+  }
+  // Fold R_386_32 sites into `BASE`: bake the symbol's offset into the field as
+  // an addend, so linking only has to add the patch's runtime address to it.
+  for (const { offset, addend } of rels) {
+    asm.writeUInt32LE((asm.readUInt32LE(offset) + addend) >>> 0, offset);
+    (vars[BASE] ??= []).push(offset);
   }
   return { asm: [...asm], vars, labels };
 }

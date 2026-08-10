@@ -3,18 +3,25 @@
 // the generic `*.asm` fallback is last for not-yet-built imports.
 
 declare module "*.asm" {
+  type Vars = Record<string, number[]>;
   const patch: {
     /** Raw x86 patch machine code; reloc fields are zeroed. */
     readonly raw: number[];
     /** Byte offsets of each reloc's 32-bit field within `raw`. */
-    readonly vars: Record<string, number[]>;
+    readonly vars: Vars;
     /** Byte offset of each label within `raw`. */
     readonly labels: Record<string, number>;
     /**
-     * Links the patch: a copy of `raw` with each reloc's value written
-     * little-endian at every offset recorded for it in `vars`.
+     * Links the patch: a copy of `raw` with each reloc's value added
+     * little-endian into every offset recorded for it in `vars`.
+     *
+     * Omitting `BASE` (the patch's own runtime address) yields a
+     * function taking it and returning the linked bytes; `ffi.cave`
+     * accepts that directly and supplies the cave address.
      */
-    (this: void, values: Record<string, number>): number[];
+    (this: void, values: Record<string, number>):
+      | number[]
+      | ((this: void, base: number) => number[]);
   };
   export default patch;
 }

@@ -19,6 +19,34 @@ main:
 `%use masm` (MASM syntax) and `reloc.asm` are pre-included via `--before`, so
 sources need neither.
 
+### `BASE` and the patch's own labels
+
+A patch may also reference its own labels absolutely (constant pools, jump
+tables, scratch storage):
+
+```asm
+float_16: dd 16.0
+
+entry:
+    mulss xmm0, [float_16]
+```
+
+Those leave real `R_386_32` relocations, which the assembler folds into an
+implicit `BASE` reloc: the field keeps the label's offset within the patch as an
+addend, and its site is recorded under `BASE`, so linking computes
+`BASE + offset`. No `reloc BASE` declaration is needed (declaring one anyway just
+makes the name usable in code, e.g. `mov eax, BASE`).
+
+Anything that cannot be resolved this way — an extern, a symbol outside `.text`,
+or a relocation type other than `R_386_32` — is still a hard error: a patch must
+be self-contained.
+
+### `entry`
+
+If a patch defines an `entry` label, `ffi.cave` hooks to `cave + entry` instead
+of the start of the cave, so data can be laid out in front of the code without a
+jump over it.
+
 ## Output
 
 Assembling produces a callable `{ raw, vars, labels }`:
@@ -28,9 +56,10 @@ Assembling produces a callable `{ raw, vars, labels }`:
 - `labels` – every other `.text` label → its byte offset in `raw`
 
 Calling the patch **links** it: it returns a fresh copy of `raw` with each
-reloc's value written little-endian at every offset recorded for it in `vars`.
-`raw` itself is never mutated, so one patch can be linked repeatedly with
-different values.
+reloc's value added little-endian into every offset recorded for it in `vars`
+(plain reloc fields are zeroed in `raw`, so that is just a write; `BASE` fields
+hold their addend). `raw` itself is never mutated, so one patch can be linked
+repeatedly with different values.
 
 ```ts
 import patch from './patches/my_patch.asm';
@@ -41,13 +70,18 @@ ffi.cave(addr, patch({ c075: someAddr, c5: 0x3f800000 }));
 Every reloc must be given a value; a missing one is an error. For a patch with
 no relocs the argument is optional, so `patch()` just yields a copy of `raw`.
 
-Assembly fails if the object contains any real relocations against `.text`
-(absolute label refs or externs), since such a patch is not self-contained.
+`BASE` is the exception: a patch's runtime address isn't known until it's placed,
+so omitting it returns a **function** taking that address and yielding the linked
+bytes. `ffi.cave` accepts such a function directly — it allocates the cave first,
+then calls it with the cave's address:
+
+```ts
+ffi.cave(addr, patch({ c075: someAddr })); // BASE supplied by cave
+```
 
 ## Usage
 
-Install the assembler (it's an optional peer of `@noita-ts/ffi`, so it isn't
-downloaded unless you actually assemble patches):
+Install the assembler:
 
 ```sh
 npm i -D @noita-ts/nasm

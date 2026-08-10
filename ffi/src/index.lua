@@ -273,14 +273,30 @@ end
 --- with a relative operand (`CALL rel32`, `JMP`/`Jcc`, RIP-less but
 --- offset-relative addressing) will not survive the move.
 ---
+--- `bytes` may also be a function, as returned by linking an assembled patch
+--- without a value for its `BASE` reloc: the cave is allocated first and the
+--- function is called with its address to produce the final bytes.
+---
+--- If the resulting byte array carries an `entry` offset (the patch's `entry`
+--- label), the hook jumps there rather than to the start of the cave, so a patch
+--- can put data in front of its code.
+---
 --- @param addr number the address to hook
---- @param bytes ffi.cdata*|number[]|string the code to run in the cave
+--- @param bytes ffi.cdata*|number[]|string|fun(base: number): number[] the code to run in the cave
 --- @return number cave the address of the allocated cave
 function M.cave(addr, bytes)
-    if type(bytes) == 'table' or type(bytes) == 'string' then
-        bytes = ffi.new('char[?]', #bytes, bytes)
+    -- a patch that needs its own address can only be linked once the cave is
+    -- allocated, and allocating needs the size - which linking does not change,
+    -- so link once at a dummy base just to measure, then again for real
+    local link = type(bytes) == 'function' and bytes --[[ @as fun(base: number): number[] ]]
+    if link then
+        bytes = link(0)
     end
-    local size = ffi.sizeof(bytes) --[[ @as number ]]
+    local entry = 0
+    if type(bytes) == 'table' then
+        entry = bytes['entry'] or 0
+    end
+    local size = type(bytes) == 'cdata' and ffi.sizeof(bytes) --[[ @as number ]] or #bytes
 
     -- walk instruction boundaries to see how much the jump displaces
     local stolen = 0
@@ -297,6 +313,13 @@ function M.cave(addr, bytes)
     local cavePtr = M.allocExec(finalSize)
     local caveAddr = tonumber(ffi.cast('uint32_t', cavePtr)) --[[ @as number ]]
 
+    if link then
+        bytes = link(caveAddr)
+    end
+    if type(bytes) == 'table' or type(bytes) == 'string' then
+        bytes = ffi.new('char[?]', size, bytes)
+    end
+
     -- the payload, then the displaced instructions, then a jump back
     ffi.copy(cavePtr, bytes, size)
     ffi.copy(cavePtr + size, ffi.cast('char*', addr), stolen)
@@ -306,7 +329,7 @@ function M.cave(addr, bytes)
 
     -- and finally the jump into the cave, padded with NOPs
     -- if it landed in the middle of an instruction
-    local patch = jmpRel32(addr, caveAddr)
+    local patch = jmpRel32(addr, caveAddr + entry)
     for i = JMP_LEN + 1, stolen do
         patch[i] = 0x90 -- NOP
     end

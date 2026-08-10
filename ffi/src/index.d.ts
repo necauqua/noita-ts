@@ -118,11 +118,22 @@ declare const _default: {
    * with a relative operand (`CALL rel32`, `JMP`/`Jcc`, or anything else
    * offset-relative) will not survive the move.
    *
+   * `bytes` may also be a function, as returned by linking an assembled patch
+   * without a value for its `BASE` reloc: the cave is allocated first and the
+   * function is called with its address to produce the final bytes.
+   *
+   * If the patch defines an `entry` label, the hook jumps there rather than to
+   * the start of the cave, so a patch can put data in front of its code.
+   *
    * @param addr The address to hook
    * @param bytes The code to run in the cave
    * @return The address of the allocated cave
    */
-  cave(this: void, addr: number, bytes: number[] | string): number;
+  cave(
+    this: void,
+    addr: number,
+    bytes: number[] | string | ((this: void, base: number) => number[]),
+  ): number;
 
   /**
    * Locate a string in `.rdata`.
