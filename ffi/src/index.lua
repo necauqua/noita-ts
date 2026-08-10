@@ -223,6 +223,45 @@ end
 -- see https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc
 local MEM_COMMIT_RESERVE = 0x3000
 
+-- the Windows allocation granularity: a `VirtualAlloc` reservation is rounded up
+-- to this, so small allocations are bump-allocated out of one arena instead of
+-- burning a whole 64KiB reservation each
+local ARENA_SIZE = 0x10000
+
+--- @type ffi.cdata*|nil
+local arena
+local arenaLeft = 0
+
+--- Bump-allocates `size` bytes of readable, writable and executable memory,
+--- 16-byte aligned, reserving a new arena when the current one runs out.
+---
+--- The memory is never released - it lives for as long as the process does.
+---
+--- @param size number
+--- @return ffi.cdata* ptr a `char*` to the allocation
+function M.allocExec(size)
+    -- keep allocations 16-byte aligned
+    size = bit.band(math.max(size, 1) + 15, bit.bnot(15))
+
+    if arenaLeft < size then
+        local n = math.max(ARENA_SIZE, size)
+        local mem = ffi.C.VirtualAlloc(nil, n, MEM_COMMIT_RESERVE, PAGE_EXECUTE_READ_WRITE)
+        if mem == nil then
+            error(string.format('could not reserve %d bytes of executable memory', n))
+        end
+        arena = ffi.cast('char*', mem)
+        arenaLeft = n
+    end
+
+    local ptr = arena
+    arena = ptr + size
+    arenaLeft = arenaLeft - size
+
+    -- ptr can never be nil here
+    ---@diagnostic disable-next-line: return-type-mismatch
+    return ptr
+end
+
 --- Allocates an executable code cave holding `bytes`, and redirects `addr` to it
 --- with a `JMP rel32`.
 ---
@@ -255,12 +294,8 @@ function M.cave(addr, bytes)
 
     local finalSize = size + stolen + JMP_LEN
 
-    local cave = ffi.C.VirtualAlloc(nil, finalSize, MEM_COMMIT_RESERVE, PAGE_EXECUTE_READ_WRITE)
-    if cave == nil then
-        error(string.format('could not allocate %d bytes for a code cave', finalSize))
-    end
-    local caveAddr = tonumber(ffi.cast('uint32_t', cave)) --[[ @as number ]]
-    local cavePtr = ffi.cast('char*', cave)
+    local cavePtr = M.allocExec(finalSize)
+    local caveAddr = tonumber(ffi.cast('uint32_t', cavePtr)) --[[ @as number ]]
 
     -- the payload, then the displaced instructions, then a jump back
     ffi.copy(cavePtr, bytes, size)

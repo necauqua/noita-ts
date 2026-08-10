@@ -96,6 +96,17 @@ declare const _default: {
   instrLen(this: void, addr: Ptr<any> | number): number;
 
   /**
+   * Bump-allocates `size` bytes of readable, writable and executable memory,
+   * 16-byte aligned, reserving a new arena when the current one runs out.
+   *
+   * The memory is never released - it lives for as long as the process does.
+   *
+   * @param size The number of bytes to allocate
+   * @return A `char*` to the allocation
+   */
+  allocExec(this: void, size: number): Ptr<number>;
+
+  /**
    * Allocates an executable code cave holding `bytes`, and redirects `addr` to
    * it with a `JMP rel32`.
    *
