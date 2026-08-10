@@ -177,7 +177,7 @@ declare const _default: {
 
   /**
    * Attempt to find a pattern in .text and patch it, just a shortcut for
-   * `patchRaw(text.scan(...), ...)`.
+   * `patchRaw(text.scanAll(...), ...)`.
    *
    * @param needle The pattern to search for
    * @param patch The bytes to write at that location

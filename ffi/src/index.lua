@@ -290,7 +290,7 @@ end
 ---@param patch ffi.cdata*|number[]|string
 ---@param params ScanParams?
 function M.patch(needle, patch, params)
-    M.patchRaw(text:scan(needle, params), patch)
+    M.patchRaw(text:scanAll(needle, params), patch)
 end
 
 -- for TS default export
