@@ -13,8 +13,28 @@ function hexByte(b) {
   return '0x' + b.toString(16).padStart(2, '0');
 }
 
+/**
+ * Reserved words that cannot appear as a bare `k = v` key in a Lua table.
+ *
+ * Taken verbatim from LuaJIT's `src/lj_lex.h` `TKDEF` macro, whose leading
+ * `_(...)` entries are the reserved words (`TK_RESERVED = TK_while - TK_OFS`).
+ * `goto` is only a hard keyword under `LJ_52`, but quoting it is valid either
+ * way, so it is included.
+ */
+const LUA_KEYWORDS = new Set([
+  'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for', 'function',
+  'goto', 'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 'return',
+  'then', 'true', 'until', 'while',
+]);
+
+const isIdent = (name) => /^[A-Za-z_]\w*$/.test(name);
+
+/**
+ * `name` as a Lua table key: bare when it is an identifier that is not a
+ * reserved word, otherwise bracket-quoted (`["end"]`).
+ */
 function luaKey(name) {
-  return /^[A-Za-z_]\w*$/.test(name) ? name : `[${JSON.stringify(name)}]`;
+  return isIdent(name) && !LUA_KEYWORDS.has(name) ? name : `[${JSON.stringify(name)}]`;
 }
 
 /**
@@ -129,7 +149,12 @@ return setmetatable(patch, { __call = link })
 `;
 }
 
-const tsKey = (name) => (/^[A-Za-z_]\w*$/.test(name) ? name : JSON.stringify(name));
+/**
+ * `name` as a TypeScript property name. Reserved words (`default`, `if`, ...)
+ * are legal bare property names, so only names that are not identifiers at all
+ * need the quoted-string form.
+ */
+const tsKey = (name) => (isIdent(name) ? name : JSON.stringify(name));
 
 /** `{ a: T; b: T }` for the given members, or `{}` when there are none. */
 const tsObject = (members) => (members.length > 0 ? `{ ${members.join('; ')} }` : '{}');
