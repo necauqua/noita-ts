@@ -20,6 +20,14 @@ npm i -D @noita-ts/nasm
 /// <reference types="@noita-ts/nasm/asm" />
 import patch from './patches/my_patch.asm';
 // patch({ <reloc>: value, ... }), patch.raw, patch.vars.<reloc>, patch.labels.<label>
+
+// or inline, no file needed — relocs and labels are parsed from the source:
+const patch2 = asm(`
+reloc target
+entry:
+    jmp [target]
+`);
+patch2({ target: addr });
 ```
 
 The assembled patches are plain `{ asm, vars, labels }` tables and don't depend

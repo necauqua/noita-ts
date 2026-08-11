@@ -150,6 +150,54 @@ return setmetatable(patch, { __call = link })
 }
 
 /**
+ * The same `{ raw, vars, labels }` callable as `emitLua`, but as a Lua AST
+ * expression to be spliced straight into the requiring file — used for inline
+ * `asm` templates, which have no module of their own.
+ *
+ * `lua` is typescript-to-lua's AST factory (passed in so this module never has
+ * to import tstl itself), and `tsOriginal` the node the expression came from,
+ * carried along for source maps.
+ *
+ * The linker is still the shared `asm_link` module: the emitted
+ * `require('@noita-ts/nasm/link')` is picked up by TSTL's require scanner and
+ * resolved by the plugin exactly like a generated patch module's own require.
+ */
+export function buildPatchExpression(lua, { asm, vars, labels }, tsOriginal) {
+  const str = (value) => lua.createStringLiteral(value, tsOriginal);
+  const num = (value) => lua.createNumericLiteral(value, tsOriginal);
+  const field = (value, key) =>
+    lua.createTableFieldExpression(value, key === undefined ? undefined : str(key), tsOriginal);
+  const table = (fields) => lua.createTableExpression(fields, tsOriginal);
+  const array = (values) => table(values.map((value) => field(num(value))));
+
+  const patch = table([
+    field(array(asm), 'raw'),
+    field(
+      table(Object.entries(vars).map(([name, offs]) => field(array(offs), name))),
+      'vars',
+    ),
+    field(
+      table(Object.entries(labels).map(([name, off]) => field(num(off), name))),
+      'labels',
+    ),
+  ]);
+  const link = lua.createTableIndexExpression(
+    lua.createCallExpression(
+      lua.createIdentifier('require', tsOriginal),
+      [str(LINK_MODULE)],
+      tsOriginal,
+    ),
+    str('link'),
+    tsOriginal,
+  );
+  return lua.createCallExpression(
+    lua.createIdentifier('setmetatable', tsOriginal),
+    [patch, table([field(link, '__call')])],
+    tsOriginal,
+  );
+}
+
+/**
  * `name` as a TypeScript property name. Reserved words (`default`, `if`, ...)
  * are legal bare property names, so only names that are not identifiers at all
  * need the quoted-string form.
@@ -241,19 +289,180 @@ export function patternFor(specifier) {
 }
 
 /**
- * The `.d.ts` shipped as `@noita-ts/nasm/asm`: every known patch as a concrete
- * block FIRST (so it wins the wildcard tie against the fallback), then the
- * generic `*.asm` fallback LAST for not-yet-built imports.
+ * The global `asm` function for inline patches.
+ *
+ * It has no runtime: the asm-plugin recognises the call, assembles the string at
+ * build time and replaces the whole expression with the patch table, so this is
+ * a compile-time-only declaration (and lives in the ambient file rather than
+ * being importable, so no stray `require` is emitted for it).
+ *
+ * Its reloc and label names are parsed *from the source text at the type level*,
+ * which is why the block is passed as an argument rather than as a tagged
+ * template: TypeScript only gives a template literal a literal type when it is a
+ * normal argument matched against a `const` type parameter — a tag's strings
+ * array is always the opaque `TemplateStringsArray`.
+ *
+ * The parser mirrors what `assemble.mjs` reads out of the object file: `reloc a,
+ * b` declarations, and `label:` definitions that are not nasm sublabels (`.foo`).
+ * `BASE` cannot be seen this way (it is implied by how operands are used), so it
+ * is always accepted as an optional extra value — but passing one does pin the
+ * result down to `number[]`, since only a missing `BASE` defers linking.
+ */
+function asmDecl() {
+  // Escaping note: `\${` is an interpolation escaped for the emitted file, and
+  // `\\n`/`\\t` are the two-character escapes as they must appear in the .d.ts.
+  return [
+    `/**`,
+    ` * An inline x86 patch, assembled at build time by \`@noita-ts/nasm/asm-plugin\`.`,
+    ` *`,
+    ` * The source must be a constant string (a template literal with no`,
+    ` * \`\${...}\` substitutions): its bytes are baked at build time, and its`,
+    ` * reloc and label names are read out of the text by the types below.`,
+    ` *`,
+    ` * \`\`\`ts`,
+    ` * const patch = asm(\``,
+    ` * reloc target`,
+    ` * entry:`,
+    ` *     jmp [target]`,
+    ` * \`);`,
+    ` * patch({ target: addr });`,
+    ` * \`\`\``,
+    ` */`,
+    `declare function asm<const Source extends string>(`,
+    `  source: Source,`,
+    `): asm.Patch<Source>;`,
+    ``,
+    `declare namespace asm {`,
+    `  /** Whitespace nasm ignores around a line. */`,
+    `  type Space = ' ' | '\\t' | '\\r';`,
+    ``,
+    `  /** Characters that cannot occur in a reloc or (top-level) label name. */`,
+    `  type Punct =`,
+    `    | Space`,
+    `    | ','`,
+    `    | '.' // a leading dot is a nasm sublabel, which \`assemble\` skips`,
+    `    | ':'`,
+    `    | ';'`,
+    `    | '['`,
+    `    | ']'`,
+    `    | '('`,
+    `    | ')'`,
+    `    | '+'`,
+    `    | '-'`,
+    `    | '*'`,
+    `    | '"'`,
+    `    | "'";`,
+    ``,
+    `  type Trim<S extends string> = S extends \`\${Space}\${infer R}\``,
+    `    ? Trim<R>`,
+    `    : S extends \`\${infer R}\${Space}\``,
+    `      ? Trim<R>`,
+    `      : S;`,
+    ``,
+    `  /** A line with its \`;\` comment (if any) cut off. */`,
+    `  type Code<S extends string> = Trim<S extends \`\${infer L};\${string}\` ? L : S>;`,
+    ``,
+    `  type Lines<S extends string> = S extends \`\${infer L}\\n\${infer R}\``,
+    `    ? [Code<L>, ...Lines<R>]`,
+    `    : [Code<S>];`,
+    ``,
+    `  type Commas<S extends string> = S extends \`\${infer A},\${infer B}\``,
+    `    ? Trim<A> | Commas<B>`,
+    `    : Trim<S>;`,
+    ``,
+    `  /** \`S\` if it is a plain name, else nothing — keeps expressions out. */`,
+    `  type Name<S extends string> = S extends ''`,
+    `    ? never`,
+    `    : S extends \`\${string}\${Punct}\${string}\``,
+    `      ? never`,
+    `      : S;`,
+    ``,
+    `  type RelocsIn<L> = L extends [infer Head extends string, ...infer Rest]`,
+    `    ? (Head extends \`reloc \${infer Names}\` ? Name<Commas<Names>> : never) | RelocsIn<Rest>`,
+    `    : never;`,
+    ``,
+    `  type LabelsIn<L> = L extends [infer Head extends string, ...infer Rest]`,
+    `    ? (Head extends \`\${infer Label}:\${string}\` ? Name<Trim<Label>> : never) | LabelsIn<Rest>`,
+    `    : never;`,
+    ``,
+    `  /** Every name declared by a \`reloc\` line in \`Source\`. */`,
+    `  type Relocs<Source extends string> = RelocsIn<Lines<Source>>;`,
+    ``,
+    `  /** Every top-level label defined in \`Source\`. */`,
+    `  type Labels<Source extends string> = LabelsIn<Lines<Source>>;`,
+    ``,
+    `  /**`,
+    `   * The values to link with: one per reloc, plus an optional \`BASE\`, which`,
+    `   * a patch only has if it references its own labels absolutely (invisible`,
+    `   * to this parser, hence always allowed).`,
+    `   */`,
+    `  type Values<Source extends string> = Record<Relocs<Source>, number> & {`,
+    `    BASE?: number;`,
+    `  };`,
+    ``,
+    `  /**`,
+    `   * \`Values\`, plus \`never\` for anything else \`V\` happens to carry.`,
+    `   *`,
+    `   * The argument's type has to be inferred (the result depends on whether it`,
+    `   * has a \`BASE\`), and inference turns off the excess property check, so`,
+    `   * unknown relocs are rejected by the constraint instead.`,
+    `   */`,
+    `  type Only<Source extends string, V> = Values<Source> &`,
+    `    Record<Exclude<keyof V, Relocs<Source> | 'BASE'>, never>;`,
+    ``,
+    `  /** With no relocs at all there is nothing to pass, so the argument is optional. */`,
+    `  type Args<Source extends string, V> = [Relocs<Source>] extends [never]`,
+    `    ? [values?: V]`,
+    `    : [values: V];`,
+    ``,
+    `  type Deferred = (this: void, base: number) => number[];`,
+    ``,
+    `  /**`,
+    `   * Linking is deferred only when no \`BASE\` is given, so a call that passes`,
+    `   * one is always the finished bytes. Without it the result stays a union:`,
+    `   * whether the patch needs a \`BASE\` at all cannot be seen from the source.`,
+    `   */`,
+    `  type Linked<V> = V extends { BASE: number } ? number[] : number[] | Deferred;`,
+    ``,
+    `  interface Patch<Source extends string> {`,
+    `    /** Raw x86 patch machine code; reloc fields are zeroed. */`,
+    `    readonly raw: number[];`,
+    `    /** Byte offsets of each reloc's 32-bit field within \`raw\`. */`,
+    `    readonly vars: Record<Relocs<Source>, number[]> & { BASE?: number[] };`,
+    `    /** Byte offset of each label within \`raw\`. */`,
+    `    readonly labels: Record<Labels<Source>, number>;`,
+    `    /**`,
+    `     * Links the patch: a copy of \`raw\` with each reloc's value added`,
+    `     * little-endian into every offset recorded for it in \`vars\`.`,
+    `     *`,
+    `     * Omitting \`BASE\` (the patch's own runtime address) yields a`,
+    `     * function taking it and returning the linked bytes; \`ffi.cave\``,
+    `     * accepts that directly and supplies the cave address. Pass a \`BASE\``,
+    `     * and the result is just \`number[]\`.`,
+    `     */`,
+    `    <V extends Only<Source, V>>(this: void, ...args: Args<Source, V>): Linked<V>;`,
+    `  }`,
+    `}`,
+  ].join('\n');
+}
+
+/**
+ * The `.d.ts` shipped as `@noita-ts/nasm/asm`: the global `asm` function for
+ * inline patches, then every known patch as a concrete block (so it wins the wildcard
+ * tie against the fallback), then the generic `*.asm` fallback LAST for
+ * not-yet-built imports.
  *
  * `modules` is an iterable of `[pattern, patch]`.
  */
 export function emitTypesIndex(modules) {
-  const blocks = [...modules].map(([pattern, patch]) => asmModuleBlock(pattern, patch));
+  const blocks = [asmDecl()];
+  blocks.push(...[...modules].map(([pattern, patch]) => asmModuleBlock(pattern, patch)));
   blocks.push(asmModuleBlock('*.asm', undefined));
   return (
     `// AUTO-GENERATED by @noita-ts/nasm asm-plugin. Do not edit.\n` +
-    `// Concrete per-file blocks come first so they win the wildcard match;\n` +
-    `// the generic \`*.asm\` fallback is last for not-yet-built imports.\n\n` +
+    `// \`asm()\` types inline blocks; concrete per-file blocks come next so\n` +
+    `// they win the wildcard match, and the generic \`*.asm\` fallback is last,\n` +
+    `// for not-yet-built imports.\n\n` +
     blocks.join('\n\n') +
     '\n'
   );

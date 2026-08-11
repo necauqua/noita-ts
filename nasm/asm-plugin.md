@@ -1,4 +1,4 @@
-# x86 patch assembly (`.asm` → callable `{ raw, vars, labels }`)
+# x86 patch assembly (`.asm` files or inline `asm()` → callable `{ raw, vars, labels }`)
 
 Assembles small x86 machine-code patches (for runtime code injection) from NASM
 sources, with runtime-injected 32-bit fields.
@@ -111,6 +111,96 @@ The linking runtime is **not** inlined into each patch: it is emitted once as a
 single `asm_link.lua` at the root of the output, and every generated patch just
 `require`s it. So a patch module is only its own bytes, offsets and labels,
 regardless of how many patches a mod has.
+
+### Inline blocks
+
+A patch too small to deserve its own file can be written straight in the
+TypeScript, with the global `asm()`:
+
+```ts
+const thumbWidth = asm(`
+reloc cell_width
+reloc width
+
+entry:
+    cmp   dword [esi+0x7c], __float32__(12.0)
+    jae   .preview
+    movss xmm7, [cell_width]
+    movss [width], xmm7
+    jmp   .done
+.preview:
+    mov   dword [width], __float32__(16.0)
+.done:
+`);
+
+ffi.cave(addr, thumbWidth({ cell_width, width }));
+```
+
+Everything else is identical to a file patch — same `reloc`/`BASE`/`entry`
+semantics, same `{ raw, vars, labels }` callable, same shared `asm_link` runtime.
+The difference is only in how it is compiled: the plugin's call visitor assembles
+the block at build time and replaces the whole call with the patch table right
+where it stands, so there is no module and nothing to import (`asm` is an ambient
+declaration, so it emits no `require` of its own). Identical blocks are assembled
+once and cached.
+
+The string must be **constant**: `${...}` substitutions are rejected, both by the
+type of `asm` and by the plugin. Values reach the patch through relocs, which is
+the point of them.
+
+nasm errors are reported as normal TypeScript diagnostics pointing at the block,
+with nasm's line numbers mapped onto the `.ts` file:
+
+```
+src/init.ts:66:13 - error TS0: src/init.ts:68: error: symbol `notathing' not defined
+```
+
+#### Types of inline blocks
+
+A file patch gets a generated ambient block with its exact reloc/label keys. An
+inline one has no module to attach that to, so its names are instead parsed **out
+of the source text at the type level**, by the `asm` namespace in `asm.d.ts`:
+
+```ts
+const p = asm(`
+reloc cell_width, width
+val: dd 16.0
+entry:
+    movss xmm7, [cell_width]
+.done:
+`);
+
+p.labels.entry;                       // ok: 'val' | 'entry'
+p.labels.done;                        // error: `.done` is a sublabel
+p({ cell_width: 1 });                 // error: 'width' is missing
+p({ cell_width: 1, width: 2 });       // ok
+```
+
+The parser splits the string into lines, drops `;` comments, and takes `reloc a,
+b` declarations and `name:` definitions — the same things `assemble.mjs` reads
+out of the object file, including its skipping of nasm sublabels (`.foo`).
+
+This is also why the block is an **argument** rather than a tagged template
+(`` asm`...` ``): TypeScript only gives a template literal a literal type when it
+is passed as a normal argument to a `const` type parameter; a tag's strings array
+is always the opaque `TemplateStringsArray`, which carries no text to parse.
+
+One thing the types cannot see is `BASE`, which is implied by *how* operands are
+used rather than declared, so it is always accepted as an optional extra value.
+It does still decide the result type, since only a *missing* `BASE` defers
+linking:
+
+```ts
+const bytes: number[] = p({ cell_width: 1, width: 2, BASE: addr }); // pinned
+const either = p({ cell_width: 1, width: 2 }); // number[] | ((base) => number[])
+```
+
+The deferring case keeps the union because whether the patch needs a `BASE` at
+all is invisible here; `ffi.cave` takes either, and supplies the cave address.
+
+Parsing a block costs type instantiations — a ~15-line patch is around 30k, which
+is unnoticeable, but a very large inline patch is a good candidate for its own
+`.asm` file, where the keys come from generated declarations instead.
 
 #### Types
 

@@ -1,5 +1,5 @@
-// TSTL plugin: turn `import patch from './file.asm'` into a real Lua module
-// providing a callable { raw, vars, labels } (see assemble.mjs and codegen.mjs).
+// TSTL plugin: turn `import patch from './file.asm'` (and the inline `asm(`...`)`
+// call) into a callable { raw, vars, labels } (see assemble.mjs and codegen.mjs).
 //
 // Wire it up in the consumer's tsconfig:
 //
@@ -30,11 +30,48 @@
 //
 // The plugin also implements @noita-ts/base's `excludeAsset` hook, so the `.asm`
 // sources themselves are kept out of the packaged mod.
+//
+// Inline blocks take a different route: a visitor for call expressions spots the
+// global `asm` function (declared in the same `asm.d.ts`, so it needs no import
+// and emits no require of its own), assembles its string argument, and replaces
+// the call with the patch table itself. Those have no module and no ambient
+// block: their reloc/label names are parsed from the source at the type level
+// instead, by the types in `asm.d.ts`.
 
 import { existsSync, realpathSync, writeFileSync } from 'node:fs';
-import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
-import { assemble } from './assemble.mjs';
-import { emitLinkLua, emitLua, emitTypesIndex, LINK_MODULE, patternFor } from './codegen.mjs';
+import { createRequire } from 'node:module';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { assemble, assembleSource } from './assemble.mjs';
+import {
+  buildPatchExpression,
+  emitLinkLua,
+  emitLua,
+  emitTypesIndex,
+  LINK_MODULE,
+  patternFor,
+} from './codegen.mjs';
+
+/**
+ * Load a package that belongs to the *consuming* project, preferring its copy
+ * over any that happens to sit next to this file.
+ *
+ * `typescript` and `typescript-to-lua` are peers here: the plugin has to build
+ * AST nodes for the very compiler running it, and a second copy would mean
+ * mismatched `SyntaxKind` values. So resolution starts at the cwd (the project
+ * being built) and only falls back to this package's own location.
+ */
+function loadPeer(name) {
+  const req = createRequire(import.meta.url);
+  const paths = [process.cwd(), dirname(fileURLToPath(import.meta.url))];
+  return req(req.resolve(name, { paths }));
+}
+
+const ts = loadPeer('typescript');
+const lua = loadPeer('typescript-to-lua');
+
+/** This package's ambient declaration file, where the `asm` tag is declared. */
+const ASM_TYPES = 'asm.d.ts';
 
 // virtual lua path -> generated module source
 const virtualModules = new Map();
@@ -58,6 +95,82 @@ function errorDiagnostic(messageText) {
     length: undefined,
     messageText,
   };
+}
+
+/** A ts.Diagnostic pointing at `node`, so the error is shown in context. */
+function nodeDiagnostic(node, messageText) {
+  return {
+    category: DIAGNOSTIC_ERROR,
+    code: 0,
+    file: node.getSourceFile(),
+    start: node.getStart(),
+    length: node.getEnd() - node.getStart(),
+    messageText,
+  };
+}
+
+/**
+ * Whether `callee` is the global `asm` declared by this package's ambient types,
+ * rather than some unrelated local named `asm`.
+ */
+function isAsmCallee(callee, checker) {
+  if (!ts.isIdentifier(callee) || callee.text !== 'asm') return false;
+  const declarations = checker.getSymbolAtLocation(callee)?.declarations;
+  return (
+    declarations?.some((d) => basename(d.getSourceFile().fileName) === ASM_TYPES) ?? false
+  );
+}
+
+/** Assembled inline blocks, keyed by source text, so each is assembled once. */
+const inlineCache = new Map();
+
+/** An empty patch, spliced in after an error so nothing downstream cascades. */
+const EMPTY_PATCH = { asm: [], vars: {}, labels: {} };
+
+/**
+ * Assemble an inline `asm(`...`)` block into the patch table expression.
+ *
+ * Only a constant string can be assembled, since the bytes are baked at build
+ * time; the declared type of `asm` rejects anything else too, so this is the
+ * backstop for when types are ignored.
+ */
+function transformInlineAsm(node, context) {
+  const [argument] = node.arguments;
+  if (
+    node.arguments.length !== 1 ||
+    !(ts.isNoSubstitutionTemplateLiteral(argument) || ts.isStringLiteral(argument))
+  ) {
+    context.diagnostics.push(
+      nodeDiagnostic(
+        argument ?? node,
+        'an inline asm block is assembled at build time, so it must be a single ' +
+          'constant string (a template literal without ${...} substitutions)',
+      ),
+    );
+    return buildPatchExpression(lua, EMPTY_PATCH, node);
+  }
+
+  const source = argument.text;
+  let patch = inlineCache.get(source);
+  if (patch === undefined) {
+    const file = node.getSourceFile();
+    // The string's first line continues the line its opening quote is on, so
+    // nasm's line N maps to that (1-based) line plus N - 1.
+    const lineOffset = file.getLineAndCharacterOfPosition(argument.getStart()).line;
+    const label = relative(process.cwd(), file.fileName);
+    try {
+      patch = assembleSource(source, { label, lineOffset });
+    } catch (err) {
+      // The diagnostic itself already points at the block, so report just nasm's
+      // own output (whose line numbers are mapped back onto this file).
+      context.diagnostics.push(
+        nodeDiagnostic(node, err?.nasmOutput ?? err?.message ?? String(err)),
+      );
+      return buildPatchExpression(lua, EMPTY_PATCH, node);
+    }
+    inlineCache.set(source, patch);
+  }
+  return buildPatchExpression(lua, patch, node);
 }
 
 function patchEmitHost(emitHost) {
@@ -104,6 +217,16 @@ function sourceDir(options, emitHost) {
 
 /** @type {import('typescript-to-lua').Plugin} */
 const plugin = {
+  visitors: {
+    // Inline patches: `asm(`...`)` becomes the assembled { raw, vars, labels }
+    // table right where it is written, sharing the same `asm_link` runtime as
+    // the file-based ones. Every other call is left to the standard visitor.
+    [ts.SyntaxKind.CallExpression]: (node, context) =>
+      isAsmCallee(node.expression, context.checker)
+        ? transformInlineAsm(node, context)
+        : context.superTransformExpression(node),
+  },
+
   moduleResolution(moduleIdentifier, requiringFile, options, emitHost) {
     // The linker shared by every generated patch. Emitted at the source root so
     // its require path is stable no matter how deep the requiring patch sits.

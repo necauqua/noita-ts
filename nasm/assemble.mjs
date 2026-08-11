@@ -22,7 +22,7 @@
 // than R_386_32) is still a hard error: the patch must be self-contained.
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync, unlinkSync } from 'node:fs';
+import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -43,7 +43,25 @@ const R_386_32 = 1;
 /** Implicit reloc holding the patch's runtime base address. */
 const BASE = 'BASE';
 
-function runNasm(input) {
+/**
+ * Rewrite nasm's `<file>:<line>: error: ...` prefixes so they point at where the
+ * source really came from: `label` instead of the (possibly temporary) file nasm
+ * was handed, and the line shifted by `lineOffset` (for sources embedded in a
+ * larger file, such as an inline `asm` template in a .ts).
+ */
+function remapDiagnostics(stderr, input, label, lineOffset) {
+  return stderr
+    .split('\n')
+    .map((line) => {
+      const m = /^(.*?):(\d+):/.exec(line);
+      if (!m || m[1] !== input) return line;
+      const mapped = `${label}:${Number(m[2]) + lineOffset}:`;
+      return mapped + line.slice(m[0].length);
+    })
+    .join('\n');
+}
+
+function runNasm(input, label = input, lineOffset = 0) {
   const out = resolve(tmpdir(), `noita-asm-${process.pid}-${Date.now()}.o`);
   try {
     try {
@@ -58,7 +76,14 @@ function runNasm(input) {
     } catch (err) {
       // Surface just nasm's diagnostics, not the full command line / node stack.
       const stderr = (err.stderr?.toString() ?? '').trim();
-      throw new Error(`nasm failed to assemble ${input}:\n${stderr || err.message}`);
+      const message = stderr
+        ? remapDiagnostics(stderr, input, label, lineOffset)
+        : err.message;
+      const error = new Error(`nasm failed to assemble ${label}:\n${message}`);
+      // nasm's own output, without the wrapper line, for callers that already
+      // report which source failed (the plugin's per-node diagnostics).
+      error.nasmOutput = message;
+      throw error;
     }
     return readFileSync(out);
   } finally {
@@ -194,4 +219,31 @@ function extract({ text, relocIndexToName, labels, rels }) {
 /** Assemble `inputPath` (absolute or cwd-relative) into { asm, vars, labels }. */
 export function assemble(inputPath) {
   return extract(parseElf(runNasm(resolve(inputPath))));
+}
+
+let inlineCounter = 0;
+
+/**
+ * Assemble assembly held in memory into { asm, vars, labels }.
+ *
+ * nasm only reads files, so the source is staged in a temp file and removed
+ * again; `label` and `lineOffset` describe where it actually lives, so error
+ * messages point back at the real source (e.g. `src/init.ts:42: error: ...`)
+ * rather than at the temp file.
+ */
+export function assembleSource(source, { label = '<inline asm>', lineOffset = 0 } = {}) {
+  const input = resolve(
+    tmpdir(),
+    `noita-asm-${process.pid}-${Date.now()}-${inlineCounter++}.asm`,
+  );
+  writeFileSync(input, source);
+  try {
+    return extract(parseElf(runNasm(input, label, lineOffset)));
+  } finally {
+    try {
+      unlinkSync(input);
+    } catch {
+      // already gone
+    }
+  }
 }
