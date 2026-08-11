@@ -53,9 +53,8 @@ Mod metadata (id, name, description, workshop settings, etc.) lives in
   dll and a Noita-specific loader.
 - [`@noita-ts/ffi`](ffi) - LuaJIT FFI helpers/types for unsafe mods.
 - [`@noita-ts/nasm`](nasm) - the NASM assembler as a platform-gated package,
-  plus the TSTL plugin that assembles `*.asm` x86 patches into Lua modules.
-  Only mods that actually import `.asm` files depend on it (and download a
-  binary).
+  plus the TSTL plugin that assembles inline `asm()` x86 patches at build time.
+  Only mods that actually write patches depend on it (and download a binary).
 - [`@noita-ts/dear-imgui-types`](dear-imgui) - type
   definitions for [Noita-Dear-ImGui](https://github.com/dextercd/Noita-Dear-ImGui)
   (ImGui 1.26.0).

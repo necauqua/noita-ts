@@ -1,4 +1,4 @@
-// Assemble an x86 patch .asm into { asm, vars, labels }.
+// Assemble an inline x86 patch's source into { asm, vars, labels }.
 //
 // Runs this package's nasm binary with `%use masm` and reloc.asm pre-included,
 // then parses the resulting ELF32 object:
@@ -216,11 +216,6 @@ function extract({ text, relocIndexToName, labels, rels }) {
   return { asm: [...asm], vars, labels };
 }
 
-/** Assemble `inputPath` (absolute or cwd-relative) into { asm, vars, labels }. */
-export function assemble(inputPath) {
-  return extract(parseElf(runNasm(resolve(inputPath))));
-}
-
 let inlineCounter = 0;
 
 /**
@@ -231,7 +226,7 @@ let inlineCounter = 0;
  * messages point back at the real source (e.g. `src/init.ts:42: error: ...`)
  * rather than at the temp file.
  */
-export function assembleSource(source, { label = '<inline asm>', lineOffset = 0 } = {}) {
+export function assemble(source, { label = '<inline asm>', lineOffset = 0 } = {}) {
   const input = resolve(
     tmpdir(),
     `noita-asm-${process.pid}-${Date.now()}-${inlineCounter++}.asm`,

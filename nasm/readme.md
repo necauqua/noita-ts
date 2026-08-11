@@ -1,7 +1,7 @@
 # @noita-ts/nasm
 
 The [NASM](https://nasm.us/) assembler as an npm package, together with the TSTL
-plugin that turns `*.asm` x86 patches into Lua modules — see
+plugin that assembles inline `asm()` x86 patches at build time — see
 [asm-plugin.md](asm-plugin.md) for the patch format, the `reloc` macro and the
 plugin's types.
 
@@ -18,16 +18,15 @@ npm i -D @noita-ts/nasm
 
 ```ts
 /// <reference types="@noita-ts/nasm/asm" />
-import patch from './patches/my_patch.asm';
-// patch({ <reloc>: value, ... }), patch.raw, patch.vars.<reloc>, patch.labels.<label>
 
-// or inline, no file needed — relocs and labels are parsed from the source:
-const patch2 = asm(`
+// relocs and labels are parsed from the source, at the type level:
+const patch = asm(`
 target: reloc
 entry:
     jmp [target]
 `);
-patch2({ target: addr });
+patch({ target: addr });
+// patch.raw, patch.vars.target, patch.labels.entry
 ```
 
 The assembled patches are plain `{ asm, vars, labels }` tables and don't depend

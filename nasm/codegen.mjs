@@ -1,7 +1,7 @@
 // Turn an assembled patch ({ raw, vars, labels }) into generated source.
 
 /**
- * Module specifier the generated patches `require` to get the shared linker.
+ * Module specifier the emitted patches `require` to get the shared linker.
  *
  * It is not a real file: the plugin recognises this exact string in
  * `moduleResolution` and serves `emitLinkLua()` for it, so the runtime is
@@ -9,37 +9,9 @@
  */
 export const LINK_MODULE = '@noita-ts/nasm/link';
 
-function hexByte(b) {
-  return '0x' + b.toString(16).padStart(2, '0');
-}
-
-/**
- * Reserved words that cannot appear as a bare `k = v` key in a Lua table.
- *
- * Taken verbatim from LuaJIT's `src/lj_lex.h` `TKDEF` macro, whose leading
- * `_(...)` entries are the reserved words (`TK_RESERVED = TK_while - TK_OFS`).
- * `goto` is only a hard keyword under `LJ_52`, but quoting it is valid either
- * way, so it is included.
- */
-const LUA_KEYWORDS = new Set([
-  'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for', 'function',
-  'goto', 'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 'return',
-  'then', 'true', 'until', 'while',
-]);
-
-const isIdent = (name) => /^[A-Za-z_]\w*$/.test(name);
-
-/**
- * `name` as a Lua table key: bare when it is an identifier that is not a
- * reserved word, otherwise bracket-quoted (`["end"]`).
- */
-function luaKey(name) {
-  return isIdent(name) && !LUA_KEYWORDS.has(name) ? name : `[${JSON.stringify(name)}]`;
-}
-
 /**
  * The shared patch linker, emitted once per project as its own Lua module and
- * required by every generated patch.
+ * required by every inline patch.
  *
  * Takes a patch table and the reloc values, and returns a fresh copy of `raw`
  * with each reloc's 32-bit value added little-endian into every offset recorded
@@ -108,59 +80,17 @@ return M
 }
 
 /**
- * A Lua module (`return { raw, vars, labels }`) for the assembled patch.
- *
- * The table is callable: `patch { name = value }` links it via the shared
- * `asm_link` runtime, returning a fresh copy of `raw` with the reloc values
- * written in. Every reloc must be given a value.
- *
- * The table also points `default` at itself, since the ambient `.asm` types
- * declare a default export and TSTL compiles `import patch from './x.asm'`
- * into a `.default` lookup on the required module.
- */
-export function emitLua({ asm, vars, labels }, banner = 'AUTO-GENERATED. Do not edit.') {
-  const rows = [];
-  for (let i = 0; i < asm.length; i += 12) {
-    rows.push('    ' + asm.slice(i, i + 12).map(hexByte).join(', ') + ',');
-  }
-  const varLines = Object.entries(vars).map(
-    ([name, offs]) => `    ${luaKey(name)} = { ${offs.join(', ')} },`,
-  );
-  const labelLines = Object.entries(labels).map(
-    ([name, off]) => `    ${luaKey(name)} = ${off},`,
-  );
-  return `-- ${banner}
-local link = require('${LINK_MODULE}').link
-
-local patch = {
-  raw = {
-${rows.join('\n')}
-  },
-  vars = {
-${varLines.join('\n')}
-  },
-  labels = {
-${labelLines.join('\n')}
-  },
-}
-patch.default = patch
-
-return setmetatable(patch, { __call = link })
-`;
-}
-
-/**
- * The same `{ raw, vars, labels }` callable as `emitLua`, but as a Lua AST
- * expression to be spliced straight into the requiring file — used for inline
- * `asm` templates, which have no module of their own.
+ * The `{ raw, vars, labels }` callable as a Lua AST expression, spliced straight
+ * into the file the inline `asm` block was written in — a patch has no module of
+ * its own.
  *
  * `lua` is typescript-to-lua's AST factory (passed in so this module never has
  * to import tstl itself), and `tsOriginal` the node the expression came from,
  * carried along for source maps.
  *
- * The linker is still the shared `asm_link` module: the emitted
+ * The linker is not inlined along with it: the emitted
  * `require('@noita-ts/nasm/link')` is picked up by TSTL's require scanner and
- * resolved by the plugin exactly like a generated patch module's own require.
+ * resolved by the plugin to the single shared `asm_link` module.
  */
 export function buildPatchExpression(lua, { asm, vars, labels }, tsOriginal) {
   const str = (value) => lua.createStringLiteral(value, tsOriginal);
@@ -194,284 +124,5 @@ export function buildPatchExpression(lua, { asm, vars, labels }, tsOriginal) {
     lua.createIdentifier('setmetatable', tsOriginal),
     [patch, table([field(link, '__call')])],
     tsOriginal,
-  );
-}
-
-/**
- * `name` as a TypeScript property name. Reserved words (`default`, `if`, ...)
- * are legal bare property names, so only names that are not identifiers at all
- * need the quoted-string form.
- */
-const tsKey = (name) => (isIdent(name) ? name : JSON.stringify(name));
-
-/** `{ a: T; b: T }` for the given members, or `{}` when there are none. */
-const tsObject = (members) => (members.length > 0 ? `{ ${members.join('; ')} }` : '{}');
-
-/**
- * The `{ raw, vars, labels }` type body, concrete when `patch` is given.
- * The call signature reuses the `vars` type (`Record<keyof Vars, number>`)
- * rather than re-listing the reloc names.
- */
-function typeBody(patch) {
-  const names = patch && Object.keys(patch.vars);
-  const labels = patch
-    ? tsObject(Object.keys(patch.labels).map((n) => `${tsKey(n)}: number`))
-    : 'Record<string, number>';
-  // For a concrete patch the link argument's keys are exactly `vars`' keys,
-  // so derive them from `Vars` instead of spelling them out again; the generic
-  // fallback keeps the loose `Record<string, number>`.
-  const values = patch ? 'Record<keyof Vars, number>' : 'Record<string, number>';
-  // With no relocs the argument is pointless, so make it optional; otherwise
-  // every reloc must be given a value.
-  const arg = patch && names.length === 0 ? `values?: ${values}` : `values: ${values}`;
-  const deferred = '(this: void, base: number) => number[]';
-  // A patch referencing its own labels absolutely gets a `BASE` reloc; omitting
-  // it is allowed and defers linking, so that gets a second overload. The fully
-  // specified one comes first, so `{ ..., BASE }` isn't rejected as excess.
-  const hasBase = patch ? names.includes('BASE') : true;
-  const calls = patch
-    ? [`(this: void, ${arg}): number[];`]
-    : [`(this: void, ${arg}): number[] | (${deferred});`];
-  if (patch && hasBase) {
-    calls.push(
-      `(this: void, values: Record<Exclude<keyof Vars, 'BASE'>, number>): ${deferred};`,
-    );
-  }
-  return (
-    `{\n` +
-    `    /** Raw x86 patch machine code; reloc fields are zeroed. */\n` +
-    `    readonly raw: number[];\n` +
-    `    /** Byte offsets of each reloc's 32-bit field within \`raw\`. */\n` +
-    `    readonly vars: Vars;\n` +
-    `    /** Byte offset of each label within \`raw\`. */\n` +
-    `    readonly labels: ${labels};\n` +
-    `    /**\n` +
-    `     * Links the patch: a copy of \`raw\` with each reloc's value added\n` +
-    `     * little-endian into every offset recorded for it in \`vars\`.\n` +
-    (hasBase
-      ? `     *\n` +
-        `     * Omitting \`BASE\` (the patch's own runtime address) yields a\n` +
-        `     * function taking it and returning the linked bytes; \`ffi.cave\`\n` +
-        `     * accepts that directly and supplies the cave address.\n`
-      : '') +
-    `     */\n` +
-    calls.map((c) => `    ${c}\n`).join('') +
-    `  }`
-  );
-}
-
-/** The `Vars` alias body: the concrete `{ name: number[] }` map, or the loose fallback. */
-function varsType(patch) {
-  return patch
-    ? tsObject(Object.keys(patch.vars).map((n) => `${tsKey(n)}: number[]`))
-    : 'Record<string, number[]>';
-}
-
-/**
- * An ambient `declare module '<pattern>'` block. Concrete (precise `vars`/`labels`
- * keys) when `patch` is given, otherwise the loose generic fallback. A local
- * `Vars` alias names the reloc map so the call signature can reuse its keys.
- */
-export function asmModuleBlock(pattern, patch) {
-  return (
-    `declare module ${JSON.stringify(pattern)} {\n` +
-    `  type Vars = ${varsType(patch)};\n` +
-    `  const patch: ${typeBody(patch)};\n` +
-    `  export default patch;\n` +
-    `}`
-  );
-}
-
-/** The wildcard ambient-module pattern matching a relative `.asm` specifier. */
-export function patternFor(specifier) {
-  // Strip leading ./ and ../ so the `*` absorbs the relative prefix.
-  return '*/' + specifier.replace(/^(?:\.\.?\/)+/, '');
-}
-
-/**
- * The global `asm` function for inline patches.
- *
- * It has no runtime: the asm-plugin recognises the call, assembles the string at
- * build time and replaces the whole expression with the patch table, so this is
- * a compile-time-only declaration (and lives in the ambient file rather than
- * being importable, so no stray `require` is emitted for it).
- *
- * Its reloc and label names are parsed *from the source text at the type level*,
- * which is why the block is passed as an argument rather than as a tagged
- * template: TypeScript only gives a template literal a literal type when it is a
- * normal argument matched against a `const` type parameter — a tag's strings
- * array is always the opaque `TemplateStringsArray`.
- *
- * The parser mirrors what `assemble.mjs` reads out of the object file: `name:
- * reloc` declarations, and `label:` definitions that are not nasm sublabels
- * (`.foo`).
- * `BASE` cannot be seen this way (it is implied by how operands are used), so it
- * is always accepted as an optional extra value — but passing one does pin the
- * result down to `number[]`, since only a missing `BASE` defers linking.
- */
-function asmDecl() {
-  // Escaping note: `\${` is an interpolation escaped for the emitted file, and
-  // `\\n`/`\\t` are the two-character escapes as they must appear in the .d.ts.
-  return [
-    `/**`,
-    ` * An inline x86 patch, assembled at build time by \`@noita-ts/nasm/asm-plugin\`.`,
-    ` *`,
-    ` * The source must be a constant string (a template literal with no`,
-    ` * \`\${...}\` substitutions): its bytes are baked at build time, and its`,
-    ` * reloc and label names are read out of the text by the types below.`,
-    ` *`,
-    ` * \`\`\`ts`,
-    ` * const patch = asm(\``,
-    ` * target: reloc`,
-    ` * entry:`,
-    ` *     jmp [target]`,
-    ` * \`);`,
-    ` * patch({ target: addr });`,
-    ` * \`\`\``,
-    ` */`,
-    `declare function asm<const Source extends string>(`,
-    `  source: Source,`,
-    `): asm.Patch<Source>;`,
-    ``,
-    `declare namespace asm {`,
-    `  /** Whitespace nasm ignores around a line. */`,
-    `  type Space = ' ' | '\\t' | '\\r';`,
-    ``,
-    `  /** Characters that cannot occur in a reloc or (top-level) label name. */`,
-    `  type Punct =`,
-    `    | Space`,
-    `    | ','`,
-    `    | '.' // a leading dot is a nasm sublabel, which \`assemble\` skips`,
-    `    | ':'`,
-    `    | ';'`,
-    `    | '['`,
-    `    | ']'`,
-    `    | '('`,
-    `    | ')'`,
-    `    | '+'`,
-    `    | '-'`,
-    `    | '*'`,
-    `    | '"'`,
-    `    | "'";`,
-    ``,
-    `  type Trim<S extends string> = S extends \`\${Space}\${infer R}\``,
-    `    ? Trim<R>`,
-    `    : S extends \`\${infer R}\${Space}\``,
-    `      ? Trim<R>`,
-    `      : S;`,
-    ``,
-    `  /** A line with its \`;\` comment (if any) cut off. */`,
-    `  type Code<S extends string> = Trim<S extends \`\${infer L};\${string}\` ? L : S>;`,
-    ``,
-    `  type Lines<S extends string> = S extends \`\${infer L}\\n\${infer R}\``,
-    `    ? [Code<L>, ...Lines<R>]`,
-    `    : [Code<S>];`,
-    ``,
-    `  /** \`S\` if it is a plain name, else nothing — keeps expressions out. */`,
-    `  type Name<S extends string> = S extends ''`,
-    `    ? never`,
-    `    : S extends \`\${string}\${Punct}\${string}\``,
-    `      ? never`,
-    `      : S;`,
-    ``,
-    `  /** The declared name if the line is \`name: reloc\`, else nothing. */`,
-    `  type RelocOn<S extends string> = S extends \`\${infer Label}:\${infer Tail}\``,
-    `    ? Trim<Tail> extends 'reloc'`,
-    `      ? Name<Trim<Label>>`,
-    `      : never`,
-    `    : never;`,
-    ``,
-    `  type RelocsIn<L> = L extends [infer Head extends string, ...infer Rest]`,
-    `    ? RelocOn<Head> | RelocsIn<Rest>`,
-    `    : never;`,
-    ``,
-    `  type LabelsIn<L> = L extends [infer Head extends string, ...infer Rest]`,
-    `    ? (Head extends \`\${infer Label}:\${string}\``,
-    `        ? [RelocOn<Head>] extends [never]`,
-    `          ? Name<Trim<Label>>`,
-    `          : never`,
-    `        : never) | LabelsIn<Rest>`,
-    `    : never;`,
-    ``,
-    `  /** Every name declared by a \`name: reloc\` line in \`Source\`. */`,
-    `  type Relocs<Source extends string> = RelocsIn<Lines<Source>>;`,
-    ``,
-    `  /** Every top-level label defined in \`Source\`. */`,
-    `  type Labels<Source extends string> = LabelsIn<Lines<Source>>;`,
-    ``,
-    `  /**`,
-    `   * The values to link with: one per reloc, plus an optional \`BASE\`, which`,
-    `   * a patch only has if it references its own labels absolutely (invisible`,
-    `   * to this parser, hence always allowed).`,
-    `   */`,
-    `  type Values<Source extends string> = Record<Relocs<Source>, number> & {`,
-    `    BASE?: number;`,
-    `  };`,
-    ``,
-    `  /**`,
-    `   * \`Values\`, plus \`never\` for anything else \`V\` happens to carry.`,
-    `   *`,
-    `   * The argument's type has to be inferred (the result depends on whether it`,
-    `   * has a \`BASE\`), and inference turns off the excess property check, so`,
-    `   * unknown relocs are rejected by the constraint instead.`,
-    `   */`,
-    `  type Only<Source extends string, V> = Values<Source> &`,
-    `    Record<Exclude<keyof V, Relocs<Source> | 'BASE'>, never>;`,
-    ``,
-    `  /** With no relocs at all there is nothing to pass, so the argument is optional. */`,
-    `  type Args<Source extends string, V> = [Relocs<Source>] extends [never]`,
-    `    ? [values?: V]`,
-    `    : [values: V];`,
-    ``,
-    `  type Deferred = (this: void, base: number) => number[];`,
-    ``,
-    `  /**`,
-    `   * Linking is deferred only when no \`BASE\` is given, so a call that passes`,
-    `   * one is always the finished bytes. Without it the result stays a union:`,
-    `   * whether the patch needs a \`BASE\` at all cannot be seen from the source.`,
-    `   */`,
-    `  type Linked<V> = V extends { BASE: number } ? number[] : number[] | Deferred;`,
-    ``,
-    `  interface Patch<Source extends string> {`,
-    `    /** Raw x86 patch machine code; reloc fields are zeroed. */`,
-    `    readonly raw: number[];`,
-    `    /** Byte offsets of each reloc's 32-bit field within \`raw\`. */`,
-    `    readonly vars: Record<Relocs<Source>, number[]> & { BASE?: number[] };`,
-    `    /** Byte offset of each label within \`raw\`. */`,
-    `    readonly labels: Record<Labels<Source>, number>;`,
-    `    /**`,
-    `     * Links the patch: a copy of \`raw\` with each reloc's value added`,
-    `     * little-endian into every offset recorded for it in \`vars\`.`,
-    `     *`,
-    `     * Omitting \`BASE\` (the patch's own runtime address) yields a`,
-    `     * function taking it and returning the linked bytes; \`ffi.cave\``,
-    `     * accepts that directly and supplies the cave address. Pass a \`BASE\``,
-    `     * and the result is just \`number[]\`.`,
-    `     */`,
-    `    <V extends Only<Source, V>>(this: void, ...args: Args<Source, V>): Linked<V>;`,
-    `  }`,
-    `}`,
-  ].join('\n');
-}
-
-/**
- * The `.d.ts` shipped as `@noita-ts/nasm/asm`: the global `asm` function for
- * inline patches, then every known patch as a concrete block (so it wins the wildcard
- * tie against the fallback), then the generic `*.asm` fallback LAST for
- * not-yet-built imports.
- *
- * `modules` is an iterable of `[pattern, patch]`.
- */
-export function emitTypesIndex(modules) {
-  const blocks = [asmDecl()];
-  blocks.push(...[...modules].map(([pattern, patch]) => asmModuleBlock(pattern, patch)));
-  blocks.push(asmModuleBlock('*.asm', undefined));
-  return (
-    `// AUTO-GENERATED by @noita-ts/nasm asm-plugin. Do not edit.\n` +
-    `// \`asm()\` types inline blocks; concrete per-file blocks come next so\n` +
-    `// they win the wildcard match, and the generic \`*.asm\` fallback is last,\n` +
-    `// for not-yet-built imports.\n\n` +
-    blocks.join('\n\n') +
-    '\n'
   );
 }

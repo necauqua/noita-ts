@@ -1,4 +1,4 @@
-# x86 patch assembly (`.asm` files or inline `asm()` → callable `{ raw, vars, labels }`)
+# x86 patch assembly (inline `asm()` → callable `{ raw, vars, labels }`)
 
 Assembles small x86 machine-code patches (for runtime code injection) from NASM
 sources, with runtime-injected 32-bit fields.
@@ -63,8 +63,6 @@ hold their addend). `raw` itself is never mutated, so one patch can be linked
 repeatedly with different values.
 
 ```ts
-import patch from './patches/my_patch.asm';
-
 ffi.cave(addr, patch({ c075: someAddr, c5: 0x3f800000 }));
 ```
 
@@ -88,7 +86,7 @@ Install the assembler:
 npm i -D @noita-ts/nasm
 ```
 
-Import `.asm` files directly. Wire the plugin in `tsconfig.json`:
+Wire the plugin in `tsconfig.json`:
 
 ```jsonc
 {
@@ -96,27 +94,7 @@ Import `.asm` files directly. Wire the plugin in `tsconfig.json`:
 }
 ```
 
-then:
-
-```ts
-import patch from './patches/my_patch.asm';
-// patch({ <reloc>: value, ... }), patch.raw, patch.vars.<reloc>, patch.labels.<label>
-```
-
-The plugin assembles on resolve and serves the generated module entirely from
-memory (nothing is written to the source tree or to disk); TSTL emits it into the
-build output mirroring the source layout (`patches/my_patch.asm` → `patches/my_patch_asm.lua`)
-and rewrites the require to it.
-
-The linking runtime is **not** inlined into each patch: it is emitted once as a
-single `asm_link.lua` at the root of the output, and every generated patch just
-`require`s it. So a patch module is only its own bytes, offsets and labels,
-regardless of how many patches a mod has.
-
-### Inline blocks
-
-A patch too small to deserve its own file can be written straight in the
-TypeScript, with the global `asm()`:
+then write patches inline, with the global `asm()`:
 
 ```ts
 const thumbWidth = asm(`
@@ -137,13 +115,16 @@ entry:
 ffi.cave(addr, thumbWidth({ cell_width, width }));
 ```
 
-Everything else is identical to a file patch — same `reloc`/`BASE`/`entry`
-semantics, same `{ raw, vars, labels }` callable, same shared `asm_link` runtime.
-The difference is only in how it is compiled: the plugin's call visitor assembles
-the block at build time and replaces the whole call with the patch table right
-where it stands, so there is no module and nothing to import (`asm` is an ambient
-declaration, so it emits no `require` of its own). Identical blocks are assembled
-once and cached.
+The plugin's call visitor assembles the block at build time and replaces the
+whole call with the patch table right where it stands, so there is no module and
+nothing to import (`asm` is an ambient declaration, so it emits no `require` of
+its own). Nothing is written to the source tree or to disk. Identical blocks are
+assembled once and cached.
+
+The linking runtime is **not** inlined into each patch: it is emitted once as a
+single `asm_link.lua` at the root of the output, and every patch just `require`s
+it. So a patch is only its own bytes, offsets and labels, regardless of how many
+patches a mod has.
 
 The string must be **constant**: `${...}` substitutions are rejected, both by the
 type of `asm` and by the plugin. Values reach the patch through relocs, which is
@@ -156,11 +137,17 @@ with nasm's line numbers mapped onto the `.ts` file:
 src/init.ts:66:13 - error TS0: src/init.ts:68: error: symbol `notathing' not defined
 ```
 
-#### Types of inline blocks
+### Types
 
-A file patch gets a generated ambient block with its exact reloc/label keys. An
-inline one has no module to attach that to, so its names are instead parsed **out
-of the source text at the type level**, by the `asm` namespace in `asm.d.ts`:
+A block has no module to hang generated declarations off, so its reloc and label
+names are parsed **out of the source text at the type level**, by the `asm`
+namespace in `asm.d.ts`. Reference the types once, anywhere in your sources:
+
+```ts
+/// <reference types="@noita-ts/nasm/asm" />
+```
+
+and the names follow from the block itself:
 
 ```ts
 const p = asm(`
@@ -201,30 +188,8 @@ The deferring case keeps the union because whether the patch needs a `BASE` at
 all is invisible here; `ffi.cave` takes either, and supplies the cave address.
 
 Parsing a block costs type instantiations — a ~15-line patch is around 30k, which
-is unnoticeable, but a very large inline patch is a good candidate for its own
-`.asm` file, where the keys come from generated declarations instead.
-
-#### Types
-
-The `.asm` ambient types ship in this package as `@noita-ts/nasm/asm`. Reference
-them once, anywhere in your sources:
-
-```ts
-/// <reference types="@noita-ts/nasm/asm" />
-```
-
-- **Before the first build** the shipped file is a generic fallback
-  (`vars`/`labels` typed as `Record<...>`), so `.asm` imports type-check
-  immediately after install — no postinstall, no extra package.
-- **Each `nts build`** the asm-plugin rewrites its own `asm.d.ts` in the
-  installed `node_modules/@noita-ts/nasm`, prepending a **concrete block per
-  imported `.asm`** (exact `vars`/`labels` keys) before the generic `*.asm`
-  fallback so it wins the wildcard match — types sharpen automatically after the
-  first build. The plugin only ever writes files inside its own package.
-
-> The plugin only rewrites a real installed copy: when `@noita-ts/nasm` is
-> symlinked (workspaces, `npm link`), the file belongs to a shared source
-> checkout, so it's left alone and the generic fallback stays in effect.
+is unnoticeable, but they do add up, so keep patches to the small pieces of code
+they are meant to be.
 
 ## nasm binary
 

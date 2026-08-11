@@ -1,7 +1,7 @@
 {
   "name": "@noita-ts/nasm",
   "version": "0.1.0",
-  "description": "The NASM assembler as a platform-gated npm package, plus the TSTL plugin that assembles `*.asm` x86 patches into Lua modules.",
+  "description": "The NASM assembler as a platform-gated npm package, plus the TSTL plugin that assembles inline `asm()` x86 patches at build time.",
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "license": "MIT",
   "type": "module",
