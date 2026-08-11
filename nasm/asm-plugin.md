@@ -5,13 +5,14 @@ sources, with runtime-injected 32-bit fields.
 
 ## Relocs
 
-`reloc.asm` provides a `reloc` macro. Each `reloc <name>` declares a 32-bit field
-that assembles to the magic dword `0xD1BE7700 + index`; the assembler scans for
+`reloc.asm` provides a `reloc` macro, used like `equ` — a label followed by it.
+Each `<name>: reloc` declares a 32-bit field that assembles to the magic dword `0xD1BE7700 + index`; the assembler scans for
 those dwords, records their byte offsets, and **zeroes them out** so the caller
 injects the real value at runtime.
 
 ```asm
-reloc c075, c5
+c075: reloc
+c5:   reloc
 main:
     mulss xmm0, dword ptr[c075]   ; runtime-injected dword
 ```
@@ -34,7 +35,7 @@ entry:
 Those leave real `R_386_32` relocations, which the assembler folds into an
 implicit `BASE` reloc: the field keeps the label's offset within the patch as an
 addend, and its site is recorded under `BASE`, so linking computes
-`BASE + offset`. No `reloc BASE` declaration is needed (declaring one anyway just
+`BASE + offset`. No `BASE: reloc` declaration is needed (declaring one anyway just
 makes the name usable in code, e.g. `mov eax, BASE`).
 
 Anything that cannot be resolved this way — an extern, a symbol outside `.text`,
@@ -119,8 +120,8 @@ TypeScript, with the global `asm()`:
 
 ```ts
 const thumbWidth = asm(`
-reloc cell_width
-reloc width
+cell_width: reloc
+width:      reloc
 
 entry:
     cmp   dword [esi+0x7c], __float32__(12.0)
@@ -163,7 +164,8 @@ of the source text at the type level**, by the `asm` namespace in `asm.d.ts`:
 
 ```ts
 const p = asm(`
-reloc cell_width, width
+cell_width: reloc
+width:      reloc
 val: dd 16.0
 entry:
     movss xmm7, [cell_width]
@@ -176,8 +178,8 @@ p({ cell_width: 1 });                 // error: 'width' is missing
 p({ cell_width: 1, width: 2 });       // ok
 ```
 
-The parser splits the string into lines, drops `;` comments, and takes `reloc a,
-b` declarations and `name:` definitions — the same things `assemble.mjs` reads
+The parser splits the string into lines, drops `;` comments, and takes `name:
+reloc` declarations and `name:` definitions — the same things `assemble.mjs` reads
 out of the object file, including its skipping of nasm sublabels (`.foo`).
 
 This is also why the block is an **argument** rather than a tagged template

@@ -6,10 +6,10 @@
 //              magic dword zeroed out (the caller injects the real 32-bit value
 //              at runtime).
 //   - vars   : reloc name -> list of byte offsets in `asm` where its 32-bit
-//              field lives (declared via `reloc <name>` in reloc.asm).
+//              field lives (declared via `<name>: reloc` in reloc.asm).
 //   - labels : every other .text symbol (label) -> its byte offset in `asm`.
 //
-// A `reloc <name>` assembles to the magic dword 0xD1BE7700 + index and exports
+// A `<name>: reloc` assembles to the magic dword 0xD1BE7700 + index and exports
 // an absolute symbol `__reloc_<name>` = index. We scan .text for those dwords,
 // record their offsets per name, and zero them.
 //

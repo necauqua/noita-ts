@@ -12,7 +12,7 @@
  *
  * ```ts
  * const patch = asm(`
- * reloc target
+ * target: reloc
  * entry:
  *     jmp [target]
  * `);
@@ -57,10 +57,6 @@ declare namespace asm {
     ? [Code<L>, ...Lines<R>]
     : [Code<S>];
 
-  type Commas<S extends string> = S extends `${infer A},${infer B}`
-    ? Trim<A> | Commas<B>
-    : Trim<S>;
-
   /** `S` if it is a plain name, else nothing — keeps expressions out. */
   type Name<S extends string> = S extends ''
     ? never
@@ -68,15 +64,26 @@ declare namespace asm {
       ? never
       : S;
 
+  /** The declared name if the line is `name: reloc`, else nothing. */
+  type RelocOn<S extends string> = S extends `${infer Label}:${infer Tail}`
+    ? Trim<Tail> extends 'reloc'
+      ? Name<Trim<Label>>
+      : never
+    : never;
+
   type RelocsIn<L> = L extends [infer Head extends string, ...infer Rest]
-    ? (Head extends `reloc ${infer Names}` ? Name<Commas<Names>> : never) | RelocsIn<Rest>
+    ? RelocOn<Head> | RelocsIn<Rest>
     : never;
 
   type LabelsIn<L> = L extends [infer Head extends string, ...infer Rest]
-    ? (Head extends `${infer Label}:${string}` ? Name<Trim<Label>> : never) | LabelsIn<Rest>
+    ? (Head extends `${infer Label}:${string}`
+        ? [RelocOn<Head>] extends [never]
+          ? Name<Trim<Label>>
+          : never
+        : never) | LabelsIn<Rest>
     : never;
 
-  /** Every name declared by a `reloc` line in `Source`. */
+  /** Every name declared by a `name: reloc` line in `Source`. */
   type Relocs<Source extends string> = RelocsIn<Lines<Source>>;
 
   /** Every top-level label defined in `Source`. */

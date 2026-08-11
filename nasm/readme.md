@@ -23,7 +23,7 @@ import patch from './patches/my_patch.asm';
 
 // or inline, no file needed — relocs and labels are parsed from the source:
 const patch2 = asm(`
-reloc target
+target: reloc
 entry:
     jmp [target]
 `);
