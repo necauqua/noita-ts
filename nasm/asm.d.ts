@@ -53,10 +53,6 @@ declare namespace asm {
   /** A line with its `;` comment (if any) cut off. */
   type Code<S extends string> = Trim<S extends `${infer L};${string}` ? L : S>;
 
-  type Lines<S extends string> = S extends `${infer L}\n${infer R}`
-    ? [Code<L>, ...Lines<R>]
-    : [Code<S>];
-
   /** `S` if it is a plain name, else nothing — keeps expressions out. */
   type Name<S extends string> = S extends ''
     ? never
@@ -65,29 +61,59 @@ declare namespace asm {
       : S;
 
   /** The declared name if the line is `name: reloc`, else nothing. */
-  type RelocOn<S extends string> = S extends `${infer Label}:${infer Tail}`
+  type RelocOn<S extends string> = Code<S> extends `${infer Label}:${infer Tail}`
     ? Trim<Tail> extends 'reloc'
       ? Name<Trim<Label>>
       : never
     : never;
 
-  type RelocsIn<L> = L extends [infer Head extends string, ...infer Rest]
-    ? RelocOn<Head> | RelocsIn<Rest>
+  /** The defined name if the line is a label other than `name: reloc`. */
+  type LabelOn<S extends string> = Code<S> extends `${infer Label}:${string}`
+    ? [RelocOn<S>] extends [never]
+      ? Name<Trim<Label>>
+      : never
     : never;
 
-  type LabelsIn<L> = L extends [infer Head extends string, ...infer Rest]
-    ? (Head extends `${infer Label}:${string}`
-        ? [RelocOn<Head>] extends [never]
-          ? Name<Trim<Label>>
-          : never
-        : never) | LabelsIn<Rest>
-    : never;
+  /**
+   * Every name `On` finds over the lines of `S`.
+   *
+   * Accumulating into `Acc` instead of unioning the recursive result keeps
+   * this a tail-recursive conditional type, so it is eliminated rather than
+   * counted against the ~50 deep instantiation limit; lines with no `:` at
+   * all skip `On` entirely, since neither form can match without one.
+   */
+  type NamesIn<
+    S extends string,
+    Acc,
+    On extends Fn,
+  > = S extends `${infer L}\n${infer R}`
+    ? NamesIn<R, L extends `${string}:${string}` ? Acc | Apply<On, L> : Acc, On>
+    : S extends `${string}:${string}`
+      ? Acc | Apply<On, S>
+      : Acc;
+
+  /** A deferred line → names operation, instantiated by `Apply`. */
+  interface Fn {
+    line: string;
+    out: unknown;
+  }
+
+  /** Instantiates the deferred `On` of `NamesIn` at one line. */
+  type Apply<On extends Fn, Line extends string> = (On & { line: Line })['out'];
+
+  interface OnReloc extends Fn {
+    out: RelocOn<this['line']>;
+  }
+
+  interface OnLabel extends Fn {
+    out: LabelOn<this['line']>;
+  }
 
   /** Every name declared by a `name: reloc` line in `Source`. */
-  type Relocs<Source extends string> = RelocsIn<Lines<Source>>;
+  type Relocs<Source extends string> = NamesIn<Source, never, OnReloc>;
 
   /** Every top-level label defined in `Source`. */
-  type Labels<Source extends string> = LabelsIn<Lines<Source>>;
+  type Labels<Source extends string> = NamesIn<Source, never, OnLabel>;
 
   /**
    * The values to link with: one per reloc, plus an optional `BASE`, which
