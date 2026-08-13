@@ -150,18 +150,24 @@ function M.locateVftable(rtti_name)
         name = string.format('string `%s` in .data', rtti_name),
     })
 
-    -- offset back to get the descriptor pointer value
-    --  and scan for the usage of that value, which should be in an RTTI locator thing
-    local in_locator = rdata:scanAll(in_desc - 8, {
-        name = string.format('RTTI locator for `%s` (descriptor at 0x%08X)', rtti_name, in_desc - 8),
+    -- The complete object locator is `signature, offset, cdOffset, pTypeDescriptor`,
+    --  all zero but the last for a class without virtual bases. Its base-class
+    --  descriptors reference the same descriptor at their own offset 0 and can come
+    --  earlier in .rdata, so scanning for the descriptor alone hits those - match
+    --  the three zero dwords in front of it instead.
+    local desc = M.le32(in_desc - 8)
+    local col = rdata:scanAll({
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        desc[1], desc[2], desc[3], desc[4],
+    }, {
+        name = string.format('complete object locator for `%s` (descriptor at 0x%08X)', rtti_name, in_desc - 8),
     })
 
-    -- same thing but to find usages of the locator, the vftable meta pointer
-    local vftable_meta_ptr = rdata:scanAll(in_locator - 12, {
-        name = string.format('vftable meta pointer for `%s` (locator at 0x%08X)', rtti_name, in_locator - 12),
+    -- the locator is pointed to from a place right before the vftable
+    local vftable_meta_ptr = rdata:scanAll(col, {
+        name = string.format('vftable meta pointer for `%s` (locator at 0x%08X)', rtti_name, col),
     })
 
-    -- which is right before the vftable
     return vftable_meta_ptr + 4
 end
 
