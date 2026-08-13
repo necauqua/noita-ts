@@ -102,6 +102,17 @@ namespace mod {
       },
     },
   ) as any;
+
+  /**
+   * Edit the content of text file, just a shortcut for `ModTextFileGetContent` +
+   * `ModTextFileSetContent`.
+   *
+   * @param path The path to the text file.
+   * @param edit A function that takes the current content of the file and returns the new content.
+   */
+  export function edit(path: string, edit: (text: string) => string) {
+    ModTextFileSetContent(path, edit(ModTextFileGetContent(path)));
+  }
 }
 
 declare global {
