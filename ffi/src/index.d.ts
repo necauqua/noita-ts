@@ -235,6 +235,8 @@ declare const _default: {
   ["new"](this: void, ct: string, init?: unknown): any;
 
   string(this: void, ptr: any, len?: number): string;
+
+  metatype(this: void, type: string, metatype: any): void;
 };
 
 export type Ptr<T> = {

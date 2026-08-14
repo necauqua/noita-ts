@@ -55,7 +55,7 @@ Mod metadata (id, name, description, workshop settings, etc.) lives in
 - [`@noita-ts/nasm`](nasm) - the NASM assembler as a platform-gated package,
   plus the TSTL plugin that assembles inline `asm()` x86 patches at build time.
   Only mods that actually write patches depend on it (and download a binary).
-- [`@noita-ts/dear-imgui-types`](dear-imgui) - type
+- [`@noita-ts/noita-dear-imgui-types`](noita-dear-imgui-types) - type
   definitions for [Noita-Dear-ImGui](https://github.com/dextercd/Noita-Dear-ImGui)
   (ImGui 1.26.0).
 

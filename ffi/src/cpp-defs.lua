@@ -13,7 +13,10 @@ ffi.cdef [[
 
 ffi.metatype('cpp_string', {
     __tostring = function(s)
-        return ffi.string(s.cap <= 15 and s.buf or s.ptr, s.len)
+        if s.len == 0 then
+            return ''
+        end
+        return ffi.string(s.cap <= 0xF and s.buf or s.ptr, s.len)
     end,
     __len = function(s)
         return s.len

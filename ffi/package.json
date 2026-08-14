@@ -3,24 +3,39 @@
   "version": "0.3.0",
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "files": [
-    "**/*.{lua,d.ts}",
+    "dist/*.{lua,d.ts}",
     "hde32.dll"
   ],
   "type": "module",
-  "main": "src/index",
-  "types": "src/index.d.ts",
+  "main": "dist/index",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
-      "default": "./src/index"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index"
     },
-    "./global_stats": {
-      "types": "./src/global_stats.d.ts",
-      "default": "./src/global_stats"
+    "./magic-numbers": {
+      "types": "./dist/magic-numbers.d.ts",
+      "default": "./dist/magic-numbers"
+    },
+    "./game-global": {
+      "types": "./dist/game-global.d.ts",
+      "default": "./dist/game-global"
+    },
+    "./platform": {
+      "types": "./dist/platform.d.ts",
+      "default": "./dist/platform"
+    },
+    "./global-stats": {
+      "types": "./dist/global-stats.d.ts",
+      "default": "./dist/global-stats"
     }
   },
   "scripts": {
-    "prepublishOnly": "docker build --output . hde32 && tsc -p ."
+    "prepublishOnly": "rm -rf dist && npm run build",
+    "build": "npm run build:lua && npm run build:hde32",
+    "build:hde32": "docker build --output . hde32",
+    "build:lua": "tstl -p . && cp src/*.{lua,d.ts} dist/"
   },
   "dependencies": {
     "@typescript-to-lua/language-extensions": "^1.19.0"
