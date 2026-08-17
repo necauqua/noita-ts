@@ -1,91 +1,51 @@
 import ffi from '.';
-import { CppStringIntMap } from './cpp-defs';
+import { NativeString, StringIntMap, Vec2 } from './cpp';
+import c from './schema';
 
-ffi.cdef(`
-    typedef struct {
-        void* vftable;
-        bool dead;
-        int32_t death_count;
-        int32_t streak;
-        uint32_t world_seed;
-        cpp_string killed_by;
-        cpp_string killed_by_extra;
-        struct { float x; float y; } death_pos;
-        double playtime;
-        cpp_string playtime_str;
-        int32_t places_visited;
-        int32_t enemies_killed;
-        int32_t heart_containers;
-        int64_t hp;
-        int64_t gold;
-        int64_t gold_all;
-        bool gold_infinite;
-        int32_t items;
-        int32_t projectiles_shot;
-        int32_t kicks;
-        double damage_taken;
-        double healed;
-        int32_t teleports;
-        int32_t wands_edited;
-        int32_t biomes_visited_with_wands;
-    } GameStats;
+export const GameStats = c.declare('GameStats', [
+  c.field("vftable", c.voidptr),
+  c.field("dead", c.bool),
+  c.field("death_count", c.i32),
+  c.field("streak", c.i32),
+  c.field("world_seed", c.u32),
+  c.field("killed_by", NativeString),
+  c.field("killed_by_extra", NativeString),
+  c.field("death_pos", Vec2),
+  c.field("playtime", c.f64),
+  c.field("playtime_str", NativeString),
+  c.field("places_visited", c.i32),
+  c.field("enemies_killed", c.i32),
+  c.field("heart_containers", c.i32),
+  c.field("hp", c.i64),
+  c.field("gold", c.i64),
+  c.field("gold_all", c.i64),
+  c.field("gold_infinite", c.bool),
+  c.field("items", c.i32),
+  c.field("projectiles_shot", c.i32),
+  c.field("kicks", c.i32),
+  c.field("damage_taken", c.f64),
+  c.field("healed", c.f64),
+  c.field("teleports", c.i32),
+  c.field("wands_edited", c.i32),
+  c.field("biomes_visited_with_wands", c.i32),
+]);
+export type GameStats = c.infer<typeof GameStats>;
 
-    typedef struct {
-        void* vftable;
-        int32_t STATS_VERSION;
-        int32_t DEBUG_HOW_MANY_TIMES_DONE;
-        bool DEBUG_IS_ON;
-        int32_t DEBUG_HOW_MANY_RESETS;
-        bool DEBUG_FIXED_STATS;
-        bool session_dead;
-        cpp_map_cpp_string_int32_t KEY_VALUE_STATS;
-        GameStats session;
-        GameStats highest;
-        GameStats global;
-        GameStats prev_best;
-    } GlobalStats;
-`);
-
-export type GameStats = {
-  dead: boolean;
-  death_count: number;
-  streak: number;
-  world_seed: number;
-  killed_by: string;
-  killed_by_extra: string;
-  death_pos: { x: number; y: number };
-  playtime: number;
-  playtime_str: string;
-  places_visited: number;
-  enemies_killed: number;
-  heart_containers: number;
-  hp: number;
-  gold: number;
-  gold_all: number;
-  gold_infinite: boolean;
-  items: number;
-  projectiles_shot: number;
-  kicks: number;
-  damage_taken: number;
-  healed: number;
-  teleports: number;
-  wands_edited: number;
-  biomes_visited_with_wands: number;
-};
-
-export type GlobalStats = {
-  STATS_VERSION: number;
-  DEBUG_HOW_MANY_TIMES_DONE: number;
-  DEBUG_IS_ON: boolean;
-  DEBUG_HOW_MANY_RESETS: number;
-  DEBUG_FIXED_STATS: boolean;
-  session_dead: boolean;
-  KEY_VALUE_STATS: CppStringIntMap;
-  session: GameStats;
-  highest: GameStats;
-  global: GameStats;
-  prev_best: GameStats;
-};
+export const GlobalStats = c.declare('GlobalStats', [
+  c.field("vftable", c.voidptr),
+  c.field("STATS_VERSION", c.i32),
+  c.field("DEBUG_HOW_MANY_TIMES_DONE", c.i32),
+  c.field("DEBUG_IS_ON", c.bool),
+  c.field("DEBUG_HOW_MANY_RESETS", c.i32),
+  c.field("DEBUG_FIXED_STATS", c.bool),
+  c.field("session_dead", c.bool),
+  c.field("KEY_VALUE_STATS", StringIntMap),
+  c.field("session", GameStats),
+  c.field("highest", GameStats),
+  c.field("global", GameStats),
+  c.field("prev_best", GameStats),
+]);
+export type GlobalStats = c.infer<typeof GlobalStats>;
 
 const GLOBAL_STATS = ffi.cast<GlobalStats>("GlobalStats*", ffi.locateStaticGlobal(".?AVGlobalStats@@"));
 

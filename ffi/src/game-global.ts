@@ -1,45 +1,40 @@
 import ffi, { Ptr } from ".";
+import { NativeString } from "./cpp";
+import c from "./schema";
 
-ffi.cdef(`
-  typedef struct GameGlobal {
-    int frame_counter;
-    int update_counter;
-    float fx_time;
-    void* camera;
-    void* grid_world;
-    void* grid_world_renderer;
-    void* cell_factory;
-    void* root_sprite;
-    void* scene_layer;
-    void* audio_manager;
-    void* world_tree;
-    void* world_light_and_fog;
-    void* game_log;
-    void* world_state;
-    void* debug_ui;
-    bool camera_reposition_pending;
-    void* cell_factory;
-    void* world_sim_data;
-    unsigned int* ui_flags;
-    void* weather_config;
-    void* post_fx;
-    void* magic_numbers;
-    void* session_numbers;
-    int restart_game_mode_idx;
-    int save_slot;
-    int requested_save_slot;
-    int restart_request;
-    bool no_logo_splashes;
-    bool load_test_save;
-    cpp_string startup_argument;
-  } GameGlobal;
-`);
-
-export type GameGlobal = {
-  frame_counter: number;
-  update_counter: number;
-  fx_time: number;
-};
+export const GameGlobal = c.declare("GameGlobal", [
+  c.field("frame_counter", c.i32),
+  c.field("update_counter", c.i32),
+  c.field("fx_time", c.f32),
+  c.field("camera", c.voidptr),
+  c.field("grid_world", c.voidptr),
+  c.field("grid_world_renderer", c.voidptr),
+  c.field("cell_factory", c.voidptr),
+  c.field("root_sprite", c.voidptr),
+  c.field("scene_layer", c.voidptr),
+  c.field("audio_manager", c.voidptr),
+  c.field("world_tree", c.voidptr),
+  c.field("world_light_and_fog", c.voidptr),
+  c.field("game_log", c.voidptr),
+  c.field("world_state", c.voidptr),
+  c.field("debug_ui", c.voidptr),
+  c.field("camera_reposition_pending", c.bool),
+  c.field("cell_factory2", c.voidptr),
+  c.field("world_sim_data", c.voidptr),
+  c.field("ui_flags", c.ptr(c.u32)),
+  c.field("weather_config", c.voidptr),
+  c.field("post_fx", c.voidptr),
+  c.field("magic_numbers", c.voidptr),
+  c.field("session_numbers", c.voidptr),
+  c.field("restart_game_mode_idx", c.i32),
+  c.field("save_slot", c.i32),
+  c.field("requested_save_slot", c.i32),
+  c.field("restart_request", c.i32),
+  c.field("no_logo_splashes", c.bool),
+  c.field("load_test_save", c.bool),
+  c.field("startup_argument", NativeString),
+])
+export type GameGlobal = c.infer<typeof GameGlobal>;
 
 const findGameGlobal = () => {
   // Look for PUSH 0x10a, which is the size of GameGlobal

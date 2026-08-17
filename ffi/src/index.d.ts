@@ -243,7 +243,7 @@ export type Ptr<T> = {
   [offset: number]: T;
 };
 
-type CommonFfiTypes = {
+export type CommonFfiTypes = {
   bool: boolean;
 
   uint8_t: number;
@@ -258,10 +258,14 @@ type CommonFfiTypes = {
 
   float: number;
   double: number;
-} & Record<string, unknown>;
 
-type FfiType<K extends string> = K extends `${infer T}*`
+  void: unknown;
+};
+
+export type FfiType<K extends string> = K extends `${infer T}*`
   ? Ptr<FfiType<T>>
-  : CommonFfiTypes[K];
+  : K extends keyof CommonFfiTypes ?
+    CommonFfiTypes[K] :
+    unknown;
 
 export default _default;
