@@ -14,8 +14,26 @@ export default class VFS {
     this.cwd = cwd;
   }
 
+  private resolve(filePath: string) {
+    return this.cwd != "" ? this.cwd + "/" + filePath : filePath;
+  }
+
   write(filePath: string, content: FileContent) {
-    this.files[this.cwd != "" ? this.cwd + "/" + filePath : filePath] = content;
+    this.files[this.resolve(filePath)] = content;
+  }
+
+  has(filePath: string) {
+    return this.resolve(filePath) in this.files;
+  }
+
+  /** Reads back a text file that was written before. */
+  read(filePath: string): string {
+    const full = this.resolve(filePath);
+    const content = this.files[full];
+    if (typeof content !== "string") {
+      throw new Error(`${full} is not a text file`);
+    }
+    return content;
   }
 
   async archive(outputPath: string) {

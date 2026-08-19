@@ -16,7 +16,48 @@ import VFS from "./vfs.js";
 export type BuildData = {
   modId: string;
   dev: boolean;
+  /** Whether this is an `nts test` build, see `testModules`. */
+  test?: boolean;
 };
+
+/**
+ * The test suite: an optional `src/test.ts` and everything under `src/tests/`.
+ * Both are left out of regular builds, and `nts test` makes `init.lua` require
+ * all of them.
+ */
+const TEST_ENTRY = "test.ts";
+const TEST_DIR = "tests";
+
+/**
+ * Lists the suite as Lua module names, in the order they should be required:
+ * `src/test.ts` first, as the place to put whatever the cases need, then every
+ * file under `src/tests/`.
+ */
+function testModules(cwd: string): string[] {
+  const src = path.join(cwd, "src");
+  const modules: string[] = [];
+
+  if (fs.existsSync(path.join(src, TEST_ENTRY))) {
+    modules.push(path.basename(TEST_ENTRY, ".ts"));
+  }
+
+  const dir = path.join(src, TEST_DIR);
+  if (!fs.existsSync(dir)) {
+    return modules;
+  }
+  const cases = fs
+    .readdirSync(dir, { recursive: true })
+    .flatMap((file) =>
+      typeof file === "string" &&
+      file.endsWith(".ts") &&
+      fs.statSync(path.join(dir, file)).isFile()
+        ? [[TEST_DIR, ...file.slice(0, -3).split(path.sep)].join(".")]
+        : [],
+    );
+  cases.sort();
+
+  return [...modules, ...cases];
+}
 
 /**
  * Optional hook a tstl plugin may implement to exclude files from the built mod.
@@ -83,7 +124,19 @@ function transpile(
 
   const diagnostics: ts.Diagnostic[] = [];
 
-  const program = ts.createProgram(config.fileNames, config.options);
+  const src = path.join(cwd, "src");
+  const testEntry = path.join(src, TEST_ENTRY);
+  const testDir = path.join(src, TEST_DIR) + path.sep;
+  const isTestFile = (fileName: string) => {
+    const full = path.normalize(fileName);
+    return full === testEntry || full.startsWith(testDir);
+  };
+
+  const fileNames = buildData.test
+    ? config.fileNames
+    : config.fileNames.filter((f) => !isTestFile(f));
+
+  const program = ts.createProgram(fileNames, config.options);
   diagnostics.push(...ts.getPreEmitDiagnostics(program));
 
   const res = new tstl.Transpiler().emit({ program, writeFile });
@@ -144,10 +197,12 @@ export default class NoitaMod {
     verbose,
     dev,
     noWorkshopId,
+    test,
   }: {
     verbose?: boolean;
     dev?: boolean;
     noWorkshopId?: boolean;
+    test?: boolean;
   }): NoitaMod {
     const vfs = new VFS();
 
@@ -166,9 +221,43 @@ export default class NoitaMod {
     const buildData = {
       modId: id,
       dev: !!dev,
+      test: !!test,
     };
 
     const { diagnostics, plugins } = transpile(vfs, !!verbose, buildData);
+
+    if (buildData.test) {
+      const modules = testModules(process.cwd());
+      if (modules.length === 0) {
+        console.warn(
+          `No tests found - they go into src/${TEST_DIR}/ (or src/${TEST_ENTRY})`,
+        );
+      }
+      // the suite is loaded from the mod entry point, so that everything the
+      // mod itself sets up on load is in place by the time tests register
+      const entry =
+        [
+          'require("lua_modules.@noita-ts.base.dist.test")',
+          ...modules.map((m) => `require("${m}")`),
+        ].join("\n") + "\n";
+      if (vfs.has("init.lua")) {
+        // the module ends in `return ____exports`, and nothing may follow a
+        // return in a Lua chunk, so the require goes right in front of it
+        const code = vfs.read("init.lua");
+        const ret = code.lastIndexOf("\nreturn ");
+        vfs.write(
+          "init.lua",
+          ret === -1
+            ? `${code}\n${entry}`
+            : `${code.slice(0, ret + 1)}${entry}${code.slice(ret + 1)}`,
+        );
+      } else {
+        vfs.write(
+          "init.lua",
+          `dofile_once('mods/${id}/require_shim.lua')\n\n${entry}`,
+        );
+      }
+    }
     if (diagnostics.length > 0) {
       const reporter = tstl.createDiagnosticReporter(true);
       for (const diagnostic of diagnostics) {
@@ -255,6 +344,7 @@ export default class NoitaMod {
     const files = fs.readdirSync(src, {
       recursive: true,
     });
+
     for (const file of files) {
       if (typeof file !== "string") {
         continue;

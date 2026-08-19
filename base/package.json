@@ -28,6 +28,10 @@
     "./async": {
       "types": "./dist/async.d.ts",
       "default": "./dist/async"
+    },
+    "./test": {
+      "types": "./dist/test.d.ts",
+      "default": "./dist/test"
     }
   },
   "bin": {
@@ -36,7 +40,7 @@
   "scripts": {
     "prepublishOnly": "rm -rf dist && npm run typegen && npm run build",
     "build": "npm run build:lua && npm run build:bin && npm run build:noita-api",
-    "build:lua": "tstl -p . && cp src/*.lua dist/ && sed -i '1i /// <reference types=\"@noita-ts/base/types\" />' dist/index.d.ts",
+    "build:lua": "tstl -p . && cp src/*.lua dist/ && sed -i '1i /// <reference types=\"@noita-ts/base/types\" />' dist/index.d.ts dist/test.d.ts",
     "build:noita-api": "test -f dist/noita.d.lua || curl -Lo dist/noita.d.lua https://raw.githubusercontent.com/NathanSnail/AutoLuaAPI/c8947a4977cff16148a7e7f574721b5decaf2463/out.lua",
     "build:bin": "tsc -p ./tsconfig.bin.json",
     "typegen": "npm run typegen:api && npm run typegen:components",

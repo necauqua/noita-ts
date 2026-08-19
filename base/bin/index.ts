@@ -4,41 +4,14 @@ import { spawnSync } from "child_process";
 import { Command } from "commander";
 import fs from "fs";
 import path from "path";
-import {
-  findSteamAppSync,
-  SteamAppNotFoundError,
-  SteamNotFoundError,
-} from "steam-locate";
 import syncDirectory from "sync-directory";
 import * as jsonc from "jsonc-parser";
 import NoitaMod from "./mod.js";
-
-function findSteamApp(name: string, id: string): string {
-  let noita;
-  try {
-    noita = findSteamAppSync(id);
-  } catch (e) {
-    if (e instanceof SteamNotFoundError) {
-      console.error("Steam is not installed or is unable to be found.");
-      process.exit(1);
-    }
-    if (e instanceof SteamAppNotFoundError) {
-      console.error(`${name} is not installed in Steam.`);
-      process.exit(1);
-    }
-    throw e;
-  }
-  const { isInstalled, installDir } = noita;
-  if (!isInstalled || !installDir) {
-    console.error(`${name} is not installed in Steam.`);
-    process.exit(1);
-  }
-  console.log(`Found a Steam installation of ${name} at ${installDir}`);
-  return installDir;
-}
+import { findNoita, findSteamApp } from "./steam.js";
+import runTests from "./test.js";
 
 function setupNoitaInstance(dir: string) {
-  const noitaDir = findSteamApp("Noita", "881100");
+  const noitaDir = findNoita();
   const startTime = performance.now();
 
   syncDirectory(noitaDir, dir, {
@@ -300,6 +273,64 @@ program
       } else {
         console.log(`Updated the mod at ${workshopUrl}`);
       }
+    },
+  );
+
+program
+  .command("test")
+  .option("-v, --verbose", "enable verbose output.")
+  .option(
+    "-l, --game-log",
+    "print the whole game log alongside the test report.",
+  )
+  .option(
+    "--image <image>",
+    "the headless Noita container image to run the tests in.",
+    "noita-headless",
+  )
+  .option("--docker <binary>", "the container engine to use.", "docker")
+  .option(
+    "--noita <path>",
+    "the Noita installation to run (default: the one installed through Steam).",
+  )
+  .option(
+    "--timeout <seconds>",
+    "how long to wait for the tests to report back.",
+    "300",
+  )
+  .option("--seed <seed>", "the world seed to run the tests with.")
+  .option("--keep", "leave the container running after the tests are done.")
+  .description(
+    "Run the mod's src/tests/ suite inside a headless Noita container.",
+  )
+  .action(
+    async (opts: {
+      verbose?: boolean;
+      image: string;
+      docker: string;
+      noita?: string;
+      timeout: string;
+      seed?: string;
+      keep?: boolean;
+      gameLog?: boolean;
+    }) => {
+      const mod = NoitaMod.make({ verbose: opts.verbose, dev: true, test: true });
+
+      // a directory of its own, as the container is given a mods folder
+      const mods = path.resolve("dist", "test");
+      fs.rmSync(mods, { recursive: true, force: true });
+      await mod.vfs.finalize(mods);
+      console.log(`Built the test mod into ${path.join(mods, mod.id)}`);
+
+      await runTests(mods, {
+        image: opts.image,
+        docker: opts.docker,
+        noita: opts.noita,
+        timeout: Number(opts.timeout),
+        seed: opts.seed,
+        keep: opts.keep,
+        gameLog: opts.gameLog,
+      });
     },
   );
 

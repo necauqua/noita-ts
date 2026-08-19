@@ -29,9 +29,26 @@ mod.on("PlayerSpawned", () => {
 ```sh
 npx nts run             # launch an isolated Noita instance with the mod installed
 npx nts build           # build a distributable mod zip into dist/
+npx nts test            # run src/test.ts in a headless Noita container
 npx nts publish "notes" # publish/update the mod on the Steam Workshop
 npx nts unpak           # unpack data.wak
 ```
+
+Tests live in `src/tests/`, which regular builds leave out entirely - every
+file in there is picked up on its own, no index to maintain:
+
+```ts
+// src/tests/player.ts
+import { assert, test } from "@noita-ts/base/test";
+
+test("the player is there", () => {
+  assert(GameGetPlayerStatsEntity() != 0, "no player");
+});
+```
+
+`nts test` builds the mod with those files as extra entry points, boots it in a
+[noita-docker](https://github.com/necauqua/noita-docker) container and reports
+what the game log said - see [test/](test) for a worked example.
 
 Mod metadata (id, name, description, workshop settings, etc.) lives in
 `package.json` under `noita.*` keys - see the
@@ -39,8 +56,9 @@ Mod metadata (id, name, description, workshop settings, etc.) lives in
 
 ## Packages
 
-- [`@noita-ts/base`](base) - the core: typed mod hooks, settings support, and
-  the `nts` CLI (build/run/publish/unpak). Also ships the ambient API typings in
+- [`@noita-ts/base`](base) - the core: typed mod hooks, settings support, an
+  in-game test runner (`@noita-ts/base/test`), and the `nts` CLI
+  (build/run/test/publish/unpak). Also ships the ambient API typings in
   [`base/types`](base/types) (Noita Lua API + components, Lua stdlib, TSTL
   language extensions), exposed as `@noita-ts/base/types`; its `bin/` holds the
   internal generator that produces the definitions from Noita's Lua API docs.
