@@ -1,0 +1,19 @@
+{
+  "name": "noita-ts-test",
+  "description": "Integration tests running inside a headless Noita container",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "noita.id": "noita-ts-test",
+  "noita.name": "noita-ts integration tests",
+  "noita.compat": 12,
+  "noita.unsafe": true,
+  "scripts": {
+    "test": "nts test",
+    "build": "nts build --dont-archive"
+  },
+  "dependencies": {
+    "@noita-ts/base": "*",
+    "@noita-ts/ffi": "*"
+  }
+}

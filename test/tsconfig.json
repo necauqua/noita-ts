@@ -1,0 +1,5 @@
+{
+  "extends": "@noita-ts/base/mod-tsconfig.json",
+  // only `src` is the mod; harness.ts runs on the host (see tsconfig.harness.json)
+  "include": ["src"]
+}
