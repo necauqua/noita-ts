@@ -40,6 +40,100 @@ const run = (cmd: string, args: string[]) => {
   };
 };
 
+/**
+ * Label every container started by this command carries, reverse-DNS as the
+ * convention for label keys goes.
+ */
+const TEST_LABEL = "ua.necauq.noita-ts.test";
+
+/**
+ * Label carrying the pid of the run a container belongs to. Containers kept
+ * with `--keep` are deliberately left without it, so that they are not reaped.
+ */
+const PID_LABEL = `${TEST_LABEL}.pid`;
+
+/**
+ * Removes the containers of `nts-test` runs whose process is gone, in case one
+ * was left behind by a run that died before it could clean up after itself.
+ */
+const reapStale = (docker: string) => {
+  const listed = run(docker, [
+    "ps",
+    "-a",
+    "--filter",
+    `label=${TEST_LABEL}`,
+    "--filter",
+    `label=${PID_LABEL}`,
+    "--format",
+    "{{.ID}}",
+  ]);
+  const ids = listed.stdout.split("\n").filter(Boolean);
+  if (ids.length === 0) {
+    return;
+  }
+  // one inspect for all of them, the label is not readable through the `ps`
+  // format string on every container engine
+  const inspected = run(docker, [
+    "inspect",
+    "-f",
+    `{{.Name}} {{index .Config.Labels "${PID_LABEL}"}}`,
+    ...ids,
+  ]);
+  for (const line of inspected.stdout.split("\n").filter(Boolean)) {
+    const [name, pid] = line.trim().replace(/^\//, "").split(" ");
+    if (!name || !pid || alive(Number(pid))) {
+      continue;
+    }
+    run(docker, ["rm", "-f", name]);
+  }
+};
+
+/** Whether a process with this pid exists, without signalling it. */
+const alive = (pid: number) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    // EPERM means it exists and just is not ours to signal
+    return (e as NodeJS.ErrnoException).code === "EPERM";
+  }
+};
+
+/**
+ * Starts a detached process that removes the container once this one is gone.
+ *
+ * The in-process cleanup covers the ordinary exits, but `npx` kills the whole
+ * process tree on Ctrl+C, which regularly takes this process down before, or
+ * halfway through, its signal handler. The watchdog is outside of that tree
+ * (detached, so it also does not get the terminal's SIGINT) and outlives it.
+ *
+ * It is another node rather than a shell one-liner, so that it works the same
+ * on Windows, where there is no `sh` to poll with.
+ */
+const watchdog = (docker: string, container: string) => {
+  const script = `
+    const { spawnSync } = require("child_process");
+    const gone = () => {
+      try {
+        process.kill(${process.pid}, 0);
+        return false;
+      } catch (e) {
+        return e.code !== "EPERM";
+      }
+    };
+    const tick = () => gone()
+      ? spawnSync(process.argv[1], ["rm", "-f", process.argv[2]], { stdio: "ignore" })
+      : setTimeout(tick, 1000);
+    tick();
+  `;
+  const child = spawn(process.execPath, ["-e", script, docker, container], {
+    detached: true,
+    stdio: "ignore",
+    windowsHide: true,
+  });
+  child.unref();
+};
+
 const die = (message: string): never => {
   console.error(`error: ${message}`);
   process.exit(1);
@@ -52,6 +146,43 @@ const die = (message: string): never => {
 export default async function runTests(mods: string, opts: TestOptions) {
   const { image, docker, timeout, seed, keep, gameLog } = opts;
   const container = `nts-test-${process.pid}`;
+
+  let running = false;
+  let stopped = false;
+  const stop = () => {
+    if (!running) {
+      return;
+    }
+    if (keep || stopped) {
+      if (keep && !stopped) {
+        console.log(`Leaving ${container} running (--keep)`);
+      }
+      stopped = true;
+      return;
+    }
+    stopped = true;
+    // `stop` gives the game a moment to die on its own, `rm -f` makes sure
+    // nothing is left behind when it does not or when `--rm` did not fire
+    run(docker, ["stop", "-t", "1", container]);
+    run(docker, ["rm", "-f", container]);
+  };
+
+  // the container name is known before it exists, and cleaning up a container
+  // that was never started is a no-op, so the handlers can go up front - a
+  // Ctrl+C landing between `docker run` and the handlers would otherwise leak
+  const onSignal = (signal: NodeJS.Signals) => {
+    console.log(`\nStopping ${container}`);
+    stop();
+    process.exit(128 + (signal === "SIGINT" ? 2 : 15));
+  };
+  process.once("SIGINT", onSignal);
+  process.once("SIGTERM", onSignal);
+  process.once("SIGHUP", onSignal);
+  // last resort for the paths that exit without going through the above, like
+  // an unexpected throw somewhere in here
+  process.once("exit", () => stop());
+
+  reapStale(docker);
 
   if (run(docker, ["image", "inspect", image]).status !== 0) {
     die(
@@ -70,6 +201,11 @@ export default async function runTests(mods: string, opts: TestOptions) {
     "-d",
     "--name",
     container,
+    "--label",
+    `${TEST_LABEL}=1`,
+    // the pid label is what the reaper of the next run goes by, and `--keep`
+    // opts out of being reaped by not having it
+    ...(keep ? [] : ["--label", `${PID_LABEL}=${process.pid}`]),
     "-v",
     `${noita}:/noita:ro`,
     "-v",
@@ -83,26 +219,11 @@ export default async function runTests(mods: string, opts: TestOptions) {
   if (started.status !== 0) {
     die(`could not start the container:\n${started.stderr}`);
   }
+  running = true;
+  if (!keep) {
+    watchdog(docker, container);
+  }
   console.log(`Running the tests in container ${container}\n`);
-
-  let stopped = false;
-  const stop = () => {
-    if (keep || stopped) {
-      if (keep && !stopped) {
-        console.log(`Leaving ${container} running (--keep)`);
-      }
-      return;
-    }
-    stopped = true;
-    run(docker, ["stop", "-t", "1", container]);
-  };
-
-  const onSignal = (signal: NodeJS.Signals) => {
-    stop();
-    process.exit(128 + (signal === "SIGINT" ? 2 : 15));
-  };
-  process.once("SIGINT", onSignal);
-  process.once("SIGTERM", onSignal);
 
   const lines = await collectReport(
     docker,
@@ -117,6 +238,7 @@ export default async function runTests(mods: string, opts: TestOptions) {
   );
   process.off("SIGINT", onSignal);
   process.off("SIGTERM", onSignal);
+  process.off("SIGHUP", onSignal);
   stop();
 
   const failed = lines.filter((l) => l.startsWith("FAIL"));

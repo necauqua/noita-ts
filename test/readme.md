@@ -24,6 +24,13 @@ Requirements: Docker or Podman, a `noita-headless` image built from
 Run `npx nts test --help` for the rest of the options (`--image`, `--docker`,
 `--noita`, `--timeout`).
 
+Every container it starts is labelled `ua.necauq.noita-ts.test=1`, so they can
+be listed with `docker ps --filter label=ua.necauq.noita-ts.test`. The command
+removes its own container when it is done, a detached watchdog removes it if
+the command itself is killed, and each run also removes the containers of
+earlier runs whose process is gone. Containers left by `--keep` are exempt
+from all of that and are yours to remove.
+
 ## Adding a test
 
 ```ts
