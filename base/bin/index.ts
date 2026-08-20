@@ -200,17 +200,33 @@ program
   .command("run")
   .option("-v, --verbose", "enable verbose output.")
   .option("--non-dev", "build in non-dev mode (DEV build data set to false)")
+  .option("--dev-exe", "launch noita_dev.exe instead of noita.exe")
+  .option("--gamemode <n>", "the gamemode index to start the game in.", "0")
+  .option(
+    "--extra-args <args...>",
+    "extra arguments to append to the Noita command line.",
+  )
   .description(
     "Run an isolated instance of Noita with the mod installed (requires Noita to be installed through Steam).",
   )
-  .action(async (opts: { verbose?: boolean; nonDev?: boolean }) => {
-    const mod = NoitaMod.make({ verbose: opts.verbose, dev: !opts.nonDev });
-    await run(mod, "noita.exe", [
-      "-no_logo_splashes",
-      "-gamemode",
-      "-always_store_userdata_in_workdir",
-    ]);
-  });
+  .action(
+    async (opts: {
+      verbose?: boolean;
+      nonDev?: boolean;
+      devExe?: boolean;
+      gamemode: string;
+      extraArgs?: string[];
+    }) => {
+      const mod = NoitaMod.make({ verbose: opts.verbose, dev: !opts.nonDev });
+      await run(mod, opts.devExe ? "noita_dev.exe" : "noita.exe", [
+        "-always_store_userdata_in_workdir",
+        "-no_logo_splashes",
+        "-gamemode",
+        opts.gamemode,
+        ...(opts.extraArgs ?? []),
+      ]);
+    },
+  );
 
 program
   .command("publish")
