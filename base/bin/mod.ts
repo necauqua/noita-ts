@@ -227,6 +227,27 @@ export default class NoitaMod {
     const { diagnostics, plugins } = transpile(vfs, !!verbose, buildData);
 
     if (buildData.test) {
+      // The test entry point is added to init.lua below rather than imported by
+      // the user's TypeScript program. Copy the base test modules explicitly
+      // so the generated require can load them from the mod's lua_modules.
+      const baseDist = path.resolve("node_modules/@noita-ts/base/dist");
+      const baseTest = fs.readFileSync(path.join(baseDist, "test.lua"), "utf-8");
+      vfs.write(
+        "lua_modules/@noita-ts/base/dist/test.lua",
+        // The published library's test module is not part of the user's
+        // TypeScript program, so tstl does not emit it as a dependency.
+        baseTest.replace(
+          'require("index")',
+          'require("lua_modules.@noita-ts.base.dist.index")',
+        ),
+      );
+      if (!vfs.has("lua_modules/@noita-ts/base/dist/index.lua")) {
+        vfs.write(
+          "lua_modules/@noita-ts/base/dist/index.lua",
+          fs.readFileSync(path.join(baseDist, "index.lua")),
+        );
+      }
+
       const modules = testModules(process.cwd());
       if (modules.length === 0) {
         console.warn(
