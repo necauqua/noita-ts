@@ -4,8 +4,8 @@ import c from "./schema";
 
 export const NativeString = c.declare('NativeString', [
   c.union(
-    c.field("buf", c.arr(c.u8, 16)),
-    c.field("ptr", c.ptr(c.u8)),
+    c.field("buf", c.u8.arr(16)),
+    c.field("ptr", c.u8.ptr()),
   ),
   c.field("len", c.u32),
   c.field("cap", c.u32),
@@ -31,15 +31,13 @@ export const Vec2i = c.declare('Vec2i', [
 export type Vec2i = c.infer<typeof Vec2i>;
 
 export const BooleanVec = c.declare('BooleanVec', [
-  c.field("start", c.ptr(c.u8)),
-  c.field("end", c.ptr(c.u8)),
-  c.field("cap", c.ptr(c.u8)),
+  c.field("start", c.u8.ptr()),
+  c.field("end", c.u8.ptr()),
+  c.field("cap", c.u8.ptr()),
   c.field("len", c.u32),
-]);
+]).augment<{ [index: number]: boolean | undefined; }>();
 
-export type BooleanVec = c.infer<typeof BooleanVec> & {
-  [index: number]: boolean | undefined;
-};
+export type BooleanVec = c.infer<typeof BooleanVec>;
 
 ffi.metatype('BooleanVec', {
   __index: (v: BooleanVec, key: any) => {
@@ -111,13 +109,13 @@ const string_vector_index = (v: any, key: any): any => {
 
 export const Vec = <T>(item: c.Type<T>) => {
   const type = c.declare(`${item.name}_Vec`, [
-    c.field("start", c.ptr(item)),
-    c.field("end", c.ptr(item)),
-    c.field("cap", c.ptr(item)),
+    c.field("start", item.ptr()),
+    c.field("end", item.ptr()),
+    c.field("cap", item.ptr()),
   ]);
 
   ffi.metatype(type.name, {
-    __index: item === NativeString ? string_vector_index : vector_index,
+    __index: item.name === NativeString.name ? string_vector_index : vector_index,
     __newindex: (v: any, key: any, value: any) => {
       if (typeof key === 'number' && key >= 0 && key < (v.end - v.start)) {
         v.start[key] = value;
@@ -126,10 +124,10 @@ export const Vec = <T>(item: c.Type<T>) => {
     __len: (v: any) => v.end - v.start,
   });
 
-  return type as c.Type<c.infer<typeof type> & {
+  return type.augment<{
     [index: number]: T | undefined;
     getAll?(): T[];
-  }>;
+  }>();
 };
 
 export const IntVec = Vec(c.i32);
@@ -140,16 +138,16 @@ export const Map = (key: c.Type<unknown>, value: c.Type<unknown>) => {
 
   const nodeRef = c.escape(`${name}_node`);
   const node = c.declare(nodeRef.name, [
-    c.field("left", c.ptr(nodeRef)),
-    c.field("up", c.ptr(nodeRef)),
-    c.field("right", c.ptr(nodeRef)),
+    c.field("left", nodeRef.ptr()),
+    c.field("up", nodeRef.ptr()),
+    c.field("right", nodeRef.ptr()),
     c.unknown(c.u32, "meta"),
     c.field("key", key),
     c.field("value", value),
   ]);
 
   const type = c.declare(name, [
-    c.field("root", c.ptr(node)),
+    c.field("root", node.ptr()),
     c.field("len", c.u32),
   ]);
 
@@ -192,10 +190,10 @@ export const Map = (key: c.Type<unknown>, value: c.Type<unknown>) => {
     __len: (map: any) => map.len,
   });
 
-  return type as c.Type<c.infer<typeof type> & {
+  return type.augment<{
     get(key: string): number | undefined;
     getAll(): Record<string, number>;
-  }>;
+  }>();
 };
 
 export const StringIntMap = Map(NativeString, c.i32);

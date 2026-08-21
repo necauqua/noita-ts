@@ -151,7 +151,7 @@ export type WizardAppConfig = c.infer<typeof WizardAppConfig>;
 const Platform = c.declare('Platform', [
   c.field("vftable", c.voidptr),
   c.field("application", c.voidptr),
-  c.field("app_config", c.ptr(WizardAppConfig)),
+  c.field("app_config", WizardAppConfig.ptr()),
   c.field("internal_width", c.f32),
   c.field("internal_height", c.f32),
   c.field("input_disabled", c.bool),
@@ -183,7 +183,7 @@ const Platform = c.declare('Platform', [
 ]);
 export type Platform = c.infer<typeof Platform>;
 
-const PLATFORM = ffi.cast<Platform>("Platform*", ffi.locateStaticGlobal(".?AVPlatformWin@poro@@"));
+const PLATFORM = Platform.cast(ffi.locateStaticGlobal(".?AVPlatformWin@poro@@"));
 
 export namespace PLATFORM { }
 export default PLATFORM;

@@ -1,4 +1,4 @@
-import ffi, { Ptr } from ".";
+import ffi from ".";
 import { NativeString } from "./cpp";
 import c from "./schema";
 
@@ -21,7 +21,7 @@ export const GameGlobal = c.declare("GameGlobal", [
   c.field("camera_reposition_pending", c.bool),
   c.field("cell_factory2", c.voidptr),
   c.field("world_sim_data", c.voidptr),
-  c.field("ui_flags", c.ptr(c.u32)),
+  c.field("ui_flags", c.u32.ptr()),
   c.field("weather_config", c.voidptr),
   c.field("post_fx", c.voidptr),
   c.field("magic_numbers", c.voidptr),
@@ -67,7 +67,7 @@ const findGameGlobal = () => {
     ) {
       continue;
     }
-    return ffi.cast<Ptr<GameGlobal>>("GameGlobal**", ffi.cast("uint32_t*", pushSize - 8)[0]);
+    return GameGlobal.ptr().cast(ffi.cast("uint32_t*", pushSize - 8)[0]);
   }
   throw "GameGlobal accessor not found";
 };

@@ -1,14 +1,76 @@
 import ffi, { Ptr } from ".";
 
 namespace c {
-  type CppDeclaration<Type> = {
-    readonly kind: 'declaration';
-    readonly name: string;
-    readonly definition?: string;
-    readonly size: number;
-    readonly align: number;
-    readonly type: Type;
-  };
+  /**
+   * A C type of a known layout, along with the TypeScript type `T` that its
+   * values are modelled as.
+   *
+   * Being a class rather than a bare object keeps the suffix functions on a
+   * shared metatable, and lets inferred declaration types be printed by name -
+   * inlining the recursive signatures below would blow up the emitted .d.ts.
+   */
+  export class Type<T> {
+    readonly kind = 'declaration';
+
+    /** The phantom carrier of `T` - it holds no value at runtime. */
+    declare readonly type: T;
+
+    constructor(
+      readonly name: string,
+      readonly size: number,
+      readonly align: number,
+      readonly definition?: string,
+    ) { }
+
+    /** `T` -> `T*`. */
+    ptr(): Type<Ptr<T>> {
+      return new Type(`${this.name}*`, 4, 4);
+    }
+
+    /** `T` -> `T[length]`. */
+    arr(length: number): Type<T[]> {
+      return new Type(`${this.name}[${length}]`, this.size * length, this.align);
+    }
+  }
+
+  /**
+   * A type whose values are handled through a pointer: a struct declaration,
+   * or a pointer to one.
+   *
+   * LuaJIT dereferences one level of indirection on field access, so a `T*`
+   * behaves exactly like the `T` it points at. That makes an address castable
+   * straight to `T`, which a scalar type cannot offer - `ffi.cast` refuses a
+   * struct type outright, and for a scalar there is nothing to dereference.
+   */
+  export class Ref<T> extends Type<T> {
+    /** `T` -> `T*`, which is one more `*` for the auto-deref to eat. */
+    override ptr(): Ref<Ptr<T>> {
+      return new Ref(`${this.name}*`, 4, 4);
+    }
+
+    /** A shorthand for `ffi.cast<T>(this.name + '*', thing)`. */
+    cast(thing: any): T {
+      return ffi.cast<T>(`${this.name}*`, thing);
+    }
+  }
+
+  /**
+   * A struct declared through `c.declare` - the one kind of type that has
+   * members of its own, and so the one kind worth augmenting.
+   */
+  export class Struct<T> extends Ref<T> {
+    /**
+     * Intersects the modelled type with `A`, leaving the C layout alone.
+     *
+     * Useful for tacking on members that the schema cannot express, such as
+     * ones provided by an `ffi.metatype`.
+     */
+    augment<A>(): Struct<T & A> {
+      return this as Struct<any>;
+    }
+  }
+
+  type CppDeclaration<T> = Type<T>;
 
   type CppField<Name extends string, Type> = {
     readonly kind: 'field';
@@ -32,8 +94,6 @@ namespace c {
     | CppField<string, any>
     | CppUnknown
     | CppUnion<readonly any[]>;
-
-  export type Type<T> = CppDeclaration<T>;
 
   type UnionToIntersection<U> =
     (U extends unknown ? (u: U) => void : never) extends (i: infer I) => void
@@ -91,7 +151,7 @@ namespace c {
       : `${typeName.slice(0, idx)} ${fieldName}${typeName.slice(idx)}`;
   };
 
-  export const declare = <E extends readonly CppEntry[]>(name: string, entries: E, noCdef?: true): CppDeclaration<Simplify<InferFields<E>>> => {
+  export const declare = <E extends readonly CppEntry[]>(name: string, entries: E, noCdef?: true): Struct<Simplify<InferFields<E>>> => {
     const render = (entry: CppEntry, offset: number, indent = '        '): string => {
       if (entry.kind === 'union') {
         return `${indent}union {\n${entry.members.map((member: CppEntry) => render(member, offset, `${indent}    `)).join('\n')}\n${indent}};`;
@@ -124,11 +184,11 @@ namespace c {
     if (!noCdef) {
       ffi.cdef(definition);
     }
-    return { kind: 'declaration', name, definition, size, align, type: undefined as never };
+    return new Struct<Simplify<InferFields<E>>>(name, size, align, definition);
   };
 
-  export const escape = <T>(name: string, size = 0, align = 1): CppDeclaration<T> =>
-    ({ kind: 'declaration', name, definition: undefined, size, align, type: undefined as never });
+  export const escape = <T>(name: string, size = 0, align = 1): Type<T> =>
+    new Type<T>(name, size, align);
 
   export const bool = escape<boolean>('bool', 1, 1);
   export const i8 = escape<number>(`int8_t`, 1, 1);
@@ -147,10 +207,6 @@ namespace c {
   // Noita is a 32-bit process.
   export const voidptr = escape<Ptr<unknown>>('void*', 4, 4);
 
-  export const ptr = <T>(type: CppDeclaration<T>): CppDeclaration<Ptr<T>> =>
-    escape<Ptr<T>>(`${type.name}*`, 4, 4);
-  export const arr = <T>(type: CppDeclaration<T>, length: number): CppDeclaration<T[]> =>
-    escape<T[]>(`${type.name}[${length}]`, type.size * length, type.align);
 
   /** A named struct field - the entries of a declaration are ordered, as C is. */
   export const field = <Name extends string, T>(name: Name, type: CppDeclaration<T>): CppField<Name, T> =>

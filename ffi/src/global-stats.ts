@@ -47,7 +47,7 @@ export const GlobalStats = c.declare('GlobalStats', [
 ]);
 export type GlobalStats = c.infer<typeof GlobalStats>;
 
-const GLOBAL_STATS = ffi.cast<GlobalStats>("GlobalStats*", ffi.locateStaticGlobal(".?AVGlobalStats@@"));
+const GLOBAL_STATS = GlobalStats.cast(ffi.locateStaticGlobal(".?AVGlobalStats@@"));
 
 export namespace GLOBAL_STATS { }
 export default GLOBAL_STATS;
