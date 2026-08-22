@@ -29,6 +29,23 @@ const TEST_ENTRY = "test.ts";
 const TEST_DIR = "tests";
 
 /**
+ * Finds the installed `@noita-ts/base` dist, walking up from the mod - npm
+ * hoists a dependency of a workspace into the root `node_modules`, so it is
+ * not always right next to the mod.
+ */
+function baseDist(cwd: string): string {
+  for (let dir = path.resolve(cwd); ; dir = path.dirname(dir)) {
+    const candidate = path.join(dir, "node_modules/@noita-ts/base/dist");
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+    if (path.dirname(dir) === dir) {
+      throw new Error("@noita-ts/base is not installed");
+    }
+  }
+}
+
+/**
  * Lists the suite as Lua module names, in the order they should be required:
  * `src/test.ts` first, as the place to put whatever the cases need, then every
  * file under `src/tests/`.
@@ -230,8 +247,8 @@ export default class NoitaMod {
       // The test entry point is added to init.lua below rather than imported by
       // the user's TypeScript program. Copy the base test modules explicitly
       // so the generated require can load them from the mod's lua_modules.
-      const baseDist = path.resolve("node_modules/@noita-ts/base/dist");
-      const baseTest = fs.readFileSync(path.join(baseDist, "test.lua"), "utf-8");
+      const dist = baseDist(process.cwd());
+      const baseTest = fs.readFileSync(path.join(dist, "test.lua"), "utf-8");
       vfs.write(
         "lua_modules/@noita-ts/base/dist/test.lua",
         // The published library's test module is not part of the user's
@@ -244,7 +261,7 @@ export default class NoitaMod {
       if (!vfs.has("lua_modules/@noita-ts/base/dist/index.lua")) {
         vfs.write(
           "lua_modules/@noita-ts/base/dist/index.lua",
-          fs.readFileSync(path.join(baseDist, "index.lua")),
+          fs.readFileSync(path.join(dist, "index.lua")),
         );
       }
 

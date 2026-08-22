@@ -9,6 +9,7 @@
     "nasm/platforms/*",
     "nxml",
     "pollnet",
-    "create-mod"
+    "create-mod",
+    "test"
   ]
 }
