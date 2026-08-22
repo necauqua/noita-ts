@@ -49,6 +49,9 @@ declare module "$mod" {
 
   /** Set to true when doing `nts run` or `nts build --dev` */
   export const DEV: boolean;
+
+  /** Set to true when doing `nts test`, i.e. when the mod runs the test suite in a container */
+  export const TEST: boolean;
 }
 
 /**

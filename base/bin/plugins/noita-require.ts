@@ -16,7 +16,7 @@ local ____originalNoitaRequire = require
 
 function require(module)
   if module == "$mod" then
-      return { MOD_ID = "${buildData.modId}", DEV = ${buildData.dev} }
+      return { MOD_ID = "${buildData.modId}", DEV = ${buildData.dev}, TEST = ${!!buildData.test} }
   end
   if module == "ffi" then
       if not ____originalNoitaRequire then
