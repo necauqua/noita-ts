@@ -29,6 +29,7 @@ mod.on("PlayerSpawned", () => {
 ```sh
 npx nts run             # launch an isolated Noita instance with the mod installed
 npx nts build           # build a distributable mod zip into dist/
+npx nts build --no-emit # build nothing, just report the files the mod would contain
 npx nts test            # run src/test.ts in a headless Noita container
 npx nts publish "notes" # publish/update the mod on the Steam Workshop
 npx nts unpak           # unpack data.wak

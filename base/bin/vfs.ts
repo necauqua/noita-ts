@@ -8,6 +8,7 @@ type FileContent = Readable | Buffer | string;
 
 export default class VFS {
   files: Record<string, FileContent> = {};
+  private sizes: Record<string, number> = {};
   private cwd: string = "";
 
   cd(cwd: string) {
@@ -18,8 +19,32 @@ export default class VFS {
     return this.cwd != "" ? this.cwd + "/" + filePath : filePath;
   }
 
-  write(filePath: string, content: FileContent) {
-    this.files[this.resolve(filePath)] = content;
+  write(filePath: string, content: FileContent, size?: number) {
+    const full = this.resolve(filePath);
+    this.files[full] = content;
+    this.sizes[full] =
+      size ??
+      (typeof content === "string"
+        ? Buffer.byteLength(content)
+        : Buffer.isBuffer(content)
+          ? content.length
+          : NaN);
+  }
+
+  /** Writes a file from disk, keeping its size known without reading it. */
+  writeFrom(filePath: string, sourcePath: string) {
+    this.write(
+      filePath,
+      fs.createReadStream(sourcePath),
+      fs.statSync(sourcePath).size,
+    );
+  }
+
+  /** The contained files with their sizes in bytes, sorted by path. */
+  entries(): { path: string; size: number }[] {
+    return Object.keys(this.files)
+      .sort()
+      .map((path) => ({ path, size: this.sizes[path] }));
   }
 
   has(filePath: string) {

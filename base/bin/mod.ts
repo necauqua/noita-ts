@@ -373,7 +373,7 @@ export default class NoitaMod {
     try {
       const name = "workshop-preview.png";
       fs.statSync(name); // meh check-then-act who cares
-      vfs.write("workshop_preview_image.png", fs.createReadStream(name));
+      vfs.writeFrom("workshop_preview_image.png", name);
     } catch (e) {
       // ignore
     }
@@ -393,7 +393,7 @@ export default class NoitaMod {
           if (assetFilters.some((filter) => filter(file, fullPath))) {
             continue;
           }
-          vfs.write(file, fs.createReadStream(fullPath));
+          vfs.writeFrom(file, fullPath);
         }
       }
     }

@@ -169,21 +169,73 @@ async function run(mod: NoitaMod | null, exe: string, noitaArgs: string[]) {
 
 const program = new Command();
 
+/** Formats a byte count the way one would want to read it in a build report. */
+function humanSize(bytes: number): string {
+  if (Number.isNaN(bytes)) {
+    return "?";
+  }
+  const units = ["B", "KiB", "MiB", "GiB"];
+  let unit = 0;
+  let size = bytes;
+  while (size >= 1024 && unit < units.length - 1) {
+    size /= 1024;
+    unit++;
+  }
+  return `${unit === 0 ? size : size.toFixed(1)} ${units[unit]}`;
+}
+
+/** Prints what the build would have produced, for `nts build --no-emit`. */
+function reportMod(mod: NoitaMod, target: string) {
+  const entries = mod.vfs.entries();
+  const prefix = `${mod.id}/`;
+
+  const sizes = entries.map((e) => humanSize(e.size));
+  const width = Math.max(...sizes.map((s) => s.length));
+
+  console.log(`Mod ${mod.id}, would be written to ${target}:`);
+  for (const [i, { path: filePath }] of entries.entries()) {
+    const name = filePath.startsWith(prefix)
+      ? filePath.slice(prefix.length)
+      : filePath;
+    console.log(`  ${sizes[i].padStart(width)}  ${name}`);
+  }
+
+  const total = entries.reduce((sum, e) => sum + (e.size || 0), 0);
+  console.log(
+    `  ${entries.length} file${entries.length === 1 ? "" : "s"}, ${humanSize(total)} total (nothing written)`,
+  );
+}
+
 program
   .command("build")
   .alias("b")
   .option("-v, --verbose", "enable verbose output.")
   .option("-A, --dont-archive", "don't zip the result")
   .option("--dev", "build in dev mode (DEV build data set to true)")
+  .option(
+    "--no-emit",
+    "don't write anything, only report what the build would produce",
+  )
   .description("Build a mod zip for distribution.")
   .action(
     async (opts: {
       verbose?: boolean;
       dontArchive?: boolean;
       dev?: boolean;
+      emit: boolean;
     }) => {
-      const { id, vfs } = NoitaMod.make(opts);
+      const mod = NoitaMod.make(opts);
+      const { id, vfs } = mod;
       const outputDir = path.resolve("dist");
+      if (!opts.emit) {
+        reportMod(
+          mod,
+          opts.dontArchive
+            ? path.join(outputDir, id)
+            : path.join(outputDir, `${id}.zip`),
+        );
+        return;
+      }
       fs.mkdirSync(outputDir, { recursive: true });
       if (opts.dontArchive) {
         await vfs.finalize(outputDir);
