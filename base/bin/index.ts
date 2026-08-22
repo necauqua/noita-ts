@@ -186,7 +186,9 @@ function humanSize(bytes: number): string {
 
 /** Prints what the build would have produced, for `nts build --no-emit`. */
 function reportMod(mod: NoitaMod, target: string) {
-  const entries = mod.vfs.entries();
+  const entries = mod.vfs
+    .entries()
+    .sort((a, b) => (b.size || 0) - (a.size || 0) || a.path.localeCompare(b.path));
   const prefix = `${mod.id}/`;
 
   const sizes = entries.map((e) => humanSize(e.size));
