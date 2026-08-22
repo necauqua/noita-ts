@@ -1,5 +1,5 @@
 import ffi from '.';
-import { NativeString, StringIntMap, Vec2 } from './cpp';
+import { Map, NativeString, Vec2 } from './cpp';
 import c from './schema';
 
 export const GameStats = c.declare('GameStats', [
@@ -29,7 +29,6 @@ export const GameStats = c.declare('GameStats', [
   c.field("wands_edited", c.i32),
   c.field("biomes_visited_with_wands", c.i32),
 ]);
-export type GameStats = c.infer<typeof GameStats>;
 
 export const GlobalStats = c.declare('GlobalStats', [
   c.field("vftable", c.voidptr),
@@ -39,13 +38,12 @@ export const GlobalStats = c.declare('GlobalStats', [
   c.field("DEBUG_HOW_MANY_RESETS", c.i32),
   c.field("DEBUG_FIXED_STATS", c.bool),
   c.field("session_dead", c.bool),
-  c.field("KEY_VALUE_STATS", StringIntMap),
+  c.field("KEY_VALUE_STATS", Map(NativeString, c.i32)),
   c.field("session", GameStats),
   c.field("highest", GameStats),
   c.field("global", GameStats),
   c.field("prev_best", GameStats),
 ]);
-export type GlobalStats = c.infer<typeof GlobalStats>;
 
 const GLOBAL_STATS = GlobalStats.cast(ffi.locateStaticGlobal(".?AVGlobalStats@@"));
 

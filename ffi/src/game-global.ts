@@ -34,7 +34,6 @@ export const GameGlobal = c.declare("GameGlobal", [
   c.field("load_test_save", c.bool),
   c.field("startup_argument", NativeString),
 ])
-export type GameGlobal = c.infer<typeof GameGlobal>;
 
 const findGameGlobal = () => {
   // Look for PUSH 0x10a, which is the size of GameGlobal

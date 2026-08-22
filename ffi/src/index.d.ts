@@ -228,6 +228,10 @@ declare const _default: {
 
   offsetof(this: void, structName: string, memberName: string): number;
 
+  sizeof(this: void, ct: string | any, nelem?: number): number;
+
+  copy(this: void, dst: any, src: any, len?: number): void;
+
   C: Record<string, any>;
 
   load(this: void, libName: string): Record<string, any>;

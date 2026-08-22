@@ -8,7 +8,6 @@ const ControlsConfigKey = c.declare('ControlsConfigKey', [
   c.field("primary_name", NativeString),
   c.field("secondary_name", NativeString),
 ]);
-export type ControlsConfigKey = c.infer<typeof ControlsConfigKey>;
 
 const ControlsConfig = c.declare('ControlsConfig', [
   c.field("key_up", ControlsConfigKey),
@@ -44,29 +43,28 @@ const ControlsConfig = c.declare('ControlsConfig', [
   c.field("gamepad_analog_sticks_threshold", c.f32),
   c.field("gamepad_analog_buttons_threshold", c.f32),
 ]);
-export type ControlsConfig = c.infer<typeof ControlsConfig>;
 
-enum FullscreenMode {
-  WINDOWED = 0,
-  STRETCHED = 1,
-  FULL = 2,
-}
+export const FullscreenMode = c.enumeration(c.i32, [
+  'WINDOWED',
+  'STRETCHED',
+  'FULL',
+]);
 
-enum VsyncMode {
-  OFF = 0,
-  ON = 1,
-  ADAPTIVE = 2,
-}
+export const VsyncMode = c.enumeration(c.i32, [
+  'OFF',
+  'ON',
+  'ADAPTIVE',
+]);
 
 export const PoroGraphicsSettings = c.declare('PoroGraphicsSettings', [
   c.field("width", c.i32),
   c.field("height", c.i32),
-  c.field("fullscreen", c.i32 as c.Type<FullscreenMode>),
+  c.field("fullscreen", FullscreenMode),
   c.field("caption", NativeString),
   c.field("icon_bmp", NativeString),
   c.field("textures_resize_to_power_of_two", c.bool),
   c.field("textures_fix_alpha_channel", c.bool),
-  c.field("vsync", c.i32 as c.Type<VsyncMode>),
+  c.field("vsync", VsyncMode),
   c.field("current_display", c.i32),
   c.field("external_context", c.voidptr),
 ]);
@@ -146,7 +144,6 @@ const WizardAppConfig = c.declare('WizardAppConfig', [
   c.unknown(NativeString),
   c.field("DEBUG_DONT_LOAD_OTHER_CONFIG", c.bool),
 ]);
-export type WizardAppConfig = c.infer<typeof WizardAppConfig>;
 
 const Platform = c.declare('Platform', [
   c.field("vftable", c.voidptr),
@@ -181,7 +178,6 @@ const Platform = c.declare('Platform', [
   c.field("random_seed", c.i32),
   c.field("joysticks_enabled", c.bool),
 ]);
-export type Platform = c.infer<typeof Platform>;
 
 const PLATFORM = Platform.cast(ffi.locateStaticGlobal(".?AVPlatformWin@poro@@"));
 

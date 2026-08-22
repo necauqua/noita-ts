@@ -12,7 +12,10 @@ namespace c {
   export class Type<T> {
     readonly kind = 'declaration';
 
-    /** The phantom carrier of `T` - it holds no value at runtime. */
+    /**
+     * The phantom carrier of `T` - it holds no value at runtime, and is how
+     * the modelled type is named: `typeof NativeString.type`.
+     */
     declare readonly type: T;
 
     constructor(
@@ -117,8 +120,6 @@ namespace c {
   type InferFields<Entries extends readonly CppEntry[]> =
     UnionToIntersection<EntryType<Entries[number]>>;
 
-  export type infer<D> = D extends CppDeclaration<infer T> ? T : never;
-
   const alignTo = (offset: number, alignment: number) =>
     Math.ceil(offset / alignment) * alignment;
 
@@ -151,6 +152,11 @@ namespace c {
       : `${typeName.slice(0, idx)} ${fieldName}${typeName.slice(idx)}`;
   };
 
+  // every `ffi.cdef`'d name, so that declaring one twice is caught rather than
+  // blowing up inside LuaJIT - generic containers hand out the same C type for
+  // the same arguments, and an actual clash is a bug worth naming
+  const declared: Record<string, string> = {};
+
   export const declare = <E extends readonly CppEntry[]>(name: string, entries: E, noCdef?: true): Struct<Simplify<InferFields<E>>> => {
     const render = (entry: CppEntry, offset: number, indent = '        '): string => {
       if (entry.kind === 'union') {
@@ -182,7 +188,13 @@ namespace c {
     // type, as self-referential structs (tree/list nodes) need
     const definition = `typedef struct ${name} ${name};\nstruct ${name} {\n${fields.join('\n')}\n};`;
     if (!noCdef) {
-      ffi.cdef(definition);
+      const previous = declared[name];
+      if (previous === undefined) {
+        ffi.cdef(definition);
+        declared[name] = definition;
+      } else if (previous !== definition) {
+        throw new Error(`C type '${name}' is already declared with a different layout`);
+      }
     }
     return new Struct<Simplify<InferFields<E>>>(name, size, align, definition);
   };
@@ -207,6 +219,52 @@ namespace c {
   // Noita is a 32-bit process.
   export const voidptr = escape<Ptr<unknown>>('void*', 4, 4);
 
+  // the position of a name in the list, as the literal number it is
+  type Ordinal<Names extends readonly string[]> = {
+    [I in keyof Names as Names[I] extends string ? Names[I] : never]:
+      I extends `${infer N extends number}` ? N : never;
+  };
+
+  /** The constants of an enumeration, however they were spelled out. */
+  type Constants<E> = E extends readonly string[] ? Ordinal<E> : E;
+
+  /**
+   * A set of numeric constants stored in `base` - a C enum with the width
+   * spelled out, which C itself leaves to the compiler.
+   *
+   * The names are numbered from zero, or given values of their own:
+   *
+   * ```typescript
+   * const Color = c.enumeration(c.u8, ['red', 'black']);
+   * const Kind = c.enumeration(c.i32, { none: 0, some: 7 });
+   * ```
+   *
+   * The constants sit on the returned type (`Color.black`), and a field
+   * declared with it is typed as their union.
+   */
+  export const enumeration = <const E extends readonly string[] | Record<string, number>>(
+    base: Type<number>,
+    values: E,
+  ): Type<Constants<E>[keyof Constants<E>]> & Readonly<Constants<E>> => {
+    const type: any = new Type(base.name, base.size, base.align);
+
+    // both forms are a table in Lua, told apart by what they hold rather than
+    // by their shape - a map keyed by a number would pass for a list
+    const [, first] = next(values as any);
+    const constants: Record<string, number> = typeof first === 'string'
+      ? Object.fromEntries((values as readonly string[]).map((name, index) => [name, index]))
+      : values as Record<string, number>;
+
+    for (const [name, value] of Object.entries(constants)) {
+      // the constants share the object with the members of `Type`, and a name
+      // quietly landing on top of `name` or `size` would be a mess
+      if (type[name] !== undefined) {
+        throw new Error(`enumeration constant '${name}' shadows a member of the type`);
+      }
+      type[name] = value;
+    }
+    return type;
+  };
 
   /** A named struct field - the entries of a declaration are ordered, as C is. */
   export const field = <Name extends string, T>(name: Name, type: CppDeclaration<T>): CppField<Name, T> =>

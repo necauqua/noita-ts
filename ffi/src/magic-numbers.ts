@@ -1,15 +1,14 @@
 /// <reference types="lua-types/jit" />
 
 import ffi, { Ptr } from ".";
+import { NativeString } from "./cpp";
 
 const bool = "bool" as string & { __type: boolean };
 const int = "int" as string & { __type: number };
 const uint = "uint" as string & { __type: number };
 const float = "float" as string & { __type: number };
 const double = "double" as string & { __type: number };
-
-// ugh its std::string, we'll figure something out later
-const str = "const char*" as string & { __type: unknown };
+const str = "const char*" as string & { __type: typeof NativeString.type };
 
 const findMagicNumber = <K extends MagicNumbers>(name: K) => {
   // only place with mov EDX <magic number string> is GetMagicNumber,
