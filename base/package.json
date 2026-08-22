@@ -1,6 +1,6 @@
 {
   "name": "@noita-ts/base",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "files": [
     "dist/**/*.{js,lua,d.ts}",
