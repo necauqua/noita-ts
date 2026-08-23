@@ -6,15 +6,35 @@ import mod from ".";
  *
  * Based on `pollnet.Reactor`.
  *
- * Usage example:
+ * Basic example:
+ * ```typescript
+ *
+ * // On first call, Scheduler.get() creates and registers a scheduler to be
+ * // polled on "WorldPreUpdate" and "PausePreUpdate" events, and stores itself.
+ * const scheduler = Scheduler.get();
+ *
+ * (async() => {
+ *     await scheduler.wait(300);
+ *     GamePrint("5 seconds passed")
+ *     while (true) {
+ *         await scheduler.wait(60);
+ *         GamePrint("1 more second passed");
+ *     }
+ * })().catch(print_error);
+ * ```
+ *
+ * Manual example (no magic singletons):
  * ```typescript
  * const scheduler = new Scheduler();
  *
  * mod.on("WorldPreUpdate", () => scheduler.poll());
  * mod.on("PausePreUpdate", () => scheduler.poll());
  *
+ * // Manually reimplement scheduler.wait here too
  * const sleep = (frames: number) => scheduler.spawn(() => {
  *    for (let i = 0; i < frames; i++) {
+ *        // this can be any yield-based API, scheduler is a tool
+ *        // for converting Lua coroutines into Promises and vice-versa
  *        coroutine.yield();
  *    }
  * });
@@ -28,23 +48,55 @@ import mod from ".";
  *     }
  * })().catch(print_error);
  * ```
- *
- * Note that in real code you'd probably want to use `scheduler.wait()` instead
- * of writing your own `sleep` function - its just an example of converting a
- * coroutine into a promise.
- *
- * Also note that you can use `Scheduler.register()` to create a scheduler and register it to poll on every frame automatically.
  */
 export default class Scheduler {
   private threads = new LuaTable<LuaThread, true>();
 
+  private static _instance: Scheduler | undefined;
+
   /**
-   * A shortcut for creating a scheduler and registering it to poll on every frame.
-   *
-   * Do *not* poll the scheduler manually if you use this method, it will
-   * register itself to be polled on "WorldPreUpdate" and "PausePreUpdate"
-   * events.
-   */
+    * A convenience lazy singleton storage for return of `Scheduler.register()`.
+    *
+    * This is the most convenient way to use the scheduler, applicable to 99% of use cases.
+    *
+    * Example, in any file run in the init context:
+    * ```typescript
+    * import Scheduler from "@noita-ts/base/async";
+    *
+    * const scheduler = Scheduler.get();
+    *
+    * scheduler.wait(60).then(() => GamePrint("60 frames later.."));
+    * ```
+    */
+  static get() {
+    return this._instance ??= Scheduler.register();
+  }
+
+  /**
+    * A shortcut for creating a scheduler and registering it to poll on every
+    * frame.
+    *
+    * Do *not* poll the scheduler manually if you use this method, it will
+    * register itself to be polled on "WorldPreUpdate" and "PausePreUpdate"
+    * events.
+    * This means such a scheduler will be automatically polled in the init
+    * context - for anything more exotic you can create and poll a scheduler
+    * manually.
+    *
+    * Also while you technically can create multiple schedulers, it is highly
+    * not recomended, so do not call this method more than once in your mod.
+    * `Scheduler.get()` lazily creates and stores a singleton instance of the
+    * scheduler, use that instead.
+    *
+    * Example:
+    * ```typescript
+    * import Scheduler from "@noita-ts/base/async";
+    *
+    * const scheduler = Scheduler.register();
+    *
+    * scheduler.wait(60).then(() => GamePrint("60 frames later.."));
+    * ```
+    */
   static register() {
     const scheduler = new Scheduler();
     mod.on("WorldPreUpdate", () => scheduler.poll());
@@ -64,7 +116,7 @@ export default class Scheduler {
     const survivors = new LuaTable<LuaThread, true>();
     let alive = 0;
 
-    for (const [thread] of pairs(polled)) {
+    for (const [thread] of Object.entries(polled)) {
       // our threads never fail because spawn catches errors and rejects the
       // promise, not surfacing the error to the coroutine;
       // and we should never have dead threads in the list either
@@ -78,7 +130,7 @@ export default class Scheduler {
     }
 
     // re-add any new threads spawned by polled threads
-    for (const [thread] of pairs(this.threads)) {
+    for (const [thread] of Object.entries(this.threads)) {
       survivors.set(thread, true);
       alive++;
     }
@@ -114,7 +166,7 @@ export default class Scheduler {
   }
 
   /**
-   * Resumes after one tick.
+   * Resumes after one poll.
    *
    * This is a convenience method that spawns a coroutine that just yields once.
    */
@@ -125,14 +177,14 @@ export default class Scheduler {
   }
 
   /**
-   * Resumes after a given number of ticks.
+   * Resumes after a given number of polls.
    *
    * This is a convenience method that spawns a coroutine that just yields
-   * `ticks` times.
+   * `polls` times.
    */
-  wait(ticks: number) {
+  wait(polls: number) {
     return this.spawn(() => {
-      for (let i = 0; i < ticks; i++) {
+      for (let i = 0; i < polls; i++) {
         coroutine.yield();
       }
     });

@@ -1,6 +1,8 @@
 import PLATFORM from "@noita-ts/ffi/platform";
 import { assert, assertEq, log, test } from "@noita-ts/base/test";
-import { scheduler } from "../async";
+import Scheduler from "@noita-ts/base/async";
+
+const scheduler = Scheduler.get();
 
 test("PLATFORM.app_config is readable", () => {
   const config = PLATFORM.app_config[0];

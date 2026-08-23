@@ -1,7 +1,9 @@
 import ffi from "@noita-ts/ffi";
 import GAME_GLOBAL from "@noita-ts/ffi/game-global";
 import { assert, assertEq, log, test } from "@noita-ts/base/test";
-import { scheduler } from "../async";
+import Scheduler from "@noita-ts/base/async";
+
+const scheduler = Scheduler.get();
 
 test("GAME_GLOBAL is reachable", () => {
   assert(GAME_GLOBAL[0] != undefined, "GAME_GLOBAL points at nothing");
