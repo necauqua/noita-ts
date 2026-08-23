@@ -134,6 +134,22 @@ const watchdog = (docker: string, container: string) => {
   child.unref();
 };
 
+/**
+ * Game log lines that mean something blew up outside the suite: after one of
+ * those no report is ever coming, so the run has to end right there.
+ *
+ * The recurring-error line is skipped - it is the game saying it stopped
+ * repeating an error it already logged, not a new one.
+ */
+const FATAL: { re: RegExp; what: string }[] = [
+  { re: /^Lua \(DoFile\) error/, what: "the mod failed to load" },
+  { re: /^Error loading lua script /, what: "the mod failed to load" },
+  {
+    re: /^Lua error - (?!\(skipping logging of recurring)/,
+    what: "the game hit an unexpected Lua error",
+  },
+];
+
 const die = (message: string): never => {
   console.error(`error: ${message}`);
   process.exit(1);
@@ -253,7 +269,8 @@ export default async function runTests(mods: string, opts: TestOptions) {
 
 /**
  * Follows the container log until the mod reports that it is done, returning
- * the report lines. Rejects when the game dies or the timeout runs out.
+ * the report lines. Rejects when the game logs an error that means the report
+ * is never coming, when the game dies, or when the timeout runs out.
  */
 function collectReport(
   docker: string,
@@ -273,6 +290,13 @@ function collectReport(
     const counter = () => dim(`[${++done}/${total}]`);
     const indent = () => " ".repeat(`[${done}/${total}] `.length);
 
+    // a fatal game log line being collected: the message continues on the
+    // lines that follow it (the stack traceback, which is indented, and the
+    // second line the game logs for a failed `dofile`), so the rejection waits
+    // for the whole thing instead of cutting it off after the first line
+    let fatal: { what: string; lines: string[] } | undefined;
+    let fatalTimer: NodeJS.Timeout | undefined;
+
     let finished = false;
     const finish = (fn: () => void) => {
       if (finished) {
@@ -280,9 +304,38 @@ function collectReport(
       }
       finished = true;
       clearTimeout(timer);
+      clearTimeout(fatalTimer);
       clearInterval(alive);
       logs.kill();
       fn();
+    };
+
+    const abort = () => {
+      const { what, lines } = fatal!;
+      finish(() => reject(new Error(`${what}:\n${lines.join("\n")}`)));
+    };
+
+    /** Feeds one game log line to the fatal-error collector. */
+    const fatalLine = (line: string) => {
+      if (fatal) {
+        // indented lines are the traceback, and the `dofile` failure is logged
+        // as two lines in a row - anything else means the message is over
+        const known = FATAL.find(({ re }) => re.test(line));
+        if ((/^\s/.test(line) && line.trim() !== "") || known?.what === fatal.what) {
+          fatal.lines.push(line);
+        } else {
+          abort();
+        }
+        return;
+      }
+      const known = FATAL.find(({ re }) => re.test(line));
+      if (!known) {
+        return;
+      }
+      fatal = { what: known.what, lines: [line] };
+      // the rest of the message lands in the log right after, but possibly in
+      // another chunk, so give it a moment before giving up on it
+      fatalTimer = setTimeout(abort, 500);
     };
 
     const timer = setTimeout(
@@ -311,15 +364,14 @@ function collectReport(
       const parts = buffer.split("\n");
       buffer = parts.pop() ?? "";
 
-      for (const part of parts) {
+      for (const raw of parts) {
+        const part = raw.replace(/\s+$/, "");
         const idx = part.indexOf(PREFIX);
         if (idx === -1) {
           if (gameLog) {
-            console.log(dim(part.trimEnd()));
+            console.log(dim(part));
           }
-          if (part.includes("Lua (DoFile) error")) {
-            finish(() => reject(new Error(`the mod failed to load:\n${part}`)));
-          }
+          fatalLine(part);
           continue;
         }
         const line = part.slice(idx + PREFIX.length).trim();
@@ -341,8 +393,13 @@ function collectReport(
         } else if (line.startsWith("FAIL ")) {
           console.log(`${counter()} ${red("FAIL")} ${line.slice(5)}`);
         } else if (line.startsWith("DONE")) {
-          // the summary printed at the end says the same thing
-          finish(() => resolve(lines));
+          // an error the game logged on the way here still sinks the run, even
+          // when every case somehow made it through
+          if (fatal) {
+            abort();
+          } else {
+            finish(() => resolve(lines));
+          }
         }
       }
     };
