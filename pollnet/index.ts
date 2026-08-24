@@ -96,7 +96,7 @@ export class HttpClient {
 }
 
 /**
- * Async WebSocket client built on top of an {@link AsyncReactor}.
+ * Async WebSocket client built on top of a {@link Scheduler}.
  * Messages are delivered via the `onmessage` callback, and errors via
  * `onerror`.
  * Call {@link send} to send a message, and {@link close} to close the
