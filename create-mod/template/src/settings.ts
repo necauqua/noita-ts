@@ -1,3 +1,5 @@
+/// <reference types="@noita-ts/base" />
+
 // By doing settings in such a way, we can have auto-completable
 //`mod.settings.checkbox` anywhere, and it would also have a correct `boolean`
 // type.
