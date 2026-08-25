@@ -41,6 +41,10 @@
     "./death-match": {
       "types": "./dist/death-match.d.ts",
       "default": "./dist/death-match"
+    },
+    "./luajit": {
+      "types": "./dist/luajit.d.ts",
+      "default": "./dist/luajit"
     }
   },
   "scripts": {
