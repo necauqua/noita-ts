@@ -66,7 +66,7 @@ const findGameGlobal = () => {
     ) {
       continue;
     }
-    return GameGlobal.ptr().cast(ffi.cast("uint32_t*", pushSize - 8)[0]);
+    return GameGlobal.ptr().ptr().ptr().cast(ffi.cast("uint32_t*", pushSize - 8))[0];
   }
   throw "GameGlobal accessor not found";
 };

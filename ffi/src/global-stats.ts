@@ -45,7 +45,7 @@ export const GlobalStats = c.declare('GlobalStats', [
   c.field("prev_best", GameStats),
 ]);
 
-const GLOBAL_STATS = GlobalStats.cast(ffi.locateStaticGlobal(".?AVGlobalStats@@"));
+const GLOBAL_STATS = GlobalStats.ptr().cast(ffi.locateStaticGlobal(".?AVGlobalStats@@"));
 
 export namespace GLOBAL_STATS { }
 export default GLOBAL_STATS;

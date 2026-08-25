@@ -243,9 +243,18 @@ declare const _default: {
   metatype(this: void, type: string, metatype: any): void;
 };
 
+declare const ptr: unique symbol;
+interface PtrMark<T> {
+  readonly [ptr]: T;
+}
+
+type Deref<T> = [T] extends [PtrMark<any>]
+  ? unknown
+  : { [K in keyof T & string]: T[K] };
+
 export type Ptr<T> = {
   [offset: number]: T;
-};
+} & PtrMark<T> & Deref<T>;
 
 export type CommonFfiTypes = {
   bool: boolean;

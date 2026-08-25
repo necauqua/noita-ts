@@ -179,7 +179,7 @@ const Platform = c.declare('Platform', [
   c.field("joysticks_enabled", c.bool),
 ]);
 
-const PLATFORM = Platform.cast(ffi.locateStaticGlobal(".?AVPlatformWin@poro@@"));
+const PLATFORM = Platform.ptr().cast(ffi.locateStaticGlobal(".?AVPlatformWin@poro@@"));
 
 export namespace PLATFORM { }
 export default PLATFORM;

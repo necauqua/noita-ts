@@ -30,6 +30,11 @@ namespace c {
       return new Type(`${this.name}*`, 4, 4);
     }
 
+    /** A shorthand for `ffi.cast<T>(this.name, thing)`. */
+    cast(thing: any): T {
+      return ffi.cast<T>(this.name, thing);
+    }
+
     /** `T` -> `T[length]`. */
     arr(length: number): Type<T[]> {
       return new Type(`${this.name}[${length}]`, this.size * length, this.align);
@@ -37,31 +42,10 @@ namespace c {
   }
 
   /**
-   * A type whose values are handled through a pointer: a struct declaration,
-   * or a pointer to one.
-   *
-   * LuaJIT dereferences one level of indirection on field access, so a `T*`
-   * behaves exactly like the `T` it points at. That makes an address castable
-   * straight to `T`, which a scalar type cannot offer - `ffi.cast` refuses a
-   * struct type outright, and for a scalar there is nothing to dereference.
-   */
-  export class Ref<T> extends Type<T> {
-    /** `T` -> `T*`, which is one more `*` for the auto-deref to eat. */
-    override ptr(): Ref<Ptr<T>> {
-      return new Ref(`${this.name}*`, 4, 4);
-    }
-
-    /** A shorthand for `ffi.cast<T>(this.name + '*', thing)`. */
-    cast(thing: any): T {
-      return ffi.cast<T>(`${this.name}*`, thing);
-    }
-  }
-
-  /**
    * A struct declared through `c.declare` - the one kind of type that has
    * members of its own, and so the one kind worth augmenting.
    */
-  export class Struct<T> extends Ref<T> {
+  export class Struct<T> extends Type<T> {
     /**
      * Intersects the modelled type with `A`, leaving the C layout alone.
      *
