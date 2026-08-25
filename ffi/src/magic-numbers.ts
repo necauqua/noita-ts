@@ -13,9 +13,8 @@ const str = "const char*" as string & { __type: typeof NativeString.type };
 const findMagicNumber = <K extends MagicNumbers>(name: K) => {
   // only place with mov EDX <magic number string> is GetMagicNumber,
   //  SetMagicNumbers has pushes
-  const [a, b, c, d] = ffi.le32(ffi.locateString(name));
   const movStr = ffi.text.scanAll(
-    [ 0xBA, a, b, c, d ],
+    [ 0xBA, ...ffi.le32(ffi.locateString(name)) ],
     { name: `mov EDX "${name}"` },
   );
   const pushMagic = ffi.scan([0x68], { at: movStr + 5 });

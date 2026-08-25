@@ -37,6 +37,10 @@
     "./global-stats": {
       "types": "./dist/global-stats.d.ts",
       "default": "./dist/global-stats"
+    },
+    "./death-match": {
+      "types": "./dist/death-match.d.ts",
+      "default": "./dist/death-match"
     }
   },
   "scripts": {
