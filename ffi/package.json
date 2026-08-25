@@ -42,6 +42,10 @@
       "types": "./dist/death-match.d.ts",
       "default": "./dist/death-match"
     },
+    "./entity-manager": {
+      "types": "./dist/entity-manager.d.ts",
+      "default": "./dist/entity-manager"
+    },
     "./luajit": {
       "types": "./dist/luajit.d.ts",
       "default": "./dist/luajit"
@@ -54,6 +58,7 @@
     "build:lua": "tstl -p . && cp src/*.{lua,d.ts} dist/"
   },
   "dependencies": {
+    "@noita-ts/base": "^0.9.4",
     "@typescript-to-lua/language-extensions": "^1.19.0"
   },
   "devDependencies": {

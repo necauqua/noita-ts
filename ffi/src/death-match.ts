@@ -1,5 +1,6 @@
 import ffi from ".";
-import { VoidVec } from "./cpp";
+import { Vec } from "./cpp";
+import { Entity } from "./entity-manager";
 import c from "./schema";
 
 export const DeathMatch = c.declare("DeathMatch", [
@@ -11,7 +12,7 @@ export const DeathMatch = c.declare("DeathMatch", [
   c.field("simple_ui_listener_vftable", c.voidptr),
   c.field("event_listener_vftable", c.voidptr),
   c.unknown(60),
-  c.field("player_entities", VoidVec),
+  c.field("player_entities", Vec(Entity.ptr())),
   c.unknown(44),
   c.field("is_game_over", c.bool),
 ]);
