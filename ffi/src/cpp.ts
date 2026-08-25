@@ -59,16 +59,19 @@ ffi.metatype('NativeString', {
 
 /** `std::string`, which a container hands out as a plain string. */
 export const NativeString = conversion(nativeString, s => tostring(s));
+export type NativeString = typeof NativeString.type;
 
 export const Vec2 = c.declare('Vec2', [
   c.field("x", c.f32),
   c.field("y", c.f32),
 ]);
+export type Vec2 = typeof Vec2.type;
 
 export const Vec2i = c.declare('Vec2i', [
   c.field("x", c.i32),
   c.field("y", c.i32),
 ]);
+export type Vec2i = typeof Vec2i.type;
 
 /**
  * A C type name may contain `*`, `[N]` and spaces, none of which may appear in
@@ -106,11 +109,10 @@ export const BooleanVec = c.declare('BooleanVec', [
   [index: number]: boolean | undefined;
   getAll(this: any): boolean[];
 }>();
-
-type Bits = typeof BooleanVec.type;
+export type BooleanVec = typeof BooleanVec.type;
 
 const booleanVecMethods = {
-  getAll: (self: Bits): boolean[] => {
+  getAll: (self: BooleanVec): boolean[] => {
     const result: boolean[] = [];
     for (let i = 0; i < self.len; i++) {
       result[i] = (self.start[i >> 3] & (1 << (i & 7))) != 0;
@@ -120,7 +122,7 @@ const booleanVecMethods = {
 } as Record<string, unknown>;
 
 ffi.metatype('BooleanVec', {
-  __index: (v: Bits, key: any) => {
+  __index: (v: BooleanVec, key: any) => {
     if (typeof key != 'number') {
       return booleanVecMethods[key];
     }
@@ -128,7 +130,7 @@ ffi.metatype('BooleanVec', {
       return (v.start[key >> 3] & (1 << (key & 7))) != 0;
     }
   },
-  __newindex: (v: Bits, key: any, value: boolean) => {
+  __newindex: (v: BooleanVec, key: any, value: boolean) => {
     if (typeof key == 'number' && key >= 0 && key < v.len) {
       const byteIdx = key >> 3;
       const mask = 1 << (key & 7);
@@ -139,7 +141,7 @@ ffi.metatype('BooleanVec', {
       }
     }
   },
-  __len: (v: Bits) => v.len,
+  __len: (v: BooleanVec) => v.len,
 });
 
 /** An opaque vector - padding of the right shape where the element type is unknown. */
@@ -148,6 +150,7 @@ export const VoidVec = c.declare('VoidVec', [
   c.field("end", c.voidptr),
   c.field("cap", c.voidptr),
 ]);
+export type VoidVec = typeof VoidVec.type;
 
 /**
  * `std::vector<T>` for any `T` of a known layout - a primitive, a pointer or a

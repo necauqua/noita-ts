@@ -2,14 +2,15 @@ import ffi from ".";
 import { NativeString, Vec2, VoidVec } from "./cpp";
 import c from "./schema";
 
-const ControlsConfigKey = c.declare('ControlsConfigKey', [
+export const ControlsConfigKey = c.declare('ControlsConfigKey', [
   c.field("primary", c.i32),
   c.field("secondary", c.i32),
   c.field("primary_name", NativeString),
   c.field("secondary_name", NativeString),
 ]);
+export type ControlsConfigKey = typeof ControlsConfigKey.type;
 
-const ControlsConfig = c.declare('ControlsConfig', [
+export const ControlsConfig = c.declare('ControlsConfig', [
   c.field("key_up", ControlsConfigKey),
   c.field("key_down", ControlsConfigKey),
   c.field("key_left", ControlsConfigKey),
@@ -43,18 +44,21 @@ const ControlsConfig = c.declare('ControlsConfig', [
   c.field("gamepad_analog_sticks_threshold", c.f32),
   c.field("gamepad_analog_buttons_threshold", c.f32),
 ]);
+export type ControlsConfig = typeof ControlsConfig.type;
 
 export const FullscreenMode = c.enumeration(c.i32, [
   'WINDOWED',
   'STRETCHED',
   'FULL',
 ]);
+export type FullscreenMode = typeof FullscreenMode.type;
 
 export const VsyncMode = c.enumeration(c.i32, [
   'OFF',
   'ON',
   'ADAPTIVE',
 ]);
+export type VsyncMode = typeof VsyncMode.type;
 
 export const PoroGraphicsSettings = c.declare('PoroGraphicsSettings', [
   c.field("width", c.i32),
@@ -68,8 +72,9 @@ export const PoroGraphicsSettings = c.declare('PoroGraphicsSettings', [
   c.field("current_display", c.i32),
   c.field("external_context", c.voidptr),
 ]);
+export type PoroGraphicsSettings = typeof PoroGraphicsSettings.type;
 
-const WizardAppConfig = c.declare('WizardAppConfig', [
+export const WizardAppConfig = c.declare('WizardAppConfig', [
   c.field("vftable", c.voidptr),
   c.field("internal_size_w", c.i32),
   c.field("internal_size_h", c.i32),
@@ -144,6 +149,7 @@ const WizardAppConfig = c.declare('WizardAppConfig', [
   c.unknown(NativeString),
   c.field("DEBUG_DONT_LOAD_OTHER_CONFIG", c.bool),
 ]);
+export type WizardAppConfig = typeof WizardAppConfig.type;
 
 const Platform = c.declare('Platform', [
   c.field("vftable", c.voidptr),
@@ -178,6 +184,7 @@ const Platform = c.declare('Platform', [
   c.field("random_seed", c.i32),
   c.field("joysticks_enabled", c.bool),
 ]);
+export type Platform = typeof Platform.type;
 
 const PLATFORM = Platform.ptr().cast(ffi.locateStaticGlobal(".?AVPlatformWin@poro@@"));
 

@@ -10,7 +10,7 @@
   "noita.unsafe": true,
   "scripts": {
     "test": "nts test",
-    "build": "nts build --dont-archive"
+    "build": "nts build --no-emit"
   },
   "dependencies": {
     "@noita-ts/base": "*",

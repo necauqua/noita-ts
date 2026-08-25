@@ -33,16 +33,14 @@ export const GameGlobal = c.declare("GameGlobal", [
   c.field("no_logo_splashes", c.bool),
   c.field("load_test_save", c.bool),
   c.field("startup_argument", NativeString),
-])
+]);
 
-const findGameGlobal = () => {
-  // Look for PUSH 0x10a, which is the size of GameGlobal
-  const allocation = [0x68, 0xa0, 0x01, 0x00, 0x00]; // asm('push 0x10a').raw
-
+const locate = () => {
   let last = ffi.text.offset;
 
   for (let skip = 0; skip < 32; skip++) {
-    const pushSize = ffi.text.scanAll(allocation, {
+    // PUSH 0x10a
+    const pushSize = ffi.text.scanAll([0x68, 0xa0, 0x01, 0x00, 0x00], {
       at: last,
       name: "GameGlobal accessor allocation",
     });
@@ -71,7 +69,7 @@ const findGameGlobal = () => {
   throw "GameGlobal accessor not found";
 };
 
-const GAME_GLOBAL = findGameGlobal();
+const GAME_GLOBAL = locate();
 
-export namespace GAME_GLOBAL { };
+export namespace GAME_GLOBAL {}
 export default GAME_GLOBAL;
