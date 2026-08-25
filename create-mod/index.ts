@@ -71,7 +71,8 @@ async function main() {
   const unsafe = cancellable(
     await p.confirm({
       message:
-        "Unsafe? (aka 'no API restrictions', prevents publishing to Steam Workshop)",
+        "Unsafe? (aka 'no API restrictions', Noita won't load such a mod from " +
+        "the Workshop without a DLL patch)",
       initialValue: false,
     }),
   );
@@ -105,14 +106,12 @@ async function main() {
     }),
   );
 
-  const workshop =
-    !unsafe &&
-    cancellable(
-      await p.confirm({
-        message: "Setup (some of) Steam Workshop metadata?",
-        initialValue: true,
-      }),
-    );
+  const workshop = cancellable(
+    await p.confirm({
+      message: "Setup (some of) Steam Workshop metadata?",
+      initialValue: true,
+    }),
+  );
 
   let workshopName: string | undefined;
   let workshopDescription: string | undefined;
@@ -148,8 +147,12 @@ async function main() {
     ["noita.name"]: name,
     ["noita.compat"]: 12,
     ...(unsafe ? { ["noita.unsafe"]: true } : {}),
-    ...(workshopName ? { ["noita.workshop.name"]: workshopName } : {}),
-    ...(workshopDescription
+    // both default to what the mod itself is called and says, so they are only
+    // worth writing down when they actually differ
+    ...(workshopName && workshopName !== name
+      ? { ["noita.workshop.name"]: workshopName }
+      : {}),
+    ...(workshopDescription && workshopDescription !== description
       ? { ["noita.workshop.description"]: workshopDescription }
       : {}),
     scripts: {

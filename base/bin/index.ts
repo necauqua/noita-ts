@@ -13,6 +13,7 @@ import runTests from "./test.js";
 import {
   publish as publishToWorkshop,
   validate as validateWorkshop,
+  workshopIdInsertionIndex,
   VISIBILITIES,
   type Question,
   type Visibility,
@@ -355,16 +356,11 @@ function saveWorkshopId(workshopId: string) {
   const edit = jsonc.modify(
     packageJsonText,
     ["noita.workshop.id"],
-    Number(workshopId),
+    workshopId,
     {
       formattingOptions: { insertSpaces: true, tabSize: 2 },
-      getInsertionIndex(properties) {
-        let idx = properties.indexOf("noita.id");
-        if (idx != -1) {
-          return idx + 1;
-        }
-        return properties.indexOf("name") + 1;
-      },
+      getInsertionIndex: (properties) =>
+        workshopIdInsertionIndex(properties, packageJson),
     },
   );
   fs.writeFileSync(packageJsonPath, jsonc.applyEdits(packageJsonText, edit));

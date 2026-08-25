@@ -106,6 +106,41 @@ export type PublishResult = {
   needsToAcceptAgreement: boolean;
 };
 
+/**
+ * Picks where a new `noita.workshop.id` goes in package.json, so that it lands
+ * among the keys it belongs with rather than wherever the end of the file
+ * happens to be.
+ *
+ * It joins the other `noita.workshop.*` keys, or failing that follows the
+ * `noita.*` block, or failing that goes above the nested objects (`scripts`,
+ * `dependencies`, ...) that conventionally end a package.json.
+ */
+export function workshopIdInsertionIndex(
+  properties: string[],
+  values: Record<string, unknown>,
+): number {
+  const firstWorkshop = properties.findIndex((p) =>
+    p.startsWith("noita.workshop."),
+  );
+  if (firstWorkshop !== -1) {
+    return firstWorkshop;
+  }
+
+  const lastNoita = properties.findLastIndex((p) => p.startsWith("noita."));
+  if (lastNoita !== -1) {
+    return lastNoita + 1;
+  }
+
+  const firstObject = properties.findIndex(
+    (p) => typeof values[p] === "object" && values[p] !== null,
+  );
+  if (firstObject !== -1) {
+    return firstObject;
+  }
+
+  return properties.length;
+}
+
 /** Normalizes a mod-relative path the way the skip settings are matched. */
 const normalize = (p: string) =>
   p.replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "");
