@@ -4,17 +4,13 @@ namespace c {
   /**
    * A C type of a known layout, along with the TypeScript type `T` that its
    * values are modelled as.
-   *
-   * Being a class rather than a bare object keeps the suffix functions on a
-   * shared metatable, and lets inferred declaration types be printed by name -
-   * inlining the recursive signatures below would blow up the emitted .d.ts.
    */
   export class Type<T> {
     readonly kind = 'declaration';
 
     /**
-     * The phantom carrier of `T` - it holds no value at runtime, and is how
-     * the modelled type is named: `typeof NativeString.type`.
+     * Use `typeof SomeType.type` to extract the `T` from
+     * `type SomeType = Type<T>`.
      */
     declare readonly type: T;
 
@@ -42,18 +38,39 @@ namespace c {
   }
 
   /**
-   * A struct declared through `c.declare` - the one kind of type that has
-   * members of its own, and so the one kind worth augmenting.
+   * This allows Struct.metatype to lose the metatype method by upcasting to
+   * this, encoding the fact that you cannot do that more than once on the
+   * typelevel.
    */
-  export class Struct<T> extends Type<T> {
+  export class MetatypedStruct<T> extends Type<T> {
     /**
      * Intersects the modelled type with `A`, leaving the C layout alone.
      *
      * Useful for tacking on members that the schema cannot express, such as
      * ones provided by an `ffi.metatype`.
      */
-    augment<A>(): Struct<T & A> {
-      return this as Struct<any>;
+    augment<A>(): MetatypedStruct<Simplify<T & A>> {
+      return this as MetatypedStruct<any>;
+    }
+  }
+
+  export class Struct<T> extends MetatypedStruct<T> {
+    /**
+     * Attach an ffi metatype to the struct.
+     * Can be given a class (that could be inline/anonymous) to have its
+     * prototype used as `__index` and the type used to augment the modelled
+     * type, quite convenient.
+     */
+    metatype<M extends object>(metatype: M): MetatypedStruct<Simplify<M extends { readonly prototype: infer P } ? T & P : T>> {
+      if ("prototype" in metatype) {
+        ffi.metatype(this.name, {
+          __index: metatype.prototype,
+          ...metatype,
+        });
+      } else {
+        ffi.metatype(this.name, metatype);
+      }
+      return this as MetatypedStruct<any>;
     }
   }
 
