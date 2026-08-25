@@ -6,7 +6,6 @@
     "base",
     "ffi",
     "nasm",
-    "nasm/platforms/*",
     "nxml",
     "pollnet",
     "create-mod",

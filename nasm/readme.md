@@ -56,6 +56,13 @@ rest — you never depend on them by name. Adding a platform means publishing a
 new `@noita-ts/nasm-<os>-<cpu>` and listing it in `index.cjs` + the
 `optionalDependencies` here.
 
+They are deliberately **not** in the root `workspaces` list. npm links a
+workspace unconditionally and only then platform-checks the link, so listing
+them makes `npm i` fail with `EBADPLATFORM` on every machine that isn't all of
+the supported platforms at once. Left out of it, the matching package is still
+linked from `platforms/` and the rest are properly skipped as optional
+dependencies.
+
 If the matching package is missing (installed with `--no-optional`, or a
 `node_modules`/lockfile copied from another platform), importing this package
 throws explaining which package is absent.
