@@ -79,7 +79,7 @@ const UPDATE_STATUS = [
   "committing changes",
 ];
 
-type Client = ReturnType<typeof steamworks.init>;
+export type Client = ReturnType<typeof steamworks.init>;
 
 export type PublishOptions = {
   changeNotes: string;
@@ -290,7 +290,7 @@ export function uploadFilter(mod: NoitaMod): (filePath: string) => boolean {
 }
 
 /** Connects to the running Steam client as Noita. */
-function connect(): Client {
+export function connect(): Client {
   let client;
   try {
     client = steamworks.init(NOITA_APP_ID);
@@ -304,8 +304,8 @@ function connect(): Client {
 
   if (!client.apps.isSubscribedApp(NOITA_APP_ID)) {
     throw new Error(
-      `${client.localplayer.getName()} does not own Noita, and only owners ` +
-        "can publish to its Workshop.",
+      `${client.localplayer.getName()} does not own Noita, and Steam only ` +
+        "serves its Workshop to owners.",
     );
   }
 

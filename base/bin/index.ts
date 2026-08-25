@@ -5,6 +5,8 @@ import { Command, Option } from "commander";
 import fs from "fs";
 import path from "path";
 import readline from "readline/promises";
+import { DEV_MODS, installDevMods } from "./devmods.js";
+import { enableMods } from "./mod-config.js";
 import syncDirectory from "sync-directory";
 import * as jsonc from "jsonc-parser";
 import NoitaMod from "./mod.js";
@@ -110,11 +112,21 @@ function setupLinuxEnv(
   return { command, args, env };
 }
 
-async function run(mod: NoitaMod | null, exe: string, noitaArgs: string[]) {
+async function run(
+  mod: NoitaMod | null,
+  exe: string,
+  noitaArgs: string[],
+  { devMods = false }: { devMods?: boolean } = {},
+) {
   const localNoita = path.resolve("noita");
-  if (!fs.existsSync(localNoita)) {
+  const firstRun = !fs.existsSync(localNoita);
+  if (firstRun) {
     console.log("A local Noita instance not found, setting up...");
     setupNoitaInstance(localNoita);
+    if (devMods) {
+      console.log("Installing the dev mods...");
+      installDevMods(localNoita);
+    }
   }
 
   if (mod) {
@@ -124,23 +136,7 @@ async function run(mod: NoitaMod | null, exe: string, noitaArgs: string[]) {
     fs.mkdirSync(mods, { recursive: true });
     fs.rmSync(path.resolve(mods, id), { recursive: true, force: true });
     await vfs.finalize(mods);
-
-    // lmao at some point I will have to actually parse nxml 🤷
-    //  not now tho
-    const save00 = path.resolve(localNoita, "save00");
-    const modConfigPath = path.resolve(save00, "mod_config.xml");
-    let modConfig;
-    try {
-      const prev = fs.readFileSync(modConfigPath, "utf-8");
-      modConfig = prev.replace(
-        new RegExp(`enabled="[01]" name="${id}"`),
-        `enabled="1" name="${id}"`,
-      );
-    } catch {
-      modConfig = `<Mods><Mod enabled="1" name="${id}" settings_fold_open="0" workshop_item_id="0" /></Mods>`;
-    }
-    fs.mkdirSync(save00, { recursive: true });
-    fs.writeFileSync(modConfigPath, modConfig);
+    enableMods(localNoita, [id]);
   }
 
   exe = path.resolve(localNoita, exe);
@@ -269,6 +265,10 @@ program
     "--extra-args <args...>",
     "extra arguments to append to the Noita command line.",
   )
+  .option(
+    "--no-dev-mods",
+    `do not install the dev tools (${DEV_MODS.map((m) => m.name).join(", ")}) when creating the instance.`,
+  )
   .description(
     "Run an isolated instance of Noita with the mod installed (requires Noita to be installed through Steam).",
   )
@@ -279,15 +279,21 @@ program
       devExe?: boolean;
       gamemode: string;
       extraArgs?: string[];
+      devMods: boolean;
     }) => {
       const mod = NoitaMod.make({ verbose: opts.verbose, dev: !opts.nonDev });
-      await run(mod, opts.devExe ? "noita_dev.exe" : "noita.exe", [
-        "-always_store_userdata_in_workdir",
-        "-no_logo_splashes",
-        "-gamemode",
-        opts.gamemode,
-        ...(opts.extraArgs ?? []),
-      ]);
+      await run(
+        mod,
+        opts.devExe ? "noita_dev.exe" : "noita.exe",
+        [
+          "-always_store_userdata_in_workdir",
+          "-no_logo_splashes",
+          "-gamemode",
+          opts.gamemode,
+          ...(opts.extraArgs ?? []),
+        ],
+        { devMods: opts.devMods },
+      );
     },
   );
 
