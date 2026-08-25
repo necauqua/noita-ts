@@ -201,13 +201,38 @@ function transpile(
   };
 }
 
+/**
+ * Everything `nts publish` needs to describe the mod on the Steam Workshop,
+ * collected from the `noita.workshop.*` keys of package.json.
+ */
+export type WorkshopMeta = {
+  /** `noita.workshop.id`, the item to update, absent for a brand new item. */
+  id?: string;
+  name: string;
+  description?: string;
+  tags: string[];
+  /** Paths relative to the mod root that are left out of the upload. */
+  skipFiles: string[];
+  /** Folders relative to the mod root that are left out of the upload. */
+  skipFolders: string[];
+  /** Absolute path of the preview image, when the mod has one. */
+  previewPath?: string;
+  /** `noita.unsafe` - such mods are not allowed on the Workshop. */
+  unsafe: boolean;
+};
+
+/** The preview image, picked up from the package root. */
+export const PREVIEW_IMAGE = "workshop-preview.png";
+
 export default class NoitaMod {
   id: string;
   vfs: VFS;
+  workshop: WorkshopMeta;
 
-  constructor(id: string, vfs: VFS) {
+  constructor(id: string, vfs: VFS, workshop: WorkshopMeta) {
     this.id = id;
     this.vfs = vfs;
+    this.workshop = workshop;
   }
 
   static make({
@@ -341,17 +366,18 @@ export default class NoitaMod {
       download_url: packageJson?.["noita.download-url"],
     };
 
+    const tags: string[] = packageJson?.["noita.workshop.tags"] ?? [];
+    const skipFiles: string[] = packageJson?.["noita.workshop.skip-files"] ?? [];
+    const skipFolders: string[] =
+      packageJson?.["noita.workshop.skip-folders"] ?? [];
+
     const workshopXml = {
       name: packageJson?.["noita.workshop.name"] ?? modXml.name,
       description:
         packageJson?.["noita.workshop.description"] ?? modXml.description,
-      tags: (packageJson?.["noita.workshop.tags"] ?? []).join(","),
-      dont_upload_files: (
-        packageJson?.["noita.workshop.skip-files"] ?? []
-      ).join("|"),
-      dont_upload_folders: (
-        packageJson?.["noita.workshop.skip-folders"] ?? []
-      ).join("|"),
+      tags: tags.join(","),
+      dont_upload_files: skipFiles.join("|"),
+      dont_upload_folders: skipFolders.join("|"),
     };
 
     const xmlConfig = (entries: Record<string, string | undefined>) =>
@@ -370,13 +396,25 @@ export default class NoitaMod {
       vfs.write("workshop_id.txt", workshopId.toString());
     }
 
+    let previewPath: string | undefined;
     try {
-      const name = "workshop-preview.png";
-      fs.statSync(name); // meh check-then-act who cares
-      vfs.writeFrom("workshop_preview_image.png", name);
+      fs.statSync(PREVIEW_IMAGE); // meh check-then-act who cares
+      previewPath = path.resolve(PREVIEW_IMAGE);
+      vfs.writeFrom("workshop_preview_image.png", PREVIEW_IMAGE);
     } catch (e) {
       // ignore
     }
+
+    const workshop: WorkshopMeta = {
+      id: workshopId === undefined ? undefined : String(workshopId),
+      name: workshopXml.name,
+      description: workshopXml.description,
+      tags,
+      skipFiles,
+      skipFolders,
+      previewPath,
+      unsafe: !!packageJson?.["noita.unsafe"],
+    };
 
     const src = path.join(process.cwd(), "src");
     const files = fs.readdirSync(src, {
@@ -398,6 +436,6 @@ export default class NoitaMod {
       }
     }
 
-    return new NoitaMod(id, vfs);
+    return new NoitaMod(id, vfs, workshop);
   }
 }

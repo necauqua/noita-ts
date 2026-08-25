@@ -54,6 +54,7 @@
     "jsonc-parser": "^3.3.1",
     "lua-types": "^2.13.1",
     "steam-locate": "^1.0.6",
+    "steamworks.js": "^0.4.0",
     "sync-directory": "^6.0.5",
     "typescript": "^6.0.2",
     "typescript-to-lua": "^1.36.0"

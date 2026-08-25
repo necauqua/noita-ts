@@ -21,7 +21,7 @@ The keys from the `package.json` file used by `nts` to produce a mod:
 - `"noita.description": "An example mod written in TypeScript using noita-ts"`\
   Description of the mod shown in-game, defaults to package description.
 - `"noita.unsafe": false`\
-  Sets the `"request_no_api_restrictions"="1"` key in mod.xml - unsafe mods cannot be published to the workshop and must be installed manually, but are not sandboxed - meaning you can do network/file access, ffi and literally anything at all, including being a crypto miner.
+  Sets the `"request_no_api_restrictions"="1"` key in mod.xml - unsafe mods are not sandboxed, meaning you can do network/file access, ffi and literally anything at all, including being a crypto miner. `nts publish` will upload one anyway once you confirm it: Noita refuses to load an unsafe mod that came from the workshop, so subscribers need a DLL patch for it to run and installing it manually is the usual way. `--via-game` refuses outright, since the game will not upload one.
 - `"noita.workshop.id": 0`\
   This will be set by the publish command automatically. If you want to publish the mod as a separate workshop item (e.g. after deleting the original), remove this, otherwise don't touch it
 - `"noita.workshop.name": "Example TypeScript Mod"`\
@@ -29,13 +29,13 @@ The keys from the `package.json` file used by `nts` to produce a mod:
 - `"noita.workshop.description": "Uploaded to the workshop!"`\
   The description of the mod on the steam workshop page, defaults to value of `noita.description`.
 - `"noita.workshop.tags": []`\
-  Tags for the mod on the steam workshop page, just sets the corresponding key in `mod.xml`.
+  Tags for the mod on the steam workshop page. Steam only accepts the tags Noita declares, and `nts publish` rejects anything else up front: `gameplay`, `graphics`, `quality of life`, `translations`, `perks`, `spells`, `player characters`, `loadouts`, `biomes`, `total conversions`, `game modes`, `creatures`, `bosses`, `alchemy`, `tweaks`, `items`, `audio`, `cheats`, `funny`, `streaming integration`, `mod dependencies`.
 - `"noita.workshop.skip-files": []`\
-  Files to skip when uploading to the workshop, just sets the corresponding key in `mod.xml`.
+  Files to leave out of the workshop upload, as paths relative to the mod root.
 - `"noita.workshop.skip-folders": []`\
-  Folders to skip when uploading to the workshop, just sets the corresponding key in `mod.xml`.
+  Folders to leave out of the workshop upload, as paths relative to the mod root - the folder and everything under it is skipped.
 - `"noita.compat": 12`\
-  API compatibility version, should Noita release a big update that changes this number, an icon "this mod has not been tested with latest mod api" will be shown in the modlist.
+  API compatibility version, should Noita release a big update that changes this number, an icon "this mod has not been tested with latest mod api" will be shown in the modlist. Leaving it out means no `compatibility.xml` and so that icon always shows - the game used to fill this in for you when it did the uploading, and `nts publish` does not.
 - `"noita.ui-newgame-name": null`\
   This and everything below is just setting other mod.xml properties:
   - `"noita.ui-newgame-description": null`

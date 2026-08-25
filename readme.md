@@ -55,6 +55,18 @@ Mod metadata (id, name, description, workshop settings, etc.) lives in
 `package.json` under `noita.*` keys - see the
 [template readme](create-mod/template/readme.md) for the full list.
 
+`nts publish` talks to the Steam client directly, so it needs Steam running and
+logged in as someone who owns Noita - but not a Noita installation, and no
+Proton on Linux. `--via-game` falls back to uploading through
+`noita_dev.exe`, which is how this used to work.
+
+A new item goes up unlisted, reachable only by its link, so you can look it over
+before anyone finds it - `--visibility public` is what makes it findable, and
+existing items keep whatever they were set to. It asks before doing anything
+awkward to take back - publishing untagged, putting an unsafe mod up, letting
+`--via-game` publish for everyone - and `--yes` answers all of it, which is also
+what you need when nothing is there to answer with.
+
 ## Packages
 
 - [`@noita-ts/base`](base) - the core: typed mod hooks, settings support, an

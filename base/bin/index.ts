@@ -1,14 +1,22 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "child_process";
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import fs from "fs";
 import path from "path";
+import readline from "readline/promises";
 import syncDirectory from "sync-directory";
 import * as jsonc from "jsonc-parser";
 import NoitaMod from "./mod.js";
 import { findNoita, findSteamApp } from "./steam.js";
 import runTests from "./test.js";
+import {
+  publish as publishToWorkshop,
+  validate as validateWorkshop,
+  VISIBILITIES,
+  type Question,
+  type Visibility,
+} from "./workshop.js";
 
 function setupNoitaInstance(dir: string) {
   const noitaDir = findNoita();
@@ -282,67 +290,184 @@ program
     },
   );
 
+/**
+ * Puts the questions to the author, and gives up unless every answer is yes.
+ *
+ * A Workshop item is live the moment it uploads and its mistakes are awkward
+ * to take back, so anything other than an explicit yes counts as no.
+ */
+async function confirmAllOrExit(
+  questions: Question[],
+  assumeYes: boolean | undefined,
+) {
+  if (questions.length === 0 || assumeYes) {
+    for (const { note } of questions) {
+      console.warn(`Warning: ${note}`);
+    }
+    return;
+  }
+
+  if (!process.stdin.isTTY) {
+    for (const { note, prompt } of questions) {
+      console.warn(`Warning: ${note}`);
+      console.error(
+        `  ${prompt} - nothing here to answer with, pass --yes to accept it.`,
+      );
+    }
+    process.exit(1);
+  }
+
+  // one interface for all of them: a fresh one per question swallows whatever
+  // the previous already read ahead of the answer it was given
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  try {
+    for (const { note, prompt } of questions) {
+      console.warn(`Warning: ${note}`);
+      let answer;
+      try {
+        answer = await rl.question(`  ${prompt} [y/N] `);
+      } catch {
+        // end of input, which is not a yes
+        answer = "";
+      }
+      if (!/^y(es)?$/i.test(answer.trim())) {
+        console.error("Nothing was published.");
+        process.exit(1);
+      }
+    }
+  } finally {
+    rl.close();
+  }
+}
+
+/** Stores the id of a freshly created Workshop item back into package.json. */
+function saveWorkshopId(workshopId: string) {
+  // todo move package.json reading out of `run`
+  const packageJsonPath = process.env.npm_package_json ?? "package.json";
+  const packageJsonText = fs.readFileSync(packageJsonPath, "utf-8");
+  const packageJson = JSON.parse(packageJsonText);
+  if (String(packageJson?.["noita.workshop.id"]) === workshopId) {
+    return;
+  }
+  const edit = jsonc.modify(
+    packageJsonText,
+    ["noita.workshop.id"],
+    Number(workshopId),
+    {
+      formattingOptions: { insertSpaces: true, tabSize: 2 },
+      getInsertionIndex(properties) {
+        let idx = properties.indexOf("noita.id");
+        if (idx != -1) {
+          return idx + 1;
+        }
+        return properties.indexOf("name") + 1;
+      },
+    },
+  );
+  fs.writeFileSync(packageJsonPath, jsonc.applyEdits(packageJsonText, edit));
+}
+
 program
   .command("publish")
   .option("-v, --verbose", "enable verbose output.")
   .option(
     "--force-new",
-    "ignore noita.workspace.id set in package.json and publish as a new workshop item.",
+    "ignore noita.workshop.id set in package.json and publish as a new workshop item.",
   )
+  .addOption(
+    new Option(
+      "--visibility <visibility>",
+      "the visibility to set on the item; new items are unlisted unless this says otherwise, and existing ones are left as they are.",
+    ).choices(VISIBILITIES),
+  )
+  .option(
+    "--via-game",
+    "upload through noita_dev.exe instead of talking to Steam directly (requires Noita to be installed through Steam).",
+  )
+  .option("-y, --yes", "answer every confirmation with yes.")
   .argument("<change notes>", "the change notes for the Steam Workshop release")
-  .description(
-    "Run an isolated instance of Noita with the mod installed (requires Noita to be installed through Steam).",
-  )
+  .description("Publish or update the mod on the Steam Workshop.")
   .action(
     async (
       changeNotes,
       opts: {
         verbose?: boolean;
         forceNew?: boolean;
+        visibility?: Visibility;
+        viaGame?: boolean;
+        yes?: boolean;
       },
     ) => {
-      const mod = NoitaMod.make(opts);
+      const mod = NoitaMod.make({
+        verbose: opts.verbose,
+        noWorkshopId: opts.forceNew,
+      });
 
-      await run(mod, "noita_dev.exe", [
-        "-workshop_upload",
-        mod.id,
-        "-workshop_upload_change_notes",
-        changeNotes,
-      ]);
-
-      const workshopId = fs
-        .readFileSync(`noita/mods/${mod.id}/workshop_id.txt`, "ascii")
-        .trim();
-      const workshopUrl = `https://steamcommunity.com/sharedfiles/filedetails/?id=${workshopId}`;
-
-      // todo move package.json reading out of `run`
-      const packageJsonPath = process.env.npm_package_json ?? "package.json";
-      const packageJsonText = fs.readFileSync(packageJsonPath, "utf-8");
-      const packageJson = JSON.parse(packageJsonText);
-      if (packageJson?.["noita.workshop.id"] != workshopId) {
-        const edit = jsonc.modify(
-          packageJsonText,
-          ["noita.workshop.id"],
-          workshopId,
-          {
-            formattingOptions: { insertSpaces: true, tabSize: 2 },
-            getInsertionIndex(properties) {
-              let idx = properties.indexOf("noita.id");
-              if (idx != -1) {
-                return idx + 1;
-              }
-              return properties.indexOf("name") + 1;
-            },
-          },
-        );
-        fs.writeFileSync(
-          packageJsonPath,
-          jsonc.applyEdits(packageJsonText, edit),
-        );
-        console.log(`Published the mod at ${workshopUrl}`);
-      } else {
-        console.log(`Updated the mod at ${workshopUrl}`);
+      const { warnings, questions } = validateWorkshop(mod, {
+        viaGame: opts.viaGame,
+        visibility: opts.visibility,
+      });
+      for (const warning of warnings) {
+        console.warn(`Warning: ${warning}`);
       }
+      await confirmAllOrExit(questions, opts.yes);
+
+      let workshopId;
+      let created;
+      let needsToAcceptAgreement = false;
+
+      if (opts.viaGame) {
+        await run(mod, "noita_dev.exe", [
+          "-workshop_upload",
+          mod.id,
+          "-workshop_upload_change_notes",
+          changeNotes,
+        ]);
+        workshopId = fs
+          .readFileSync(`noita/mods/${mod.id}/workshop_id.txt`, "ascii")
+          .trim();
+        created = mod.workshop.id !== workshopId;
+      } else {
+        const result = await publishToWorkshop(mod, {
+          changeNotes,
+          forceNew: opts.forceNew,
+          visibility: opts.visibility,
+          onItemCreated: saveWorkshopId,
+        });
+        workshopId = result.itemId;
+        created = result.created;
+        needsToAcceptAgreement = result.needsToAcceptAgreement;
+      }
+
+      saveWorkshopId(workshopId);
+
+      const workshopUrl = `https://steamcommunity.com/sharedfiles/filedetails/?id=${workshopId}`;
+      console.log(
+        created
+          ? `Published the mod at ${workshopUrl}`
+          : `Updated the mod at ${workshopUrl}`,
+      );
+
+      if (created && !opts.viaGame && opts.visibility === undefined) {
+        console.log(
+          "It is unlisted, so only this link leads to it - publish again with " +
+            "--visibility public once it looks right.",
+        );
+      }
+
+      if (needsToAcceptAgreement) {
+        console.warn(
+          "The item stays hidden until you accept the Steam Workshop legal " +
+            "agreement at\n  " +
+            "https://steamcommunity.com/sharedfiles/workshoplegalagreement",
+        );
+      }
+
+      // the Steam bindings keep a callback pump running on the event loop
+      process.exit(0);
     },
   );
 
@@ -409,4 +534,19 @@ program
   .description("Unpack the data.wak file")
   .action(() => run(null, "noita.exe", ["-wizard_unpak"]));
 
-program.parse(process.argv);
+program.parseAsync(process.argv).catch((error) => {
+  // most of what goes wrong here is something the user has to fix - a mod Steam
+  // will not take, a Steam that is not running - and it says so itself, so a
+  // stack trace would only bury the explanation
+  const verbose =
+    process.argv.includes("-v") || process.argv.includes("--verbose");
+  if (verbose || !(error instanceof Error)) {
+    console.error(error);
+  } else {
+    console.error(error.message);
+    if (error.cause) {
+      console.error(`  caused by: ${error.cause}`);
+    }
+  }
+  process.exit(1);
+});

@@ -70,9 +70,19 @@ export default class VFS {
     await archive.finalize();
   }
 
-  async finalize(outputPath: string) {
+  /**
+   * Writes every contained file under `outputPath`.
+   *
+   * @param include optional predicate on the stored path, used to leave files
+   * out of the result - `nts publish` uses it to apply the `skip-files` and
+   * `skip-folders` workshop settings.
+   */
+  async finalize(outputPath: string, include?: (filePath: string) => boolean) {
     const promises: Promise<void>[] = [];
     for (const [filePath, content] of Object.entries(this.files)) {
+      if (include && !include(filePath)) {
+        continue;
+      }
       const fullPath = path.join(outputPath, filePath);
       promises.push(
         fsp
