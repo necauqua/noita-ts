@@ -1,4 +1,5 @@
 /// <reference path="./base.d.ts" />
+/// <reference path="./base-lua.d.ts" />
 /// <reference path="./generated/lua_api.d.ts" />
 /// <reference path="./generated/components.d.ts" />
 /// <reference path="./fixups.d.ts" />
