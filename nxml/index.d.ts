@@ -1,19 +1,5 @@
 /// <reference types="@typescript-to-lua/language-extensions" />
 
-/**
- * DISCLAIMER:
- * I don't really use nxml all that much and I didn't have any motivation to
- * write all of this manually, so this declaration file was entirely vibe-coded
- * with minimal fixups by feeding luaxml.lua to an LLM.
- *
- * Should be fine, but in case it isn't - that's why
- *
- * DISCLAIMER #2:
- * Since the first disclaimer, I went in and added everything related to
- * autocompletion via NxmlShapes, so if that one's not fine that's totally
- * on me then
- */
-
 /** @noSelfInFile */
 
 declare global {
