@@ -10,6 +10,7 @@ import { enableMods } from "./mod-config.js";
 import syncDirectory from "sync-directory";
 import * as jsonc from "jsonc-parser";
 import NoitaMod from "./mod.js";
+import { setupConfig } from "./game-config.js";
 import { findNoita, findSteamApp } from "./steam.js";
 import runTests from "./test.js";
 import {
@@ -49,18 +50,7 @@ function setupNoitaInstance(dir: string) {
   // avoid the changelog popup by matching _version_hash.txt and "last_started_game_version_hash" in config
   fs.writeFileSync(path.resolve(dir, "_version_hash.txt"), "static");
 
-  const saveShared = path.resolve(dir, "save_shared");
-  fs.mkdirSync(saveShared, { recursive: true });
-  fs.writeFileSync(
-    path.resolve(saveShared, "config.xml"),
-    "<Config\r\n" +
-      '  config_format_version="14" \r\n' +
-      '  mods_disclaimer_accepted="1"\r\n' +
-      '  mods_sandbox_enabled="0"\r\n' +
-      '  mods_sandbox_warning_done="1"\r\n' +
-      '  last_started_game_version_hash="static"\r\n' +
-      "/>\r\n",
-  );
+  setupConfig(noitaDir, path.resolve(dir, "save_shared"));
 
   const endTime = performance.now();
   console.log(

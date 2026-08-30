@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import {
   findSteamAppSync,
   SteamAppNotFoundError,
@@ -31,3 +33,39 @@ export function findSteamApp(name: string, id: string): string {
 
 /** Locates the Noita installation. */
 export const findNoita = () => findSteamApp("Noita", "881100");
+
+/**
+ * Locates the folder Noita keeps the saves and the config of the player in,
+ * given the installation directory, or nothing when there is no such folder.
+ *
+ * On Windows it is a fixed spot under AppData. Everywhere else Noita runs
+ * through Proton, which puts that spot inside the prefix of the Steam library
+ * the game is installed in.
+ */
+export function findNoitaSaveDir(noitaDir: string): string | undefined {
+  let localLow;
+  if (process.platform === "win32") {
+    const appData = process.env.APPDATA;
+    if (!appData) {
+      return undefined;
+    }
+    localLow = path.resolve(appData, "..", "LocalLow");
+  } else {
+    // the installation directory is <library>/steamapps/common/Noita
+    const library = path.resolve(noitaDir, "..", "..", "..");
+    localLow = path.resolve(
+      library,
+      "steamapps",
+      "compatdata",
+      "881100",
+      "pfx",
+      "drive_c",
+      "users",
+      "steamuser",
+      "AppData",
+      "LocalLow",
+    );
+  }
+  const saveDir = path.resolve(localLow, "Nolla_Games_Noita");
+  return fs.existsSync(saveDir) ? saveDir : undefined;
+}
