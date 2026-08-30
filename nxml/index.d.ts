@@ -1,3 +1,5 @@
+/// <reference types="@typescript-to-lua/language-extensions" />
+
 /**
  * DISCLAIMER:
  * I don't really use nxml all that much and I didn't have any motivation to
@@ -31,6 +33,7 @@ declare global {
 type NxmlNames = (string & keyof NxmlShapes) | (string & {});
 
 declare namespace nxml {
+
   /** A string that is could be autocompleted to one of the attributes of the given element */
   type AttrHint<N> =
     | (string & (N extends keyof NxmlShapes ? keyof NxmlShapes[N] : string))
