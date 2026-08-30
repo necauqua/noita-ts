@@ -1,6 +1,6 @@
-import ffi from ".";
-import { NativeString, Vec2, VoidVec } from "./cpp";
-import c from "./schema";
+import ffi from "..";
+import { NativeString, Vec2, VoidVec } from "../cpp";
+import c from "../schema";
 
 export const ControlsConfigKey = c.declare('ControlsConfigKey', [
   c.field("primary", c.i32),

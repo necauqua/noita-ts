@@ -1,7 +1,7 @@
 /// <reference types="lua-types/jit" />
 
-import ffi, { Ptr } from ".";
-import { NativeString } from "./cpp";
+import ffi, { Ptr } from "..";
+import { NativeString } from "../cpp";
 
 const bool = "bool" as string & { __type: boolean };
 const int = "int" as string & { __type: number };

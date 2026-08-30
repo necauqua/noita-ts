@@ -1,9 +1,9 @@
 /// <reference types="@noita-ts/base/types" />
 
-import ffi, { Ptr } from ".";
-import { NativeString, Vec, Vec2 } from "./cpp";
-import { getLuaCFunc } from "./luajit";
-import c from "./schema";
+import ffi, { Ptr } from "..";
+import { NativeString, Vec, Vec2 } from "../cpp";
+import { getLuaCFunc } from "../luajit";
+import c from "../schema";
 
 const EntityTransform = c.declare("EntityTransform", [
   c.field("pos", Vec2),

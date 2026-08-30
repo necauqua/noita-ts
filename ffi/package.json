@@ -3,7 +3,7 @@
   "version": "0.5.0",
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "files": [
-    "dist/*.{lua,d.ts}",
+    "dist/**/*.{lua,d.ts}",
     "hde32.dll"
   ],
   "type": "module",
@@ -23,28 +23,28 @@
       "default": "./dist/schema"
     },
     "./magic-numbers": {
-      "types": "./dist/magic-numbers.d.ts",
-      "default": "./dist/magic-numbers"
+      "types": "./dist/globals/magic-numbers.d.ts",
+      "default": "./dist/globals/magic-numbers"
     },
     "./game-global": {
-      "types": "./dist/game-global.d.ts",
-      "default": "./dist/game-global"
+      "types": "./dist/globals/game-global.d.ts",
+      "default": "./dist/globals/game-global"
     },
     "./platform": {
-      "types": "./dist/platform.d.ts",
-      "default": "./dist/platform"
+      "types": "./dist/globals/platform.d.ts",
+      "default": "./dist/globals/platform"
     },
     "./global-stats": {
-      "types": "./dist/global-stats.d.ts",
-      "default": "./dist/global-stats"
+      "types": "./dist/globals/global-stats.d.ts",
+      "default": "./dist/globals/global-stats"
     },
     "./death-match": {
-      "types": "./dist/death-match.d.ts",
-      "default": "./dist/death-match"
+      "types": "./dist/globals/death-match.d.ts",
+      "default": "./dist/globals/death-match"
     },
     "./entity-manager": {
-      "types": "./dist/entity-manager.d.ts",
-      "default": "./dist/entity-manager"
+      "types": "./dist/globals/entity-manager.d.ts",
+      "default": "./dist/globals/entity-manager"
     },
     "./luajit": {
       "types": "./dist/luajit.d.ts",

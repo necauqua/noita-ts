@@ -1,7 +1,7 @@
-import ffi from ".";
-import { Vec } from "./cpp";
+import ffi from "..";
+import { Vec } from "../cpp";
 import { Entity } from "./entity-manager";
-import c from "./schema";
+import c from "../schema";
 
 export const DeathMatch = c.declare("DeathMatch", [
   c.field("application_vftable", c.voidptr),

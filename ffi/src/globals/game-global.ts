@@ -1,6 +1,6 @@
-import ffi from ".";
-import { NativeString } from "./cpp";
-import c from "./schema";
+import ffi from "..";
+import { NativeString } from "../cpp";
+import c from "../schema";
 
 export const GameGlobal = c.declare("GameGlobal", [
   c.field("frame_counter", c.i32),

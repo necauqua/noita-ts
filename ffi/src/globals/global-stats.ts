@@ -1,6 +1,6 @@
-import ffi from '.';
-import { Map, NativeString, Vec2 } from './cpp';
-import c from './schema';
+import ffi from '..';
+import { Map, NativeString, Vec2 } from '../cpp';
+import c from '../schema';
 
 export const GameStats = c.declare('GameStats', [
   c.field("vftable", c.voidptr),
