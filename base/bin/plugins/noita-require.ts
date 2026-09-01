@@ -1,7 +1,6 @@
 import { Program } from "typescript";
 import {
   CompilerOptions,
-  EmitFile,
   EmitHost,
   Plugin,
   ProcessedFile,
@@ -13,6 +12,29 @@ type WriteCallback = (filePath: string, content: string) => void;
 // `____originalRequire` is used by tstl bundler (and yes we end up having 2 require wrappers there)
 const mkShim = (buildData: BuildData) => `
 local ____originalNoitaRequire = require
+
+local function shorten(name, from, to)
+  local i = name:find(from, 1, true)
+  if i == nil then
+      return nil
+  end
+  return name:sub(1, i - 1) .. to .. name:sub(i + #from)
+end
+
+local mod_prefix = 'mods/${buildData.modId}/'
+local chunk_prefix = '${buildData.dev ? "" : `${buildData.modId}/`}'
+
+local function chunkname(filename)
+  local name = filename
+  if name:sub(1, #mod_prefix) == mod_prefix then
+      name = chunk_prefix .. name:sub(#mod_prefix + 1)
+  elseif name:sub(1, 5) == 'mods/' then
+      name = name:sub(6)
+  end
+  return '@' .. (shorten(name, 'lua_modules/@noita-ts/', 'lib:nts/')
+      or shorten(name, 'lua_modules/', 'lib:')
+      or name)
+end
 
 function require(module)
   if module == "$mod" then
@@ -26,12 +48,24 @@ function require(module)
   end
   local filename = (module:match('^data/.-%.lua$') or module:match('^mods/.-%.lua$'))
       and module
-      or 'mods/${buildData.modId}/' .. module:gsub('%.', '/') .. '.lua'
+      or mod_prefix .. module:gsub('%.', '/') .. '.lua'
   local cached = __loadonce[filename]
   if cached ~= nil then
       return cached[1]
   end
-  local f, err = loadfile(filename)
+  local f, err
+  if loadstring == nil then
+      f, err = loadfile(filename)
+  else
+      -- unsafe mods have loadstring, allowing us to unjank the chunk names
+      -- for better stack traces
+      local content = ModTextFileGetContent(filename)
+      if content == nil then
+          err = filename .. ': file not found'
+      else
+          f, err = loadstring(content, chunkname(filename))
+      end
+  end
   if f == nil then
       if ____originalNoitaRequire ~= nil then
       local result = ____originalNoitaRequire(module)
