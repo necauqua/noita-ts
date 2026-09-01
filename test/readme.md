@@ -56,9 +56,9 @@ Cases run concurrently as soon as the world is up, so one waiting for frames
 does not hold up the rest and the suite takes as long as its slowest case.
 Anything a test throws (a failed assert included) fails only that case.
 
-Waiting for frames needs a scheduler that the mod polls; this mod keeps one in
-`src/async.ts`, imported from `src/init.ts` so that it is registered in regular
-builds too.
+Waiting for frames needs a scheduler that the mod polls. Cases use
+`Scheduler.get()` from `@noita-ts/base/async`, which creates a singleton and
+registers it to poll on the world and pause update hooks on its own.
 
 `log()` from the same module prints into the report, which shows up in the
 command output the moment it happens - handy for dumping values while
