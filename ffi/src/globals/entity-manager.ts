@@ -48,46 +48,21 @@ export const Entity = c.declare("Entity", [
   c.field("parent", EntityRef.ptr()),
 ]);
 
-const locate = () => {
-  let at = getLuaCFunc(EntityGetIsAlive);
+// EntityGetIsAlive loads the manager global, then passes the looked-up id to
+// the resolver: mov ecx, [entityManager] ; add esp, 8 ; push eax ; call get_entity
+const getEntityCall = ffi.text.scan([0x83, 0xC4, 0x08, 0x50, 0xE8], {
+  at: getLuaCFunc(EntityGetIsAlive),
+  name: "EntityManager get_entity call in EntityGetIsAlive",
+});
 
-  // EntityGetIsAlive loads the manager global immediately before calling the
-  // internal resolver. Both addresses are found from that stable code path.
-  for (let skip = 0; skip < 8; skip++) {
-    const managerLoad = ffi.text.scanAll([0x8B, 0x0D], {
-      at,
-      limit: 0x400,
-      name: "EntityManager global load in EntityGetIsAlive",
-    });
-    const code = ffi.cast("uint8_t*", managerLoad);
-    const entityManager = ffi.cast("uint32_t*", managerLoad + 2)[0];
+// the mov ecx sits right before the cleanup, so its disp32 is the manager global
+const entityManager = ffi.cast("uint32_t*", getEntityCall - 4)[0];
 
-    if (
-      entityManager >= ffi.data.offset &&
-      entityManager < ffi.data.offset + ffi.data.len &&
-      code[6] === 0x83 &&
-      code[7] === 0xC4 &&
-      code[8] === 0x08 &&
-      code[9] === 0x50 &&
-      code[10] === 0xE8
-    ) {
-      const relative = ffi.cast("int32_t*", managerLoad + 11)[0];
-      return {
-        entityManager,
-        getEntityNative: ffi.cast<(manager: Ptr<unknown>, id: EntityID) => Ptr<Entity>>(
-          "Entity* (__thiscall *)(void*, int)",
-          managerLoad + 15 + relative,
-        ),
-      };
-    }
-
-    at = managerLoad + ffi.instrLen(managerLoad);
-  }
-
-  throw "Failed to scan EntityGetIsAlive for EntityManager global and calls";
-};
-
-const {entityManager, getEntityNative} = locate();
+// the resolver is thiscall'd with the entity id as its only argument
+const getEntityNative = ffi.cast<(manager: Ptr<EntityManager>, id: EntityID) => Ptr<Entity>>(
+  "Entity* (__thiscall *)(void*, int)",
+  getEntityCall + 9 + ffi.cast("int32_t*", getEntityCall + 5)[0],
+);
 
 export const EntityManager = c.declare("EntityManager", [
   c.field("vftable", c.voidptr),
@@ -99,10 +74,11 @@ export const EntityManager = c.declare("EntityManager", [
   c.field("event_manager", c.voidptr),
 ]).metatype(class {
   getEntity(id: EntityID): Ptr<Entity> | undefined {
-    const entity = getEntityNative(ffi.cast("void*", this), id);
+    const entity = getEntityNative(EntityManager.ptr().cast(this), id);
     return entity != null ? entity : undefined;
   }
 });
+export type EntityManager = typeof EntityManager.type;
 
 const ENTITY_MANAGER = EntityManager.ptr().ptr().cast(entityManager);
 
