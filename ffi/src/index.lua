@@ -89,6 +89,9 @@ local M = {
     data = data,
     rdata = rdata,
     text = text,
+
+    -- the wildcard byte of scan patterns
+    _ = Section.ANY_BYTE,
 }
 
 --- Splits a number into its 4 little-endian bytes.
@@ -344,13 +347,13 @@ function M.cave(addr, bytes)
     return caveAddr
 end
 
----@param needle ffi.cdata* | number[] | number | string
+---@param needle ffi.cdata* | (number | table)[] | number | string
 ---@param params ScanParams?
 function M.scan(needle, params)
     return text:scan(needle, params)
 end
 
----@param needle ffi.cdata* | number[] | number | string
+---@param needle ffi.cdata* | (number | table)[] | number | string
 ---@param patch ffi.cdata*|number[]|string
 ---@param params ScanParams?
 function M.patch(needle, patch, params)

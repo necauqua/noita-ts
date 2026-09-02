@@ -1,5 +1,30 @@
 /** @noSelfInFile */
 
+declare const anyByte: unique symbol;
+
+/**
+ * The type of `_`, the wildcard byte of scan patterns.
+ */
+export interface AnyByte {
+  readonly [anyByte]: true;
+}
+
+/**
+ * The wildcard byte of scan patterns: it matches a byte of any value at that
+ * position, for example `[0xA1, _, _, _, _, 0x85, 0xC0]` matches a `mov eax,
+ * [addr]` with any address, followed by a `test eax, eax`.
+ */
+export const _: AnyByte;
+
+/**
+ * A pattern to search memory for.
+ *
+ * A sole number is taken as a 4-byte little-endian integer, a string is taken
+ * as its bytes, and a list holds the bytes themselves, where `ffi._` stands for
+ * a byte of any value.
+ */
+export type Needle = number | string | (number | AnyByte)[];
+
 interface ScanParams {
   /**
    * The number of matches to skip before finishing the scan.
@@ -40,7 +65,7 @@ export interface Section {
    * @param params Additional parameters to control the scan
    * @return The address where the pattern was found
    */
-  scan(needle: number | number[] | string, params?: ScanParams): number;
+  scan(needle: Needle, params?: ScanParams): number;
 
   /**
    * A shortcut for scan with a limit set to section length.
@@ -50,10 +75,10 @@ export interface Section {
    * @param params Additional parameters to control the scan
    * @return The address where the pattern was found
    */
-  scanAll(needle: number | number[] | string, params?: ScanParams): number;
+  scanAll(needle: Needle, params?: ScanParams): number;
 }
 
-declare const _default: {
+declare const ffi: {
 
   /** The base address of the module, without ASLR enabled this is 0x00400000 */
   base: number,
@@ -181,11 +206,7 @@ declare const _default: {
    * @param params Additional parameters to control the scan
    * @return The address where the pattern was found
    */
-  scan(
-    this: void,
-    needle: number | number[] | string,
-    params?: ScanParams,
-  ): number;
+  scan(this: void, needle: Needle, params?: ScanParams): number;
 
   /**
    * Attempt to patch a location in memory directly.
@@ -207,7 +228,7 @@ declare const _default: {
    */
   patch(
     this: void,
-    needle: number | number[] | string,
+    needle: Needle,
     patch: number[] | string,
     params?: ScanParams,
   ): void;
@@ -281,4 +302,4 @@ export type FfiType<K extends string> = K extends `${infer T}*`
     CommonFfiTypes[K] :
     unknown;
 
-export default _default;
+export default ffi;

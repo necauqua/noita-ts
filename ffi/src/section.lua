@@ -47,15 +47,107 @@ local function check(condition, message, name, depth)
     end
 end
 
+--- A byte of a needle table that matches any byte, exported to TS as `ffi._`.
+Section.ANY_BYTE = {}
+
+--- A needle ready to be matched against memory.
+--- @class Pattern
+--- @field data ffi.cdata* the needle bytes, with wildcards zeroed out
+--- @field len number the length of the whole needle
+--- @field runs number[]? flat (offset, length) pairs of the parts without wildcards, nil when the needle has none
+--- @field anchor number the byte scans look for to find a candidate
+--- @field anchor_off number where that byte sits inside the needle
+
+--- @param needle ffi.cdata* | (number | table)[] | number | string
+--- @param name string
+--- @return Pattern
+local function compile(needle, name)
+    local runs = nil
+
+    -- if a sole number is given we assume its a 4-byte little-endian integer 🤷
+    if type(needle) == 'number' then
+        needle = ffi.new('char[4]', {
+            bit.band(needle, 0xFF),
+            bit.band(bit.rshift(needle, 8), 0xFF),
+            bit.band(bit.rshift(needle, 16), 0xFF),
+            bit.band(bit.rshift(needle, 24), 0xFF),
+        })
+    elseif type(needle) == 'table' then
+        local len = #needle
+        local bytes = ffi.new('char[?]', len)
+        local wildcards = false
+        local start = nil
+        runs = {}
+
+        for i = 1, len do
+            local byte = needle[i]
+            if byte == Section.ANY_BYTE then
+                wildcards = true
+                if start then
+                    runs[#runs + 1] = start - 1
+                    runs[#runs + 1] = i - start
+                    start = nil
+                end
+            else
+                bytes[i - 1] = byte
+                start = start or i
+            end
+        end
+        if start then
+            runs[#runs + 1] = start - 1
+            runs[#runs + 1] = len - start + 1
+        end
+        check(#runs ~= 0, 'invalid needle: only wildcards', name, 2)
+
+        needle = bytes
+        -- a needle without wildcards is one run, and a plain memcmp handles it
+        if not wildcards then
+            runs = nil
+        end
+    elseif type(needle) == 'string' then
+        needle = ffi.new('char[?]', #needle, needle)
+    end
+
+    local len = ffi.sizeof(needle)
+    check(len and len ~= 0 or false, 'invalid needle', name, 2)
+
+    local anchor_off = runs and runs[1] or 0
+    return {
+        data = needle,
+        len = len --[[ @as number ]],
+        runs = runs,
+        anchor = ffi.cast('uint8_t*', needle)[anchor_off],
+        anchor_off = anchor_off,
+    }
+end
+
+--- @param pattern Pattern
+--- @param ptr ffi.cdata*
+--- @return boolean
+local function matches(pattern, ptr)
+    local runs = pattern.runs
+    if not runs then
+        return ffi.C.memcmp(ptr, pattern.data, pattern.len) == 0
+    end
+    -- compare only the parts between the wildcards
+    for i = 1, #runs, 2 do
+        local off = runs[i]
+        if ffi.C.memcmp(ptr + off, pattern.data + off, runs[i + 1]) ~= 0 then
+            return false
+        end
+    end
+    return true
+end
+
 --- @param offset number
 --- @param len number
---- @param needle ffi.cdata* | string
---- @param needle_len number
+--- @param pattern Pattern
 --- @param limit number
 --- @param name string
 --- @return number
-local function memfind(offset, len, needle, needle_len, limit, name)
-    local first_byte = ffi.cast('uint8_t*', needle)[0]
+local function memfind(offset, len, pattern, limit, name)
+    local needle_len = pattern.len
+    local anchor_off = pattern.anchor_off
     local search_ptr = ffi.cast('uint8_t*', offset)
     local remaining = len
     local scanned = 0
@@ -63,19 +155,21 @@ local function memfind(offset, len, needle, needle_len, limit, name)
     while remaining >= needle_len do
         check(scanned < limit, 'not found: scan cutoff limit reached', name, 2)
 
-        -- Find first byte of pattern
-        local found = ffi.C.memchr(search_ptr, first_byte, math.min(remaining - needle_len + 1, limit - scanned))
+        -- Find the anchor byte, the first byte of the pattern that is not a wildcard
+        local window = math.min(remaining - needle_len + 1, limit - scanned)
+        local found = ffi.C.memchr(search_ptr + anchor_off, pattern.anchor, window)
         if found == nil then
             break
         end
+        local at = ffi.cast('uint8_t*', found) - anchor_off
 
         -- Check if full pattern matches
-        if ffi.C.memcmp(found, needle, needle_len) == 0 then
-            return tonumber(ffi.cast('size_t', found)) --[[ @as number ]]
+        if matches(pattern, at) then
+            return tonumber(ffi.cast('size_t', at)) --[[ @as number ]]
         end
 
         -- Move past this match and continue
-        local advance = ffi.cast('uint8_t*', found) - search_ptr + 1
+        local advance = at - search_ptr + 1
         search_ptr = search_ptr + advance
         remaining = remaining - advance
         scanned = scanned + advance
@@ -92,20 +186,19 @@ end
 --- Here `limit` counts instructions walked rather than bytes.
 --- @param offset number
 --- @param len number
---- @param needle ffi.cdata* | string
---- @param needle_len number
+--- @param pattern Pattern
 --- @param limit number
 --- @param name string
 --- @return number
-local function memfindcode(offset, len, needle, needle_len, limit, name)
+local function memfindcode(offset, len, pattern, limit, name)
     local ptr = ffi.cast('uint8_t*', offset)
-    local end_ptr = ptr + len - needle_len
+    local end_ptr = ptr + len - pattern.len
     local scanned = 0
 
     while ptr <= end_ptr do
         check(scanned < limit, 'not found: scan cutoff limit reached', name, 2)
 
-        if ffi.C.memcmp(ptr, needle, needle_len) == 0 then
+        if matches(pattern, ptr) then
             return tonumber(ffi.cast('size_t', ptr)) --[[ @as number ]]
         end
 
@@ -122,22 +215,21 @@ end
 
 --- @param offset number
 --- @param len number
---- @param needle ffi.cdata* | string
---- @param needle_len number
+--- @param pattern Pattern
 --- @param limit number
 --- @param name string
 --- @return number
-local function memrfind(offset, len, needle, needle_len, limit, name)
-    local first_byte = ffi.cast('uint8_t*', needle)[0]
+local function memrfind(offset, len, pattern, limit, name)
+    local anchor_off = pattern.anchor_off
     local search_ptr = ffi.cast('uint8_t*', offset)
-    local end_ptr = search_ptr + len - needle_len
+    local end_ptr = search_ptr + len - pattern.len
     local scanned = 0
 
     while end_ptr >= search_ptr do
         check(scanned < limit, 'not found: scan cutoff limit reached', name, 2)
 
-        if end_ptr[0] == first_byte then
-            if ffi.C.memcmp(end_ptr, needle, needle_len) == 0 then
+        if end_ptr[anchor_off] == pattern.anchor then
+            if matches(pattern, end_ptr) then
                 return tonumber(ffi.cast('size_t', end_ptr)) --[[ @as number ]]
             end
         end
@@ -156,7 +248,7 @@ end
 --- @field limit number?
 --- @field name string?
 
---- @param needle ffi.cdata* | number[] | number | string
+--- @param needle ffi.cdata* | (number | table)[] | number | string
 --- @param params ScanParams?
 --- @return number
 function Section:scan(needle, params)
@@ -167,20 +259,8 @@ function Section:scan(needle, params)
     local limit = params.limit or 256
     local name = params.name or ('needle in ' .. self.name)
 
-    -- if a sole number is given we assume its a 4-byte little-endian integer 🤷
-    if type(needle) == 'number' then
-        needle = ffi.new('char[4]', {
-            bit.band(needle, 0xFF),
-            bit.band(bit.rshift(needle, 8), 0xFF),
-            bit.band(bit.rshift(needle, 16), 0xFF),
-            bit.band(bit.rshift(needle, 24), 0xFF),
-        })
-    elseif type(needle) == 'table' or type(needle) == 'string' then
-        needle = ffi.new('char[?]', #needle, needle)
-    end
-
-    local needle_len = ffi.sizeof(needle)
-    check(needle_len and needle_len ~= 0 or false, 'invalid needle', name, 1)
+    local pattern = compile(needle, name)
+    local needle_len = pattern.len
 
     if not back then
         local index = 0
@@ -190,7 +270,7 @@ function Section:scan(needle, params)
         end
         local find = self.code and memfindcode or memfind
         for _ = 0, skip do
-            local found = find(self.offset + index, self.len - index, needle, needle_len --[[ @as integer ]], limit, name)
+            local found = find(self.offset + index, self.len - index, pattern, limit, name)
             index = found - self.offset + needle_len
         end
         return self.offset + index - needle_len
@@ -202,13 +282,13 @@ function Section:scan(needle, params)
         check(index >= 0 and index <= self.len, 'not found: at parameter out of bounds', name, 1)
     end
     for _ = 0, skip do
-        local found = memrfind(self.offset, index, needle, needle_len --[[ @as integer ]], limit, name)
+        local found = memrfind(self.offset, index, pattern, limit, name)
         index = found - self.offset
     end
     return self.offset + index
 end
 
---- @param needle ffi.cdata* | number[] | number | string
+--- @param needle ffi.cdata* | (number | table)[] | number | string
 --- @param params ScanParams?
 --- @return number
 function Section:scanAll(needle, params)
