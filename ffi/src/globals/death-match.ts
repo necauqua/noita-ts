@@ -26,12 +26,12 @@ const constructor = ffi.text.scanAll(
 );
 
 // mov [DEATH_MATCH], EDI
-const deathMatchPos = ffi.text.scan([0x89, 0x3D], {
+const addr = ffi.text.scan([0x89, 0x3D], {
   at: constructor + 6,
   name: "DeathMatch constructor DEATH_MATCH store",
 }) + 2;
 
-const DEATH_MATCH = DeathMatch.ptr().ptr().ptr().cast(deathMatchPos)[0];
+const DEATH_MATCH = DeathMatch.ptr().ptr().ptr().cast(addr)[0];
 
 export namespace DEATH_MATCH { };
 export default DEATH_MATCH;

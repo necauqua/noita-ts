@@ -1,4 +1,4 @@
-import ffi from "..";
+import ffi, { _ } from "..";
 import { NativeString } from "../cpp";
 import c from "../schema";
 
@@ -35,41 +35,18 @@ export const GameGlobal = c.declare("GameGlobal", [
   c.field("startup_argument", NativeString),
 ]);
 
-const locate = () => {
-  let last = ffi.text.offset;
+// The first instance of the classic GameGlobal::get() inlined 300+ times:
+//   mov eax, [globalStorage]  ; A1 <globalStorage>
+//   test eax, eax             ; 85 C0
+//   jnz .ready                ; 75 <short offset forward>
+//   push 0x1a0                ; 68 A0 01 00 00 - sizeof(GameGlobal)
+//   call operator new
+const addr = ffi.text.scanAll(
+  [0xA1, _, _, _, _, 0x85, 0xC0, 0x75, _, 0x68, 0xA0, 0x01, 0x00, 0x00],
+  { name: "GameGlobal accessor allocation" },
+) + 1;
 
-  for (let skip = 0; skip < 32; skip++) {
-    // PUSH 0x10a
-    const pushSize = ffi.text.scanAll([0x68, 0xa0, 0x01, 0x00, 0x00], {
-      at: last,
-      name: "GameGlobal accessor allocation",
-    });
-    last = pushSize + 5;
-
-    const code = ffi.cast("uint8_t*", pushSize - 9);
-
-    // We're basically searching for the following pattern:
-    //   0xA1 <globalStorage>        ; mov eax, [<globalStorage>]
-    //   0x85 0xC0                   ; test eax, eax
-    //   0x75 <short offset forward> ; jnz <short offset forward>
-    //   0x68 0x10 0x0A 0x00 0x00    ; push 0x10a
-
-    if (
-      code[0] !== 0xA1 ||
-      code[5] !== 0x85 ||
-      code[6] !== 0xC0 ||
-      code[7] !== 0x75 ||
-      code[8] < 5 ||
-      code[8] > 0x7f
-    ) {
-      continue;
-    }
-    return GameGlobal.ptr().ptr().ptr().cast(ffi.cast("uint32_t*", pushSize - 8))[0];
-  }
-  throw "GameGlobal accessor not found";
-};
-
-const GAME_GLOBAL = locate();
+const GAME_GLOBAL = GameGlobal.ptr().ptr().ptr().cast(addr)[0];
 
 export namespace GAME_GLOBAL {}
 export default GAME_GLOBAL;
