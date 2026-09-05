@@ -54,7 +54,7 @@ Section.ANY_BYTE = {}
 --- @class Pattern
 --- @field data ffi.cdata* the needle bytes, with wildcards zeroed out
 --- @field len number the length of the whole needle
---- @field runs number[]? flat (offset, length) pairs of the parts without wildcards, nil when the needle has none
+--- @field runs number[] flat (offset, length) pairs of the parts without wildcards
 --- @field anchor number the byte scans look for to find a candidate
 --- @field anchor_off number where that byte sits inside the needle
 
@@ -75,14 +75,12 @@ local function compile(needle, name)
     elseif type(needle) == 'table' then
         local len = #needle
         local bytes = ffi.new('char[?]', len)
-        local wildcards = false
         local start = nil
         runs = {}
 
         for i = 1, len do
             local byte = needle[i]
             if byte == Section.ANY_BYTE then
-                wildcards = true
                 if start then
                     runs[#runs + 1] = start - 1
                     runs[#runs + 1] = i - start
@@ -100,10 +98,6 @@ local function compile(needle, name)
         check(#runs ~= 0, 'invalid needle: only wildcards', name, 2)
 
         needle = bytes
-        -- a needle without wildcards is one run, and a plain memcmp handles it
-        if not wildcards then
-            runs = nil
-        end
     elseif type(needle) == 'string' then
         needle = ffi.new('char[?]', #needle, needle)
     end
@@ -111,7 +105,12 @@ local function compile(needle, name)
     local len = ffi.sizeof(needle)
     check(len and len ~= 0 or false, 'invalid needle', name, 2)
 
-    local anchor_off = runs and runs[1] or 0
+    -- a needle without wildcards is a single run over the whole thing; keeping
+    -- one shape here keeps the scan loops monomorphic, which the JIT needs to
+    -- compile them into a single trace
+    runs = runs or { 0, len }
+
+    local anchor_off = runs[1]
     return {
         data = needle,
         len = len --[[ @as number ]],
@@ -122,17 +121,19 @@ local function compile(needle, name)
 end
 
 --- @param pattern Pattern
---- @param ptr ffi.cdata*
+--- @param ptr ffi.cdata* a `uint8_t*` to the candidate position
 --- @return boolean
 local function matches(pattern, ptr)
-    local runs = pattern.runs
-    if not runs then
-        return ffi.C.memcmp(ptr, pattern.data, pattern.len) == 0
+    -- one byte load rejects almost every candidate before any call
+    if ptr[pattern.anchor_off] ~= pattern.anchor then
+        return false
     end
+    local runs = pattern.runs
+    local data = pattern.data
     -- compare only the parts between the wildcards
     for i = 1, #runs, 2 do
         local off = runs[i]
-        if ffi.C.memcmp(ptr + off, pattern.data + off, runs[i + 1]) ~= 0 then
+        if ffi.C.memcmp(ptr + off, data + off, runs[i + 1]) ~= 0 then
             return false
         end
     end

@@ -25,7 +25,7 @@ export const _: AnyByte;
  */
 export type Needle = number | string | (number | AnyByte)[];
 
-interface ScanParams {
+export interface ScanParams {
   /**
    * The number of matches to skip before finishing the scan.
    * Defaults to 0.
@@ -89,6 +89,31 @@ declare const ffi: {
   rdata: Section;
   /** The `.text` memory address range */
   text: Section;
+
+  /** The section class, to scan a memory range that is not part of the module */
+  Section: {
+    /**
+     * Makes a section over an arbitrary memory range.
+     *
+     * The three sections of the module are already there as `ffi.data`,
+     * `ffi.rdata` and `ffi.text`, so this is only for the rare case of scanning
+     * memory that is not part of it.
+     *
+     * @param name The name of the range, used in error messages
+     * @param offset The address the range starts at
+     * @param len The length of the range in bytes
+     * @param code Whether the range holds executable code, which makes scans
+     * walk instruction boundaries instead of every byte
+     * @return The section over that range
+     */
+    ["new"](
+      this: void,
+      name: string,
+      offset: number,
+      len: number,
+      code?: boolean,
+    ): Section;
+  };
 
   /**
    * Splits a number into its 4 little-endian bytes.

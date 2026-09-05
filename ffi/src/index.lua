@@ -90,6 +90,9 @@ local M = {
     rdata = rdata,
     text = text,
 
+    -- for the rare case of scanning memory outside of the module
+    Section = Section,
+
     -- the wildcard byte of scan patterns
     _ = Section.ANY_BYTE,
 }
