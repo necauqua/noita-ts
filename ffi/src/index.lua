@@ -350,13 +350,13 @@ function M.cave(addr, bytes)
     return caveAddr
 end
 
----@param needle ffi.cdata* | (number | table)[] | number | string
+---@param needle ffi.cdata* | (number | AnyByte)[] | number | string
 ---@param params ScanParams?
 function M.scan(needle, params)
     return text:scan(needle, params)
 end
 
----@param needle ffi.cdata* | (number | table)[] | number | string
+---@param needle ffi.cdata* | (number | AnyByte)[] | number | string
 ---@param patch ffi.cdata*|number[]|string
 ---@param params ScanParams?
 function M.patch(needle, patch, params)

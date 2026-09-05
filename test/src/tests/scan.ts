@@ -113,6 +113,18 @@ test("a needle of only wildcards is rejected", () => {
   assert(found !== undefined, `unexpected error: ${tostring(err)}`);
 });
 
+test("a failed scan points at the code that asked for it", () => {
+  const [, err] = pcall(() => scan([0xDE, 0xAD, 0xBE, 0x00]));
+  const [found] = string.find(tostring(err), "scan.lua", 1, true);
+  assert(found !== undefined, `unexpected error: ${tostring(err)}`);
+});
+
+test("scanAll leaves the parameters it was given alone", () => {
+  const params: ScanParams = { name: "test needle" };
+  buffer.scanAll([0xDE, 0xAD, 0xBE, 0xEF], params);
+  assertEq(params.limit, undefined, "the limit of the parameters table");
+});
+
 /// And the same over real code, where scans walk instruction boundaries
 /// instead of every byte.
 

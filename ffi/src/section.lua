@@ -37,17 +37,38 @@ function Section._hde32_len(ptr)
     return hde32.hde32_len(ptr)
 end
 
+--- The chunk of this file, to tell its frames apart from the ones that call it.
+local SOURCE = debug.getinfo(1, 'S').short_src
+
+--- The position of the innermost frame outside of this file, which is where
+--- the scan that failed was asked for. Scans go through several frames in
+--- here, so a plain `error` level cannot point at it.
+--- @return string
+local function position()
+    for level = 2, 16 do
+        local info = debug.getinfo(level, 'Sl')
+        if not info then
+            break
+        end
+        -- tail calls and C functions have no line to point at
+        if info.short_src ~= SOURCE and info.currentline > 0 then
+            return string.format('%s:%d: ', info.short_src, info.currentline)
+        end
+    end
+    return ''
+end
+
 --- @param condition boolean
 --- @param message string
 --- @param name string
---- @param depth number
-local function check(condition, message, name, depth)
+local function check(condition, message, name)
     if not condition then
-        error(string.format('%s %s', name, message), depth)
+        error(string.format('%s%s %s', position(), name, message), 0)
     end
 end
 
 --- A byte of a needle table that matches any byte, exported to TS as `ffi._`.
+--- @class AnyByte
 Section.ANY_BYTE = {}
 
 --- A needle ready to be matched against memory.
@@ -58,7 +79,7 @@ Section.ANY_BYTE = {}
 --- @field anchor number the byte scans look for to find a candidate
 --- @field anchor_off number where that byte sits inside the needle
 
---- @param needle ffi.cdata* | (number | table)[] | number | string
+--- @param needle ffi.cdata* | (number | AnyByte)[] | number | string
 --- @param name string
 --- @return Pattern
 local function compile(needle, name)
@@ -74,6 +95,8 @@ local function compile(needle, name)
         })
     elseif type(needle) == 'table' then
         local len = #needle
+        check(len ~= 0, 'invalid needle: empty', name)
+
         local bytes = ffi.new('char[?]', len)
         local start = nil
         runs = {}
@@ -95,7 +118,7 @@ local function compile(needle, name)
             runs[#runs + 1] = start - 1
             runs[#runs + 1] = len - start + 1
         end
-        check(#runs ~= 0, 'invalid needle: only wildcards', name, 2)
+        check(#runs ~= 0, 'invalid needle: only wildcards', name)
 
         needle = bytes
     elseif type(needle) == 'string' then
@@ -103,7 +126,7 @@ local function compile(needle, name)
     end
 
     local len = ffi.sizeof(needle)
-    check(len and len ~= 0 or false, 'invalid needle', name, 2)
+    check(len and len ~= 0 or false, 'invalid needle', name)
 
     -- a needle without wildcards is a single run over the whole thing; keeping
     -- one shape here keeps the scan loops monomorphic, which the JIT needs to
@@ -154,7 +177,7 @@ local function memfind(offset, len, pattern, limit, name)
     local scanned = 0
 
     while remaining >= needle_len do
-        check(scanned < limit, 'not found: scan cutoff limit reached', name, 2)
+        check(scanned < limit, 'not found: scan cutoff limit reached', name)
 
         -- Find the anchor byte, the first byte of the pattern that is not a wildcard
         local window = math.min(remaining - needle_len + 1, limit - scanned)
@@ -177,7 +200,7 @@ local function memfind(offset, len, pattern, limit, name)
     end
 
     ---@diagnostic disable-next-line: missing-return -- ugh lmao
-    check(false, 'not found: scanned the entire range', name, 2)
+    check(false, 'not found: scanned the entire range', name)
 end
 
 --- Walk instruction boundaries (via hde32) looking for the needle.
@@ -197,7 +220,7 @@ local function memfindcode(offset, len, pattern, limit, name)
     local scanned = 0
 
     while ptr <= end_ptr do
-        check(scanned < limit, 'not found: scan cutoff limit reached', name, 2)
+        check(scanned < limit, 'not found: scan cutoff limit reached', name)
 
         if matches(pattern, ptr) then
             return tonumber(ffi.cast('size_t', ptr)) --[[ @as number ]]
@@ -211,7 +234,7 @@ local function memfindcode(offset, len, pattern, limit, name)
     end
 
     ---@diagnostic disable-next-line: missing-return -- ugh lmao
-    check(false, 'not found: scanned the entire range', name, 2)
+    check(false, 'not found: scanned the entire range', name)
 end
 
 --- @param offset number
@@ -227,7 +250,7 @@ local function memrfind(offset, len, pattern, limit, name)
     local scanned = 0
 
     while end_ptr >= search_ptr do
-        check(scanned < limit, 'not found: scan cutoff limit reached', name, 2)
+        check(scanned < limit, 'not found: scan cutoff limit reached', name)
 
         if end_ptr[anchor_off] == pattern.anchor then
             if matches(pattern, end_ptr) then
@@ -239,7 +262,7 @@ local function memrfind(offset, len, pattern, limit, name)
     end
 
     ---@diagnostic disable-next-line: missing-return -- ugh lmao
-    check(false, 'not found: scanned the entire range', name, 2)
+    check(false, 'not found: scanned the entire range', name)
 end
 
 ---@class ScanParams
@@ -249,7 +272,7 @@ end
 --- @field limit number?
 --- @field name string?
 
---- @param needle ffi.cdata* | (number | table)[] | number | string
+--- @param needle ffi.cdata* | (number | AnyByte)[] | number | string
 --- @param params ScanParams?
 --- @return number
 function Section:scan(needle, params)
@@ -267,7 +290,7 @@ function Section:scan(needle, params)
         local index = 0
         if at then
             index = at - self.offset
-            check(index >= 0 and index <= self.len, 'not found: at parameter out of bounds', name, 1)
+            check(index >= 0 and index <= self.len, 'not found: at parameter out of bounds', name)
         end
         local find = self.code and memfindcode or memfind
         for _ = 0, skip do
@@ -280,7 +303,7 @@ function Section:scan(needle, params)
     local index = self.len
     if at then
         index = at - self.offset
-        check(index >= 0 and index <= self.len, 'not found: at parameter out of bounds', name, 1)
+        check(index >= 0 and index <= self.len, 'not found: at parameter out of bounds', name)
     end
     for _ = 0, skip do
         local found = memrfind(self.offset, index, pattern, limit, name)
@@ -289,15 +312,16 @@ function Section:scan(needle, params)
     return self.offset + index
 end
 
---- @param needle ffi.cdata* | (number | table)[] | number | string
+--- @param needle ffi.cdata* | (number | AnyByte)[] | number | string
 --- @param params ScanParams?
 --- @return number
 function Section:scanAll(needle, params)
-    params = params or {}
-    if not params.limit then
-        params.limit = self.len
+    -- a copy, so that a table of parameters can be reused across sections
+    local all = { limit = self.len }
+    for key, value in pairs(params or {}) do
+        all[key] = value
     end
-    return self:scan(needle, params)
+    return self:scan(needle, all)
 end
 
 return Section
