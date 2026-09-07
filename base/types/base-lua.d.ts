@@ -23,7 +23,7 @@ declare module "data/scripts/gun/gun_actions.lua" {
   export type Action = {
     id: string;
     name: string;
-    type: import("../src").ActionType;
+    type: import("@noita-ts/base").ActionType;
     recursive?: boolean;
     related_projectiles?: string[];
     related_extra_entities?: string[];
