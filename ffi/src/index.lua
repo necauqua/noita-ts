@@ -37,6 +37,9 @@ ffi.cdef [[
         uint32_t VirtualAddress;
         char pad[24];
     } IMAGE_SECTION_HEADER;
+
+    uint16_t AddAtomA(const char* str);
+    uint16_t FindAtomA(const char* str);
 ]]
 
 -- dont hardcode 0x00400000 because of ASLR
@@ -186,6 +189,24 @@ function M.locateStaticGlobal(rtti_name)
     return data:scanAll(vftable, {
         name = string.format('static global for `%s` (vftable at 0x%08X)', rtti_name, vftable),
     })
+end
+
+local ONCE_PREFIX = 'noita-ts.'
+
+--- Returns true the first time it is called with a given name, and false after
+--- that, for as long as the process lives.
+---
+--- @param name string
+--- @return boolean
+function M.once(name)
+    local key = ONCE_PREFIX .. name
+    if ffi.C.FindAtomA(key) ~= 0 then
+        return false
+    end
+    if ffi.C.AddAtomA(key) == 0 then
+        error(string.format('could not add the atom for the once flag `%s`', name))
+    end
+    return true
 end
 
 -- see https://learn.microsoft.com/en-us/windows/win32/Memory/memory-protection-constants

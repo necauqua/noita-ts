@@ -234,6 +234,35 @@ declare const ffi: {
   scan(this: void, needle: Needle, params?: ScanParams): number;
 
   /**
+   * Returns true the first time it is called with a given name, and false
+   * after that, for as long as the game process lives.
+   *
+   * Note: the flags are case-insensitive.
+   *
+   * A mod runs in more than one Lua state, and every state loads its modules
+   * again, so top-level code that scans and patches can run many times - while
+   * the patches themselves stay in the process. Guard such code with this to
+   * apply it exactly once per run of the game:
+   *
+   * ```ts
+   * if (ffi.once("my_mod_health_patch")) {
+   *   // scans and patches
+   * }
+   * ```
+   *
+   * The flag is set at the moment of the call, so a patch that throws is not
+   * tried again.
+   *
+   * All mods share one set of names, which lets two mods that apply the same
+   * patch agree on who does it. Put the name of your mod in the name if you do
+   * not want that.
+   *
+   * @param name The name of the flag
+   * @return Whether the caller is the first to ask for this name
+   */
+  once(this: void, name: string): boolean;
+
+  /**
    * Attempt to patch a location in memory directly.
    * This attempts to undo and redo the memory protection around the write.
    *
