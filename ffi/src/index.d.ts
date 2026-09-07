@@ -52,6 +52,43 @@ export interface ScanParams {
   name?: string;
 }
 
+/**
+ * The general purpose registers of the hooked code, as `PUSHAD` saves them.
+ *
+ * Writing to a field puts the value back into the register when the hook
+ * returns, except for `esp`, which `POPAD` leaves alone. `esp` also holds the
+ * stack pointer as it is inside the trampoline: the one of the hooked code is 4
+ * bytes above it, over the flags the trampoline pushed.
+ */
+export interface Regs {
+  edi: number;
+  esi: number;
+  ebp: number;
+  esp: number;
+  ebx: number;
+  edx: number;
+  ecx: number;
+  eax: number;
+}
+
+/** The function a hook runs. */
+export type HookCallback = (this: void, regs: Ptr<Regs>) => void;
+
+/**
+ * A hook made by `ffi.hook`.
+ */
+export interface Hook {
+  /** The address of the allocated cave. */
+  readonly cave: number;
+
+  /**
+   * Undoes the hook: the hooked code goes back to the instructions it started
+   * with, and the callback is released. The cave itself stays, as nothing ever
+   * frees it.
+   */
+  remove(): void;
+}
+
 export interface Section {
   offset: number;
   len: number;
@@ -184,6 +221,37 @@ declare const ffi: {
     addr: number,
     bytes: number[] | string | ((this: void, base: number) => number[]),
   ): number;
+
+  /**
+   * Hooks `addr` with a cave that calls `fn` with the registers of the hooked
+   * code.
+   *
+   * ```ts
+   * const hook = ffi.hook(addr, (regs) => {
+   *   print(string.format("0x%08X", regs.eax));
+   *   regs.ecx = 0; // and back into the register it goes
+   * });
+   * hook.remove();
+   * ```
+   *
+   * A hook is only alive for as long as the Lua state that made it: a callback
+   * dies with its state while the cave lives on, so the hook is removed when
+   * the state is closed, exactly as `remove` does it. That puts the hooked
+   * instructions back the way they were, which leaves the address hookable
+   * again - a soft reload of a mod simply hooks it once more from its new
+   * state.
+   *
+   * The callback runs on the thread that the hooked code runs on, and a Lua
+   * state may only be used from the thread that owns it, so a hook may only sit
+   * on code that the game runs on the thread of the mod. Every call also
+   * crosses the C boundary, which is far slower than a Lua call and cannot be
+   * compiled, so a hook on hot code costs real frame time.
+   *
+   * @param addr The address to hook
+   * @param fn The function to call
+   * @return The hook
+   */
+  hook(this: void, addr: number, fn: HookCallback): Hook;
 
   /**
    * Locate a string in `.rdata`.

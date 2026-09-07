@@ -253,6 +253,21 @@ local function jmpRel32(from, to)
     return { 0xE9, rel[1], rel[2], rel[3], rel[4] }
 end
 
+--- How many bytes of whole instructions a `JMP rel32` at `addr` displaces.
+--- @param addr number
+--- @return number
+local function displaced(addr)
+    local stolen = 0
+    while stolen < JMP_LEN do
+        local len = M.instrLen(addr + stolen)
+        if len == 0 then
+            error(string.format('could not decode the instruction at 0x%08X', addr + stolen))
+        end
+        stolen = stolen + len
+    end
+    return stolen
+end
+
 -- see https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc
 local MEM_COMMIT_RESERVE = 0x3000
 
@@ -331,16 +346,7 @@ function M.cave(addr, bytes)
     end
     local size = type(bytes) == 'cdata' and ffi.sizeof(bytes) --[[ @as number ]] or #bytes
 
-    -- walk instruction boundaries to see how much the jump displaces
-    local stolen = 0
-    while stolen < JMP_LEN do
-        local len = M.instrLen(addr + stolen)
-        if len == 0 then
-            error(string.format('could not decode the instruction at 0x%08X', addr + stolen))
-        end
-        stolen = stolen + len
-    end
-
+    local stolen = displaced(addr)
     local finalSize = size + stolen + JMP_LEN
 
     local cavePtr = M.allocExec(finalSize)
@@ -369,6 +375,98 @@ function M.cave(addr, bytes)
     M.patchRaw(addr, patch)
 
     return caveAddr
+end
+
+--- Builds the trampoline of a hook: it saves the state of the CPU and calls
+--- `cb` with a pointer to the saved registers.
+---
+--- @param cb number the address of the callback
+--- @return number[]
+local function trampoline(cb)
+    local imm = M.le32(cb)
+    return {
+        0x9C,                                 -- PUSHFD
+        0x60,                                 -- PUSHAD
+        0xFC,                                 -- CLD, the direction flag the ABI wants
+        0x54,                                 -- PUSH ESP, the frame PUSHAD left
+        0xB8, imm[1], imm[2], imm[3], imm[4], -- MOV EAX, <callback>
+        0xFF, 0xD0,                           -- CALL EAX
+        0x83, 0xC4, 0x04,                     -- ADD ESP, 4, cdecl cleans up
+        0x61,                                 -- POPAD
+        0x9D,                                 -- POPFD
+    }
+end
+
+-- the callback of every live hook: LuaJIT holds it weakly through the finalizer
+-- that undoes the hook, and only this keeps it around to be finalized at all
+---@diagnostic disable-next-line: unused-local
+local hooks = {}
+
+--- Wraps `fn` so that nothing is thrown across the C call boundary, which takes
+--- the process down.
+--- @param fn function
+--- @return function
+local function guarded(fn)
+    return function(...)
+        local ok, err = pcall(fn, ...)
+        if not ok then
+            print(string.format('noita-ts: a hook errored: %s', tostring(err)))
+        end
+    end
+end
+
+local CALLBACK = ffi.typeof('void (__cdecl *)(struct { uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax; }*)')
+
+--- Hooks `addr` with a cave that calls `fn` with the registers of the hooked
+--- code, as a pointer to the frame that `PUSHAD` leaves - writing to a field
+--- puts the value back into the register, except for `esp`.
+---
+--- @param addr number the address to hook
+--- @param fn function the function to call
+--- @return table hook the hook, with `cave` and `remove`
+function M.hook(addr, fn)
+    local cb = ffi.cast(CALLBACK, guarded(fn))
+
+    -- the bytes the cave is about to displace, to put back on `remove`
+    local stolen = displaced(addr)
+    local original = ffi.new('char[?]', stolen)
+    ffi.copy(original, ffi.cast('char*', addr), stolen)
+
+    ---@diagnostic disable-next-line: param-type-mismatch bruh
+    local cave = M.cave(addr, trampoline(tonumber(ffi.cast('uint32_t', cb))))
+
+    local removed = false
+
+    --- Puts the hooked code back the way it was.
+    local function undo()
+        if not removed then
+            removed = true
+            M.patchRaw(addr, original)
+        end
+    end
+
+    -- a callback dies with the Lua state that made it, while the cave lives on,
+    -- so the hook has to be gone by then - and the address free to hook again.
+    -- `undo` deliberately holds no reference to `cb`: it hangs on it as the key
+    -- of the weak finalizer table of LuaJIT
+    ffi.gc(cb, undo)
+    ---@diagnostic disable-next-line: unused-local
+    hooks[cb] = true
+
+    local hook = { cave = cave }
+
+    --- Undoes the hook: the hooked code goes back to what it was, and the
+    --- callback is released. The cave itself stays, as nothing ever frees it.
+    function hook.remove()
+        if removed then return end
+        undo()
+        ---@diagnostic disable-next-line: unused-local
+        hooks[cb] = nil
+        ---@diagnostic disable-next-line: undefined-field
+        cb:free()
+    end
+
+    return hook
 end
 
 ---@param needle ffi.cdata* | (number | AnyByte)[] | number | string
