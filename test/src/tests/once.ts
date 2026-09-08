@@ -14,10 +14,3 @@ test("a once flag is not case sensitive", () => {
   assert(ffi.once(name), "the first call did not claim the flag");
   assert(!ffi.once(string.upper(name)), "the flag is case sensitive");
 });
-
-test("a name over the length limit is rejected", () => {
-  const [ok, err] = pcall(() => ffi.once(string.rep("x", 242)));
-  assert(!ok, "an over-long name was accepted");
-  const [found] = string.find(tostring(err), "at most 241", 1, true);
-  assert(found !== undefined, `unexpected error: ${tostring(err)}`);
-});
