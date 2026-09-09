@@ -1,15 +1,9 @@
 import { spawn, spawnSync } from "child_process";
 import { findNoita } from "./steam.js";
+import { dim, green, red } from "./colors.js";
 
 /** Every line of the report printed by `@noita-ts/base/test` starts with this. */
 const PREFIX = "[nts-test]";
-
-const colors = !!process.stdout.isTTY && !process.env.NO_COLOR;
-const paint = (code: string, text: string) =>
-  colors ? `\x1b[${code}m${text}\x1b[0m` : text;
-const green = (text: string) => paint("32", text);
-const red = (text: string) => paint("31", text);
-const dim = (text: string) => paint("2", text);
 
 export type TestOptions = {
   /** Container image to run, see https://github.com/necauqua/noita-docker. */

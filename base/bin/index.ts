@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { spawnSync } from "child_process";
+import { spawn } from "child_process";
 import { Command, Option } from "commander";
 import fs from "fs";
 import path from "path";
@@ -12,6 +12,7 @@ import * as jsonc from "jsonc-parser";
 import NoitaMod from "./mod.js";
 import { setupConfig } from "./game-config.js";
 import { findNoita, findSteamApp } from "./steam.js";
+import { followGameLog } from "./game-log.js";
 import runTests from "./test.js";
 import {
   publish as publishToWorkshop,
@@ -151,13 +152,48 @@ async function run(
 
   console.log(`Noita launch commmand:\n  ${exe}\n  ${noitaArgs.join("\n  ")}`);
 
-  const res = spawnSync(exe, noitaArgs, {
-    cwd: localNoita,
-    env,
-    stdio: "inherit",
-  });
-  if (res.error) {
-    console.error(res.error);
+  // the game appends to the log of the previous run, and replaying that into
+  // the console would bury the one that is starting now
+  const logFile = path.resolve(localNoita, "logger.txt");
+  fs.rmSync(logFile, { force: true });
+  const gameLog = followGameLog(logFile);
+
+  // Ctrl+C already reaches the game through the terminal, and dying on it here
+  // as well would cut the log off before its last, most telling lines; a second
+  // one is taken as "the game is not going anywhere, leave it"
+  let interrupted = false;
+  const onSignal = () => {
+    if (interrupted) {
+      process.exit(130);
+    }
+    interrupted = true;
+  };
+  process.on("SIGINT", onSignal);
+  process.on("SIGTERM", onSignal);
+
+  let failure: unknown;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn(exe, noitaArgs, {
+        cwd: localNoita,
+        env,
+        stdio: "inherit",
+      });
+      child.on("error", reject);
+      child.on("close", () => resolve());
+    });
+  } catch (error) {
+    failure = error;
+  } finally {
+    process.off("SIGINT", onSignal);
+    process.off("SIGTERM", onSignal);
+  }
+
+  // the lines the game wrote on its way out are the ones worth having
+  await gameLog.stop();
+
+  if (failure) {
+    console.error(failure);
     process.exit(1);
   }
 }

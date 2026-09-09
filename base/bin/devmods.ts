@@ -51,6 +51,7 @@ export const DEV_MODS: DevMod[] = [
     folders: ["unsafe-explorer"],
   },
   { name: "Spell Lab Shugged", workshopId: "3284126816" },
+  { name: "Enable Logger", workshopId: "2124936579" },
 ];
 
 /** The bits of the item state ISteamUGC reports that matter here. */
