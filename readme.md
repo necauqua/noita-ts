@@ -35,6 +35,10 @@ npx nts publish "notes" # publish/update the mod on the Steam Workshop
 npx nts unpak           # unpack data.wak
 ```
 
+`nts run` prints the game log (`noita/logger.txt`) into the console while the
+game writes it. Ctrl+C asks the game to quit, so that it saves first - this
+needs `xdotool` on Linux. A second Ctrl+C kills the game.
+
 Tests live in `src/tests/`, which regular builds leave out entirely - every
 file in there is picked up on its own, no index to maintain:
 

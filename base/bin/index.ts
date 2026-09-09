@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { spawn } from "child_process";
+import { spawn, type ChildProcess } from "child_process";
 import { Command, Option } from "commander";
 import fs from "fs";
 import path from "path";
@@ -13,6 +13,7 @@ import NoitaMod from "./mod.js";
 import { setupConfig } from "./game-config.js";
 import { findNoita, findSteamApp } from "./steam.js";
 import { followGameLog } from "./game-log.js";
+import { askGameToQuit, killGameTree, QUIT_TOOL } from "./shutdown.js";
 import runTests from "./test.js";
 import {
   publish as publishToWorkshop,
@@ -158,15 +159,53 @@ async function run(
   fs.rmSync(logFile, { force: true });
   const gameLog = followGameLog(logFile);
 
-  // Ctrl+C already reaches the game through the terminal, and dying on it here
-  // as well would cut the log off before its last, most telling lines; a second
-  // one is taken as "the game is not going anywhere, leave it"
+  // the game runs in a process group of its own, so that Ctrl+C reaches it
+  // only through the orderly shutdown below instead of tearing it down mid
+  // frame - on Windows that would give it a console window of its own instead
+  const ownGroup = process.platform !== "win32";
+
+  let child: ChildProcess | undefined;
   let interrupted = false;
+
+  // npm and npx pass the SIGINT that the terminal has already delivered on to
+  // this process, so one Ctrl+C arrives twice; no hand presses it that fast
+  let lastSignal = 0;
+
   const onSignal = () => {
-    if (interrupted) {
+    const now = Date.now();
+    if (now - lastSignal < 500) {
+      return;
+    }
+    lastSignal = now;
+
+    if (child?.pid === undefined) {
       process.exit(130);
     }
+    if (interrupted) {
+      console.log("Killing the game.");
+      killGameTree(child.pid, localNoita);
+      return;
+    }
     interrupted = true;
+    const again = "press Ctrl+C again to kill it";
+    const { kind, detail } = askGameToQuit(child.pid, localNoita);
+    const because = detail ? ` (${detail})` : "";
+    switch (kind) {
+      case "asked":
+        console.log(`\nAsked the game to quit, ${again}.`);
+        break;
+      case "no-window":
+        console.log(
+          `\nFound no game window to close${because}, ${again}.`,
+        );
+        break;
+      case "no-tool":
+        console.log(
+          `\n${QUIT_TOOL} is not installed, so the game cannot be asked to ` +
+            `quit - close its window, or ${again}.`,
+        );
+        break;
+    }
   };
   process.on("SIGINT", onSignal);
   process.on("SIGTERM", onSignal);
@@ -174,10 +213,11 @@ async function run(
   let failure: unknown;
   try {
     await new Promise<void>((resolve, reject) => {
-      const child = spawn(exe, noitaArgs, {
+      child = spawn(exe, noitaArgs, {
         cwd: localNoita,
         env,
         stdio: "inherit",
+        detached: ownGroup,
       });
       child.on("error", reject);
       child.on("close", () => resolve());
