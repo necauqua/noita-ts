@@ -25,16 +25,41 @@ ffi.cdef [[
     int memcmp(const void *buffer1, const void *buffer2, size_t count);
 ]]
 
---- @noita-ts-include ../hde32.dll
-local hde32 = ffi.load('mods/' .. require('$mod').MOD_ID .. '/lua_modules/@noita-ts/ffi/hde32.dll')
-
 ffi.cdef [[
     unsigned int hde32_len(const void* addr);
 ]]
 
+--- The path of the bundled HDE32 build inside a mod.
+--- @noita-ts-include ../hde32.dll
+local HDE32_DLL = 'lua_modules/@noita-ts/ffi/hde32.dll'
+
+--- @type table?
+local hde32
+
+--- The HDE32 library, loaded the first time a code scan asks for it.
+---
+--- The load waits until then because only a code scan needs it, while finding
+--- the folder of a mod that was installed from the Workshop needs the module
+--- that this one is a dependency of.
+--- @return table
+local function lib()
+    if hde32 == nil then
+        local mod_id = require('$mod').MOD_ID
+        local ok, loaded = pcall(ffi.load, 'mods/' .. mod_id .. '/' .. HDE32_DLL)
+        if not ok then
+            -- a mod installed from the Workshop does not live under `mods/`,
+            -- so ask Noita where it put it
+            local mods = require('globals.mods').default
+            loaded = ffi.load(mods:path(mod_id) .. '/' .. HDE32_DLL)
+        end
+        hde32 = loaded
+    end
+    return hde32
+end
+
 -- to be exported by ffi
 function Section._hde32_len(ptr)
-    return hde32.hde32_len(ptr)
+    return lib().hde32_len(ptr)
 end
 
 --- The chunk of this file, to tell its frames apart from the ones that call it.
@@ -215,6 +240,7 @@ end
 --- @param name string
 --- @return number
 local function memfindcode(offset, len, pattern, limit, name)
+    local hde = lib()
     local ptr = ffi.cast('uint8_t*', offset)
     local end_ptr = ptr + len - pattern.len
     local scanned = 0
@@ -226,7 +252,7 @@ local function memfindcode(offset, len, pattern, limit, name)
             return tonumber(ffi.cast('size_t', ptr)) --[[ @as number ]]
         end
 
-        local ilen = hde32.hde32_len(ptr)
+        local ilen = hde.hde32_len(ptr)
         -- hde32 returns 0 on a decode error; step a single byte to resynchronise
         -- rather than spinning forever
         ptr = ptr + (ilen > 0 and ilen or 1)

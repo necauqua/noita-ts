@@ -46,6 +46,10 @@
       "types": "./dist/globals/entity-manager.d.ts",
       "default": "./dist/globals/entity-manager"
     },
+    "./mods": {
+      "types": "./dist/globals/mods.d.ts",
+      "default": "./dist/globals/mods"
+    },
     "./luajit": {
       "types": "./dist/luajit.d.ts",
       "default": "./dist/luajit"
