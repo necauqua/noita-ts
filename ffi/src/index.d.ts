@@ -90,6 +90,40 @@ export interface Hook {
 }
 
 /**
+ * The process-wide store of `ffi.store`.
+ */
+export interface Store {
+  /**
+   * The value of `name`, or `undefined` when it has none. A number that
+   * `shared` stored comes back as its text.
+   */
+  get(this: void, name: string): string | undefined;
+
+  /**
+   * Sets the value of `name`, or removes it with `undefined`.
+   */
+  set(this: void, name: string, value: string | undefined): void;
+
+  /**
+   * The value of `name`. When it has none, calls `init` and stores its
+   * result first, so `init` runs once per process even though every Lua state
+   * asks again - for example to share memory that one state made persistent:
+   *
+   * ```ts
+   * const proc = ffi.store.shared("my_mod.proc", () => {
+   *   const mem = ffi.allocExec(CODE.length, { persistent: true });
+   *   // ...copy CODE into mem
+   *   return tonumber(ffi.cast("uint32_t", mem))!;
+   * });
+   * ```
+   *
+   * A number comes back as a number, and a string as a string. If `init`
+   * throws, nothing is stored.
+   */
+  shared<T extends string | number>(this: void, name: string, init: (this: void) => T): T;
+}
+
+/**
  * How long the memory of `ffi.allocExec` and `ffi.cave` lives.
  */
 export interface LifetimeOptions {
@@ -367,7 +401,9 @@ declare const ffi: {
    * Returns true the first time it is called with a given name, and false
    * after that, for as long as the game process lives.
    *
-   * Note: the flags are case-insensitive.
+   * The flags are environment variables of the process, with the names
+   * prefixed by `NOITA_TS_ONCE_`, so names are not case sensitive. A name may
+   * not be empty or contain `=`.
    *
    * A mod runs in more than one Lua state, and every state loads its modules
    * again, so top-level code that scans and patches can run many times - while
@@ -395,6 +431,26 @@ declare const ffi: {
    * @return Whether the caller is the first to ask for this name
    */
   once(this: void, name: string): boolean;
+
+  /**
+   * Values that live for as long as the game process does, shared by every
+   * Lua state and every mod.
+   *
+   * The values are environment variables of the process, with the names
+   * prefixed by `NOITA_TS_STORE_`, so names are not case sensitive, and
+   * processes that the game starts get a copy. A name may not be empty or
+   * contain `=`.
+   *
+   * Names and values can hold any bytes, NUL too: each byte is one UTF-16
+   * character of the variable, so the code page of the system does not
+   * change them. Windows limits an environment variable to 32767 characters,
+   * and the store adds one in front of the value, so a value can have at most
+   * 32766 bytes.
+   *
+   * As with `ffi.once`, all mods share one set of names: put the name of your
+   * mod or package in the name.
+   */
+  store: Store;
 
   /**
    * Attempt to patch a location in memory directly.

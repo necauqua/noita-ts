@@ -40,8 +40,8 @@ ffi.cdef [[
         char pad[24];
     } IMAGE_SECTION_HEADER;
 
-    uint16_t AddAtomA(const char* str);
-    uint16_t FindAtomA(const char* str);
+    uint32_t GetEnvironmentVariableW(const uint16_t* name, uint16_t* buffer, uint32_t size);
+    bool SetEnvironmentVariableW(const uint16_t* name, const uint16_t* value);
 ]]
 
 -- dont hardcode 0x00400000 because of ASLR
@@ -193,7 +193,87 @@ function M.locateStaticGlobal(rtti_name)
     })
 end
 
-local ONCE_PREFIX = 'noita-ts.'
+-- the store and the once flags keep their values in environment variables of
+-- the process, with these prefixes on their names
+local STORE_PREFIX = 'NOITA_TS_STORE_'
+local ONCE_PREFIX = 'NOITA_TS_ONCE_'
+
+-- the first character of a stored value tells its type
+local STRING_TAG = 's'
+local NUMBER_TAG = 'n'
+
+-- the names and the values go through the wide (UTF-16) functions with one
+-- code unit for each byte, so that no code page changes them. A NUL byte
+-- becomes U+0100, because a NUL code unit ends the string
+local NUL_UNIT = 0x100
+
+--- `s` as a NUL-terminated wide string, one code unit for each byte.
+--- @param s string
+--- @return ffi.cdata*
+local function encode(s)
+    local wide = ffi.new('uint16_t[?]', #s + 1)
+    for i = 1, #s do
+        local byte = s:byte(i)
+        wide[i - 1] = byte == 0 and NUL_UNIT or byte
+    end
+    return wide
+end
+
+--- The bytes of the first `len` code units of `wide`, made by `encode`.
+--- @param wide ffi.cdata*
+--- @param len number
+--- @return string
+local function decode(wide, len)
+    local bytes = ffi.new('uint8_t[?]', len)
+    for i = 0, len - 1 do
+        local unit = wide[i]
+        bytes[i] = unit == NUL_UNIT and 0 or unit
+    end
+    return ffi.string(bytes, len)
+end
+
+--- The name of the environment variable for `name`. Call it directly from a
+--- public function, so that an error points at the caller of that function.
+--- @param prefix string
+--- @param name string
+--- @return string
+local function envKey(prefix, name)
+    if type(name) ~= 'string' or name == '' or name:find('=', 1, true) then
+        error(string.format('not a valid name: %s', tostring(name)), 3)
+    end
+    return prefix .. name
+end
+
+--- @param key string
+--- @return string|nil
+local function envGet(key)
+    local wideKey = encode(key)
+    local size = 256
+    while true do
+        local buffer = ffi.new('uint16_t[?]', size)
+        local len = ffi.C.GetEnvironmentVariableW(wideKey, buffer, size)
+        if len == 0 then
+            -- a stored value has its tag and a once flag is `1`, so the
+            -- values are never empty
+            return nil
+        end
+        if len < size then
+            return decode(buffer, len)
+        end
+        -- too small: `len` is the size that it needs, with the NUL
+        size = len
+    end
+end
+
+--- Sets an environment variable. Call it directly from a public function, so
+--- that an error points at the caller of that function.
+--- @param key string
+--- @param value string|nil
+local function envSet(key, value)
+    if not ffi.C.SetEnvironmentVariableW(encode(key), value and encode(value)) then
+        error(string.format('could not set the environment variable `%s`', key), 3)
+    end
+end
 
 --- Returns true the first time it is called with a given name, and false after
 --- that, for as long as the process lives.
@@ -201,15 +281,61 @@ local ONCE_PREFIX = 'noita-ts.'
 --- @param name string
 --- @return boolean
 function M.once(name)
-    local key = ONCE_PREFIX .. name
-    if ffi.C.FindAtomA(key) ~= 0 then
+    local key = envKey(ONCE_PREFIX, name)
+    if envGet(key) ~= nil then
         return false
     end
-    if ffi.C.AddAtomA(key) == 0 then
-        error(string.format('could not add the atom for the once flag `%s`', name))
-    end
+    envSet(key, '1')
     return true
 end
+
+--- Values that live for as long as the process does, shared by every Lua state
+--- and every mod.
+local store = {}
+
+--- @param name string
+--- @return string|nil
+function store.get(name)
+    local raw = envGet(envKey(STORE_PREFIX, name))
+    return raw and raw:sub(2)
+end
+
+--- @param name string
+--- @param value string|nil
+function store.set(name, value)
+    local key = envKey(STORE_PREFIX, name)
+    if value ~= nil and type(value) ~= 'string' then
+        error(string.format('the store keeps strings, not %s', type(value)), 2)
+    end
+    envSet(key, value and STRING_TAG .. value)
+end
+
+--- @param name string
+--- @param init fun(): string|number
+--- @return string|number
+function store.shared(name, init)
+    local key = envKey(STORE_PREFIX, name)
+    local raw = envGet(key)
+    if raw ~= nil then
+        local text = raw:sub(2)
+        if raw:sub(1, 1) == NUMBER_TAG then
+            return tonumber(text) --[[ @as number ]]
+        end
+        return text
+    end
+
+    local value = init()
+    if type(value) == 'number' then
+        envSet(key, NUMBER_TAG .. string.format('%.17g', value))
+    elseif type(value) == 'string' then
+        envSet(key, STRING_TAG .. value)
+    else
+        error(string.format('a shared value must be a string or a number, not %s', type(value)), 2)
+    end
+    return value
+end
+
+M.store = store
 
 -- see https://learn.microsoft.com/en-us/windows/win32/Memory/memory-protection-constants
 local PAGE_EXECUTE_READ_WRITE = 0x40
