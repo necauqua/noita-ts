@@ -24,11 +24,18 @@ write(first, [0xDE, 0xAD, 0xBE, 0xEF]);
 write(second, [0xDE, 0xAD, 0x00, 0xEF]);
 
 const start = tonumber(ffi.cast("uint32_t", buf))!;
-const buffer = ffi.Section.new("test buffer", start, LEN);
+
+/**
+ * A section over `buf`. A section has only an address, so the tests make it
+ * from `buf` each time, which keeps the garbage collector from freeing `buf`
+ * while they run.
+ */
+const section = () =>
+  ffi.Section.new("test buffer", tonumber(ffi.cast("uint32_t", buf))!, LEN);
 
 /** Scans the whole buffer, unless the parameters say otherwise. */
 const scan = (needle: Needle, params: ScanParams = {}) =>
-  buffer.scanAll(needle, { name: "test needle", ...params });
+  section().scanAll(needle, { name: "test needle", ...params });
 
 test("a needle without wildcards is found", () => {
   assertEq(scan([0xDE, 0xAD, 0xBE, 0xEF]), start + first, "the match address");
@@ -121,7 +128,7 @@ test("a failed scan points at the code that asked for it", () => {
 
 test("scanAll leaves the parameters it was given alone", () => {
   const params: ScanParams = { name: "test needle" };
-  buffer.scanAll([0xDE, 0xAD, 0xBE, 0xEF], params);
+  section().scanAll([0xDE, 0xAD, 0xBE, 0xEF], params);
   assertEq(params.limit, undefined, "the limit of the parameters table");
 });
 
