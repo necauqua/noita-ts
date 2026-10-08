@@ -19,7 +19,7 @@
     }
   },
   "scripts": {
-    "build": "tstl -p . && cp *.{lua,d.ts,dll} dist/",
+    "build": "tstl -p . && cp src/*.{lua,d.ts} pollnet.dll dist/",
     "prepublishOnly": "rm -rf dist && npm run build"
   },
   "dependencies": {
