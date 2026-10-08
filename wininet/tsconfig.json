@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/TypeScriptToLua/TypeScriptToLua/master/tsconfig-schema.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "moduleResolution": "bundler",
+    "types": [
+      "lua-types/jit",
+      "@typescript-to-lua/language-extensions",
+      "@noita-ts/nasm/asm",
+    ],
+    "strict": true,
+    "declaration": true,
+    "rootDir": "src",
+    "outDir": "dist",
+  },
+  "tstl": {
+    "noResolvePaths": ["ffi"],
+    "buildMode": "library",
+    "luaTarget": "JIT",
+    "noImplicitSelf": true,
+    "luaLibImport": "require-minimal",
+    "luaPlugins": [{ "name": "@noita-ts/nasm/asm-plugin" }],
+  },
+}

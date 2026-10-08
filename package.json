@@ -8,6 +8,7 @@
     "nasm",
     "nxml",
     "pollnet",
+    "wininet",
     "create-mod",
     "test"
   ]

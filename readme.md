@@ -86,6 +86,9 @@ what you need when nothing is there to answer with.
 - [`@noita-ts/pollnet`](pollnet) - networking for unsafe mods via
   [pollnet](https://github.com/probable-basilisk/pollnet), bundling the 32-bit
   dll and a Noita-specific loader.
+- [`@noita-ts/wininet`](wininet) - an HTTP client for unsafe mods that uses
+  WinINet on native threads: a drop-in replacement for the `HttpClient` of
+  pollnet, without a DLL to ship (and without its HTTPS stalls in Wine).
 - [`@noita-ts/ffi`](ffi) - LuaJIT FFI helpers/types for unsafe mods.
 - [`@noita-ts/nasm`](nasm) - the NASM assembler as a platform-gated package,
   plus the TSTL plugin that assembles inline `asm()` x86 patches at build time.

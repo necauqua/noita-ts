@@ -1,0 +1,33 @@
+{
+  "name": "@noita-ts/wininet",
+  "version": "0.1.0",
+  "description": "An HTTP client for unsafe Noita mods that uses WinINet on native threads, so the game does not stop.",
+  "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
+  "license": "MIT",
+  "files": [
+    "dist/**/*.{lua,d.ts}"
+  ],
+  "type": "module",
+  "main": "dist/index",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index"
+    }
+  },
+  "scripts": {
+    "build": "tstl -p .",
+    "prepublishOnly": "rm -rf dist && npm run build"
+  },
+  "dependencies": {
+    "@noita-ts/ffi": "^0.6.3",
+    "@typescript-to-lua/language-extensions": "^1.19.0",
+    "lua-types": "^2.13.1"
+  },
+  "devDependencies": {
+    "@noita-ts/nasm": "^0.1.0",
+    "typescript": "^6.0.2",
+    "typescript-to-lua": "^1.36.0"
+  }
+}
