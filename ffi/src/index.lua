@@ -18,6 +18,8 @@ ffi.cdef [[
 
     void* VirtualAlloc(void* address, size_t size, uint32_t allocation_type, uint32_t protect);
 
+    bool VirtualFree(void* address, size_t size, uint32_t free_type);
+
     typedef struct {
         char pad[60];
         uint32_t e_lfanew;
@@ -270,69 +272,156 @@ end
 
 -- see https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc
 local MEM_COMMIT_RESERVE = 0x3000
+-- see https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualfree
+local MEM_RELEASE = 0x8000
 
 -- the Windows allocation granularity: a `VirtualAlloc` reservation is rounded up
 -- to this, so small allocations are bump-allocated out of one arena instead of
 -- burning a whole 64KiB reservation each
 local ARENA_SIZE = 0x10000
 
---- @type ffi.cdata*|nil
-local arena
-local arenaLeft = 0
+--- @class Arena
+--- @field ptr ffi.cdata*|nil the next free byte
+--- @field left number the number of free bytes after `ptr`
+--- @field blocks ffi.cdata*[] the reservations, to release them
 
---- Bump-allocates `size` bytes of readable, writable and executable memory,
---- 16-byte aligned, reserving a new arena when the current one runs out.
+--- Memory that is released when the Lua state is closed.
+--- @type Arena
+local scopedArena = { left = 0, blocks = {} }
+
+--- Memory that lives for as long as the process does.
+--- @type Arena
+local persistentArena = { left = 0, blocks = {} }
+
+-- what undoes the scoped caves and hooks that are still live, and the
+-- functions of `onRelease`, in the order they were added
+--- @type (fun())[]
+local live = {}
+
+--- @param undo fun()
+local function track(undo)
+    live[#live + 1] = undo
+end
+
+--- @param undo fun()
+local function untrack(undo)
+    for i = #live, 1, -1 do
+        if live[i] == undo then
+            table.remove(live, i)
+            return
+        end
+    end
+end
+
+--- Undoes every live scoped cave and hook and calls the functions of
+--- `onRelease`, newest first, and then releases the scoped memory. The order
+--- matters: nothing may jump into the memory by the time it is released.
+local function release()
+    local undos = live
+    live = {}
+    for i = #undos, 1, -1 do
+        local ok, err = pcall(undos[i])
+        if not ok then
+            print(string.format('noita-ts: the release of the Lua state errored: %s', tostring(err)))
+        end
+    end
+
+    for _, mem in ipairs(scopedArena.blocks) do
+        ffi.C.VirtualFree(mem, 0, MEM_RELEASE)
+    end
+    scopedArena.ptr = nil
+    scopedArena.left = 0
+    scopedArena.blocks = {}
+end
+
+-- the finalizer that releases the scoped memory. LuaJIT runs every pending
+-- finalizer when the Lua state is closed, and only one finalizer does all of
+-- the work, because the order of separate finalizers is not defined.
+-- The finalizer refers to the sentinel, so that the finalizer table keeps it
+-- until the state is closed - it holds its keys weakly but its values strongly
+local sentinel
+sentinel = ffi.gc(ffi.new('char[1]'), function()
+    local _ = sentinel
+    release()
+end)
+
+--- Calls `fn` when the Lua state is closed, together with the undoing of the
+--- scoped caves and hooks, newest first, and before the scoped memory is
+--- released.
 ---
---- The memory is never released - it lives for as long as the process does.
----
+--- @param fn fun()
+--- @return fun() remove what removes `fn`, so that it is not called
+function M.onRelease(fn)
+    if type(fn) ~= 'function' then
+        error(string.format('not a function: %s', tostring(fn)), 2)
+    end
+    -- a closure of its own, so that the same `fn` can be added more than once
+    local function call() fn() end
+    track(call)
+    return function() untrack(call) end
+end
+
+--- Runs the teardown of the Lua state now: undoes every scoped cave and hook,
+--- calls the functions of `onRelease`, and releases the scoped memory. Only
+--- for tests.
+M._release = release
+
+--- @param arena Arena
 --- @param size number
---- @return ffi.cdata* ptr a `char*` to the allocation
-function M.allocExec(size)
+--- @return ffi.cdata*
+local function bump(arena, size)
     -- keep allocations 16-byte aligned
     size = bit.band(math.max(size, 1) + 15, bit.bnot(15))
 
-    if arenaLeft < size then
+    if arena.left < size then
         local n = math.max(ARENA_SIZE, size)
         local mem = ffi.C.VirtualAlloc(nil, n, MEM_COMMIT_RESERVE, PAGE_EXECUTE_READ_WRITE)
         if mem == nil then
             error(string.format('could not reserve %d bytes of executable memory', n))
         end
-        arena = ffi.cast('char*', mem)
-        arenaLeft = n
+        arena.blocks[#arena.blocks + 1] = mem
+        arena.ptr = ffi.cast('char*', mem)
+        arena.left = n
     end
 
-    local ptr = arena
-    arena = ptr + size
-    arenaLeft = arenaLeft - size
+    local ptr = arena.ptr
+    arena.ptr = ptr + size
+    arena.left = arena.left - size
 
     -- ptr can never be nil here
     ---@diagnostic disable-next-line: return-type-mismatch
     return ptr
 end
 
---- Allocates an executable code cave holding `bytes`, and redirects `addr` to it
---- with a `JMP rel32`.
+--- @class LifetimeOptions
+--- @field persistent boolean? keep it for as long as the process lives
+
+--- @param opts LifetimeOptions?
+--- @return boolean
+local function isPersistent(opts)
+    return opts ~= nil and opts.persistent == true
+end
+
+--- Bump-allocates `size` bytes of readable, writable and executable memory,
+--- 16-byte aligned, reserving a new arena when the current one runs out.
 ---
---- The whole instructions covered by that jump are copied to the end of the
---- cave, followed by a jump back to the instruction right after them, and any
---- leftover bytes of a partially overwritten instruction are filled with NOPs.
+--- The memory is released when the Lua state is closed, unless
+--- `opts.persistent` is set: then it lives for as long as the process does.
 ---
---- Note that the displaced instructions are copied verbatim, so an instruction
---- with a relative operand (`CALL rel32`, `JMP`/`Jcc`, RIP-less but
---- offset-relative addressing) will not survive the move.
----
---- `bytes` may also be a function, as returned by linking an assembled patch
---- without a value for its `BASE` reloc: the cave is allocated first and the
---- function is called with its address to produce the final bytes.
----
---- If the resulting byte array carries an `entry` offset (the patch's `entry`
---- label), the hook jumps there rather than to the start of the cave, so a patch
---- can put data in front of its code.
----
---- @param addr number the address to hook
---- @param bytes ffi.cdata*|number[]|string|fun(base: number): number[] the code to run in the cave
---- @return number cave the address of the allocated cave
-function M.cave(addr, bytes)
+--- @param size number
+--- @param opts LifetimeOptions?
+--- @return ffi.cdata* ptr a `char*` to the allocation
+function M.allocExec(size, opts)
+    return bump(isPersistent(opts) and persistentArena or scopedArena, size)
+end
+
+--- Makes a cave, see `M.cave`.
+--- @param addr number
+--- @param bytes ffi.cdata*|number[]|string|fun(base: number): number[]
+--- @param persistent boolean
+--- @return number cave the address of the cave
+--- @return fun()|nil undo what puts the original instructions back, for a scoped cave
+local function makeCave(addr, bytes, persistent)
     -- a patch that needs its own address can only be linked once the cave is
     -- allocated, and allocating needs the size - which linking does not change,
     -- so link once at a dummy base just to measure, then again for real
@@ -349,7 +438,7 @@ function M.cave(addr, bytes)
     local stolen = displaced(addr)
     local finalSize = size + stolen + JMP_LEN
 
-    local cavePtr = M.allocExec(finalSize)
+    local cavePtr = bump(persistent and persistentArena or scopedArena, finalSize)
     local caveAddr = tonumber(ffi.cast('uint32_t', cavePtr)) --[[ @as number ]]
 
     if link then
@@ -374,6 +463,50 @@ function M.cave(addr, bytes)
     end
     M.patchRaw(addr, patch)
 
+    if persistent then
+        return caveAddr, nil
+    end
+
+    -- the displaced instructions are still in the cave, right after the payload
+    local original = ffi.new('char[?]', stolen)
+    ffi.copy(original, cavePtr + size, stolen)
+    return caveAddr, function()
+        M.patchRaw(addr, original)
+    end
+end
+
+--- Allocates an executable code cave holding `bytes`, and redirects `addr` to it
+--- with a `JMP rel32`.
+---
+--- The whole instructions covered by that jump are copied to the end of the
+--- cave, followed by a jump back to the instruction right after them, and any
+--- leftover bytes of a partially overwritten instruction are filled with NOPs.
+---
+--- Note that the displaced instructions are copied verbatim, so an instruction
+--- with a relative operand (`CALL rel32`, `JMP`/`Jcc`, RIP-less but
+--- offset-relative addressing) will not survive the move.
+---
+--- `bytes` may also be a function, as returned by linking an assembled patch
+--- without a value for its `BASE` reloc: the cave is allocated first and the
+--- function is called with its address to produce the final bytes.
+---
+--- If the resulting byte array carries an `entry` offset (the patch's `entry`
+--- label), the hook jumps there rather than to the start of the cave, so a patch
+--- can put data in front of its code.
+---
+--- When the Lua state is closed, the hooked instructions are put back and the
+--- cave is released, unless `opts.persistent` is set: then both stay for as
+--- long as the process lives.
+---
+--- @param addr number the address to hook
+--- @param bytes ffi.cdata*|number[]|string|fun(base: number): number[] the code to run in the cave
+--- @param opts LifetimeOptions?
+--- @return number cave the address of the allocated cave
+function M.cave(addr, bytes, opts)
+    local caveAddr, undo = makeCave(addr, bytes, isPersistent(opts))
+    if undo then
+        track(undo)
+    end
     return caveAddr
 end
 
@@ -396,11 +529,6 @@ local function trampoline(cb)
         0x9D,                                 -- POPFD
     }
 end
-
--- the callback of every live hook: LuaJIT holds it weakly through the finalizer
--- that undoes the hook, and only this keeps it around to be finalized at all
----@diagnostic disable-next-line: unused-local
-local hooks = {}
 
 --- Wraps `fn` so that nothing is thrown across the C call boundary, which takes
 --- the process down.
@@ -427,43 +555,36 @@ local CALLBACK = ffi.typeof('void (__cdecl *)(struct { uint32_t edi, esi, ebp, e
 function M.hook(addr, fn)
     local cb = ffi.cast(CALLBACK, guarded(fn))
 
-    -- the bytes the cave is about to displace, to put back on `remove`
-    local stolen = displaced(addr)
-    local original = ffi.new('char[?]', stolen)
-    ffi.copy(original, ffi.cast('char*', addr), stolen)
-
     ---@diagnostic disable-next-line: param-type-mismatch bruh
-    local cave = M.cave(addr, trampoline(tonumber(ffi.cast('uint32_t', cb))))
+    local ok, cave, undoCave = pcall(makeCave, addr, trampoline(tonumber(ffi.cast('uint32_t', cb))), false)
+    if not ok then
+        ---@diagnostic disable-next-line: undefined-field
+        cb:free()
+        error(cave, 0)
+    end
 
     local removed = false
 
-    --- Puts the hooked code back the way it was.
+    -- a callback dies with the Lua state that made it, so the hook is undone
+    -- with the rest of the scoped caves before that. Through `live`, this also
+    -- keeps `cb` from being collected while the hook is in place
     local function undo()
-        if not removed then
-            removed = true
-            M.patchRaw(addr, original)
-        end
+        if removed then return end
+        removed = true
+        undoCave()
+        ---@diagnostic disable-next-line: undefined-field
+        cb:free()
     end
-
-    -- a callback dies with the Lua state that made it, while the cave lives on,
-    -- so the hook has to be gone by then - and the address free to hook again.
-    -- `undo` deliberately holds no reference to `cb`: it hangs on it as the key
-    -- of the weak finalizer table of LuaJIT
-    ffi.gc(cb, undo)
-    ---@diagnostic disable-next-line: unused-local
-    hooks[cb] = true
+    track(undo)
 
     local hook = { cave = cave }
 
     --- Undoes the hook: the hooked code goes back to what it was, and the
-    --- callback is released. The cave itself stays, as nothing ever frees it.
+    --- callback is released. The cave memory stays until the Lua state is
+    --- closed.
     function hook.remove()
-        if removed then return end
+        untrack(undo)
         undo()
-        ---@diagnostic disable-next-line: unused-local
-        hooks[cb] = nil
-        ---@diagnostic disable-next-line: undefined-field
-        cb:free()
     end
 
     return hook

@@ -83,10 +83,21 @@ export interface Hook {
 
   /**
    * Undoes the hook: the hooked code goes back to the instructions it started
-   * with, and the callback is released. The cave itself stays, as nothing ever
-   * frees it.
+   * with, and the callback is released. The memory of the cave stays until the
+   * Lua state is closed.
    */
   remove(): void;
+}
+
+/**
+ * How long the memory of `ffi.allocExec` and `ffi.cave` lives.
+ */
+export interface LifetimeOptions {
+  /**
+   * Keep it for as long as the process lives, rather than release it when the
+   * Lua state is closed. Defaults to false.
+   */
+  persistent?: boolean;
 }
 
 export interface Section {
@@ -186,12 +197,16 @@ declare const ffi: {
    * Bump-allocates `size` bytes of readable, writable and executable memory,
    * 16-byte aligned, reserving a new arena when the current one runs out.
    *
-   * The memory is never released - it lives for as long as the process does.
+   * The memory is released when the Lua state that allocated it is closed, so
+   * nothing may use it after that - neither code that the game jumps to, nor a
+   * thread that still runs in it. Set `opts.persistent` to keep the memory for
+   * as long as the process lives instead.
    *
    * @param size The number of bytes to allocate
+   * @param opts How long the memory lives
    * @return A `char*` to the allocation
    */
-  allocExec(this: void, size: number): Ptr<number>;
+  allocExec(this: void, size: number, opts?: LifetimeOptions): Ptr<number>;
 
   /**
    * Allocates an executable code cave holding `bytes`, and redirects `addr` to
@@ -212,14 +227,31 @@ declare const ffi: {
    * If the patch defines an `entry` label, the hook jumps there rather than to
    * the start of the cave, so a patch can put data in front of its code.
    *
+   * When the Lua state that made the cave is closed, the hooked instructions
+   * are put back and the cave is released. Set `opts.persistent` to keep both
+   * for as long as the process lives instead - together with `ffi.once`, that
+   * applies a patch exactly once per run of the game:
+   *
+   * ```ts
+   * if (ffi.once("my_mod_health_patch")) {
+   *   ffi.cave(addr, bytes, { persistent: true });
+   * }
+   * ```
+   *
+   * The game can run the hooked code on another thread at the moment that
+   * the state is closed. Then the cave is released under that thread, so put a
+   * scoped cave only on code that runs on the thread of the mod.
+   *
    * @param addr The address to hook
    * @param bytes The code to run in the cave
+   * @param opts How long the cave lives
    * @return The address of the allocated cave
    */
   cave(
     this: void,
     addr: number,
     bytes: number[] | string | ((this: void, base: number) => number[]),
+    opts?: LifetimeOptions,
   ): number;
 
   /**
@@ -235,8 +267,8 @@ declare const ffi: {
    * ```
    *
    * A hook is only alive for as long as the Lua state that made it: a callback
-   * dies with its state while the cave lives on, so the hook is removed when
-   * the state is closed, exactly as `remove` does it. That puts the hooked
+   * dies with its state, so the hook is removed when the state is closed,
+   * exactly as `remove` does it, and its cave is released. That puts the hooked
    * instructions back the way they were, which leaves the address hookable
    * again - a soft reload of a mod simply hooks it once more from its new
    * state.
@@ -252,6 +284,36 @@ declare const ffi: {
    * @return The hook
    */
   hook(this: void, addr: number, fn: HookCallback): Hook;
+
+  /**
+   * Calls `fn` when the Lua state is closed, to release what the state holds
+   * outside of Lua (handles, native memory, threads).
+   *
+   * Closing the state undoes the hooks and the caves that are not persistent,
+   * and calls the functions of `onRelease`, together and newest first. Then
+   * it releases the memory of `ffi.allocExec` that is not persistent, so `fn`
+   * can still use such memory. If `fn` throws, the error is printed and the
+   * release continues.
+   *
+   * LuaJIT runs separate finalizers (`ffi.gc`) in no defined order, so use
+   * this rather than a finalizer of your own when the order matters.
+   *
+   * @param fn What to call
+   * @return A function that removes `fn`, so that it is not called
+   */
+  onRelease(this: void, fn: (this: void) => void): (this: void) => void;
+
+  /**
+   * Does now what closing the Lua state does: removes every hook and every
+   * cave that is not persistent and calls the functions of `onRelease`,
+   * newest first, and then releases the memory that is not persistent.
+   *
+   * Only for tests - everything that this state hooked or allocated without
+   * `persistent` is gone after it.
+   *
+   * @internal
+   */
+  _release(this: void): void;
 
   /**
    * Locate a string in `.rdata`.
@@ -317,6 +379,10 @@ declare const ffi: {
    *   // scans and patches
    * }
    * ```
+   *
+   * A cave made under such a guard must be persistent (`{ persistent: true }`):
+   * a scoped cave is undone when its state is closed, and the guard keeps the
+   * next state from making it again.
    *
    * The flag is set at the moment of the call, so a patch that throws is not
    * tried again.
