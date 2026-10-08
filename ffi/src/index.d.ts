@@ -506,6 +506,8 @@ declare const ffi: {
   string(this: void, ptr: any, len?: number): string;
 
   metatype(this: void, type: string, metatype: any): void;
+
+  gc<T>(this: void, cdata: T, finalizer: ((this: void, cdata: T) => void) | undefined): T;
 };
 
 declare const ptr: unique symbol;
