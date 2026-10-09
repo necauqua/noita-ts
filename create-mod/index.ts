@@ -99,6 +99,10 @@ async function main() {
           hint: "a networking library, wrapper around pollnet",
         },
         {
+          value: "@noita-ts/wininet",
+          hint: "an HTTP client on WinINet, without a DLL to ship",
+        },
+        {
           value: "@noita-ts/ffi",
           hint: "a set of Noita engine modding utitiles",
         },
