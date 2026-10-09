@@ -1,4 +1,4 @@
-import ffi from "@noita-ts/ffi";
+import ffi, { type Ptr } from "@noita-ts/ffi";
 import { BooleanVec, Map, NativeString, NodeColor, Vec } from "@noita-ts/ffi/cpp";
 import c from "@noita-ts/ffi/schema";
 import { assert, assertEq, test } from "@noita-ts/base/test";
@@ -138,6 +138,16 @@ test("an enumeration is a set of numbers of a chosen width", () => {
 
   const [ok] = pcall(() => c.enumeration(c.u8, ["name"]));
   assertEq(ok, false, "a constant may not shadow a member of the type");
+});
+
+test("an array field is indexed from zero, as in C", () => {
+  const Arrays = c.declare("TestArrays", [c.field("items", c.i32.arr(4))]);
+  const value: typeof Arrays.type = ffi.new(Arrays.name);
+  value.items[0] = 7;
+  value.items[3] = 9;
+  const raw = ffi.cast<Ptr<number>>("int32_t*", value);
+  assertEq(raw[0], 7, "the first element");
+  assertEq(raw[3], 9, "the last element");
 });
 
 test("a struct lays out the way the C compiler does", () => {

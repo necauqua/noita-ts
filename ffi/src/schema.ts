@@ -31,8 +31,13 @@ namespace c {
       return ffi.cast<T>(this.name, thing);
     }
 
-    /** `T` -> `T[length]`. */
-    arr(length: number): Type<T[]> {
+    /**
+     * `T` -> `T[length]`.
+     *
+     * The array is modelled as a `Ptr<T>`, not as `T[]`: TSTL adds 1 to the
+     * index of an array, but a C array starts at 0.
+     */
+    arr(length: number): Type<Ptr<T>> {
       return new Type(`${this.name}[${length}]`, this.size * length, this.align);
     }
   }
