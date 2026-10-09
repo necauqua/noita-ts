@@ -29,8 +29,11 @@ export class HttpResponse {
   parseHeaders(): Record<string, string | string[]> {
     const headers: Record<string, string | string[]> = {};
     for (const line of this.headers.split("\n")) {
-      const [key, value] = line.split(": ", 2);
-      if (!key || !value) {
+      // split at the first separator only, as a value can contain one too
+      const sep = line.indexOf(": ");
+      const key = line.slice(0, sep);
+      const value = line.slice(sep + 2);
+      if (sep <= 0 || !value) {
         continue;
       }
       const prev = headers[key];
