@@ -1,10 +1,16 @@
 // An HTTP client that uses WinINet (part of Windows, so there is no DLL to
 // ship). The blocking calls run on native threads (see `thread.ts`), so the
 // game does not stop. The API is the one of `HttpClient` of
-// `@noita-ts/pollnet`.
+// `@noita-ts/pollnet`, except that the headers of a request are only a map.
 
 import ffi, { type Ptr } from "@noita-ts/ffi";
-import { Pool } from "./thread";
+import {
+  describeError,
+  type HeaderMap,
+  headerLines,
+  type Scheduler,
+} from "../common";
+import { lastError, Pool } from "./thread";
 
 ffi.cdef(`
   void* InternetOpenA(const char* agent, uint32_t access, const char* proxy, const char* bypass, uint32_t flags);
@@ -15,7 +21,6 @@ ffi.cdef(`
   int InternetReadFile(void* file, void* buffer, uint32_t size, uint32_t* read);
   int HttpQueryInfoA(void* request, uint32_t info, void* buffer, uint32_t* length, uint32_t* index);
   int InternetCloseHandle(void* internet);
-  uint32_t GetLastError();
 `);
 
 // the game loads wininet.dll itself and never unloads it, so a thread can
@@ -37,6 +42,8 @@ const INTERNET_FLAG_NO_UI = 0x00000200;
 const HTTP_QUERY_STATUS_CODE = 19;
 const HTTP_QUERY_RAW_HEADERS_CRLF = 22;
 const HTTP_QUERY_FLAG_NUMBER = 0x20000000;
+const ERROR_INSUFFICIENT_BUFFER = 122;
+const ERROR_HTTP_INVALID_SERVER_RESPONSE = 12152;
 
 /** The size of one read of the body. */
 const CHUNK = 256 * 1024;
@@ -58,14 +65,13 @@ const ERRORS: Record<number, string> = {
   12157: "security channel error",
   12169: "invalid certificate",
   12170: "certificate revoked",
-  12175: "decoding failed",
 };
 
-const describe = (error: number) => {
-  const name = ERRORS[error];
-  return name !== undefined
-    ? `WinINet error ${error} (${name})`
-    : `WinINet error ${error}`;
+const describe = (error: number) => describeError("WinINet", error, ERRORS);
+
+/** Throws the error of a failed WinINet call. */
+const fail = (what: string, error: number): never => {
+  throw new Error(`${what}: ${describe(error)}`);
 };
 
 export class HttpResponse {
@@ -84,8 +90,8 @@ export class HttpResponse {
    * Header names seen more than once collapse into an array of their values, in
    * order.
    */
-  parseHeaders(): Record<string, string | string[]> {
-    const headers: Record<string, string | string[]> = {};
+  parseHeaders(): HeaderMap {
+    const headers: HeaderMap = {};
     for (const line of this.headers.split("\n")) {
       // split at the first separator only, as a value can contain one too
       const sep = line.indexOf(": ");
@@ -100,50 +106,45 @@ export class HttpResponse {
         continue;
       }
       if (Array.isArray(prev)) {
-        (prev as string[]).push(value);
+        prev.push(value);
       } else {
-        headers[key] = [prev as string, value];
+        headers[key] = [prev, value];
       }
     }
     return headers;
   }
 }
 
-/** The headers of a request: a map, or lines separated by `\n`. */
-export type Headers = Record<string, string | string[]> | string;
-
-/**
- * Anything that looks, walks and quacks like a scheduler (to not depend on
- * `@noita-ts/base` directly).
- * Import and set up a `Scheduler` from `@noita-ts/base/async` for this.
- */
-interface Scheduler {
-  spawn<T>(body: () => T): Promise<T>;
-}
-
 export interface HttpClientOptions {
-  /** The `User-Agent` of the requests. Defaults to `noita-ts/wininet`. */
+  /** The `User-Agent` of the requests. Defaults to `noita-ts/http`. */
   userAgent?: string;
   /**
    * The timeout of a connection, of a send and of a receive, in
-   * milliseconds. Defaults to 30 seconds.
+   * milliseconds: an integer from 1 to 4294967295. Defaults to 30 seconds.
    */
   timeoutMs?: number;
 }
 
-/** A URL, split into the parts that WinINet takes. */
+/**
+ * A URL, split into the parts that WinINet takes. The errors do not have the
+ * URL: the request adds it.
+ */
 const parseUrl = (url: string) => {
-  const [scheme, host, port, rest] = string.match(
+  const [scheme, authority, rest] = string.match(
     url,
-    "^(%a[%w+.-]*)://([^/:?#]+):?(%d*)(.*)$",
+    "^(%a[%w+.-]*)://([^/?#]*)(.*)$",
   );
   const lower = scheme?.toLowerCase();
   if (lower !== "http" && lower !== "https") {
-    throw new Error(`not an http or https URL: ${url}`);
+    throw new Error("not an http or https URL");
+  }
+  const [host, port] = string.match(authority!, "^([^:]+):?(%d*)$");
+  if (host === undefined || port === undefined) {
+    throw new Error("an invalid host or port");
   }
   const secure = lower === "https";
   // the fragment is for the client only
-  let path = string.gsub(rest, "#.*$", "")[0];
+  let path = string.gsub(rest!, "#.*$", "")[0];
   if (!path.startsWith("/")) {
     path = `/${path}`;
   }
@@ -156,43 +157,23 @@ const parseUrl = (url: string) => {
 };
 
 /** Headers as WinINet takes them: `Key: value` lines, each ended by CRLF. */
-const formatHeaders = (headers: Headers) => {
-  const lines: string[] = [];
-  if (typeof headers === "string") {
-    for (const line of headers.split("\n")) {
-      lines.push(string.gsub(line, "\r$", "")[0]);
-    }
-  } else {
-    const keys = Object.keys(headers);
-    keys.sort();
-    for (const key of keys) {
-      const value = headers[key]!;
-      for (const v of typeof value === "string" ? [value] : value) {
-        lines.push(`${key}: ${v}`);
-      }
-    }
-  }
-  return lines
-    .filter((line) => line !== "")
+const formatHeaders = (headers: HeaderMap) =>
+  headerLines(headers)
     .map((line) => `${line}\r\n`)
     .join("");
-};
 
 /**
  * The response headers as `HttpResponse` of pollnet has them: `Key: value`
- * lines separated by `\n`, without the status line.
+ * lines separated by `\n`, without the status line. The separator becomes
+ * `: `, also when the server sent no space after the colon or more than one.
  */
-const responseHeaders = (raw: string) => {
-  const lines = string.gsub(raw, "\r\n", "\n")[0].split("\n");
-  return lines
+const responseHeaders = (raw: string) =>
+  raw
+    .split("\r\n")
     .slice(1)
     .filter((line) => line !== "")
+    .map((line) => string.gsub(line, "^([^:]*):[ \t]*", "%1: ", 1)[0])
     .join("\n");
-};
-
-/** The kinds of the WinINet handles of a request, children first. */
-const REQUEST = 1;
-const CONNECT = 2;
 
 /**
  * An async HTTP client built on top of a {@link Scheduler}.
@@ -201,36 +182,40 @@ const CONNECT = 2;
  * blocking WinINet calls run on native threads, so the game runs while a
  * request waits.
  *
- * A client keeps a WinINet session until the Lua state is closed, so make one
- * client and keep it. When the state is closed, the client closes its handles
- * and frees its memory; the thread of a request that still runs frees the
- * memory of its call when the call ends.
+ * A client keeps a WinINet session until it is closed with {@link close} or
+ * the Lua state is closed, so make one client and keep it. Then the client
+ * closes its handles and frees its memory; the thread of a request that
+ * still runs frees the memory of its call when the call ends.
  */
 export class HttpClient {
-  private scheduler: Scheduler;
   private userAgent: string;
-  private timeoutMs: number;
+  /** The timeout of all the handles, in milliseconds. */
+  private timeout: Ptr<number>;
   private internet: unknown;
-  /** The open request and connection handles, with their kinds. */
-  private handles = new LuaTable<object, number>();
+  /** The open request handles. */
+  private requests = new LuaSet<object>();
+  /** The open connection handles, the parents of the request handles. */
+  private connects = new LuaSet<object>();
   /** The memory that the threads of the requests use. */
   private pool = new Pool();
-  private released = false;
-  /** Removes the release of this client from the release of the state. */
+  private closed = false;
+  /** Removes the close of this client from the release of the state. */
   private unregister: (this: void) => void;
 
-  constructor(scheduler: Scheduler, options?: HttpClientOptions) {
-    this.scheduler = scheduler;
-    this.userAgent = options?.userAgent ?? "noita-ts/wininet";
-    this.timeoutMs = options?.timeoutMs ?? 30_000;
-    this.unregister = ffi.onRelease(() => this._release());
+  constructor(
+    private scheduler: Scheduler,
+    options?: HttpClientOptions,
+  ) {
+    this.userAgent = options?.userAgent ?? "noita-ts/http";
+    this.timeout = ffi.new("uint32_t[1]", options?.timeoutMs ?? 30_000);
+    this.unregister = ffi.onRelease(() => this.close());
   }
 
   /**
    * Perform an HTTP GET.
    */
-  get(url: string, headers?: Headers): Promise<HttpResponse> {
-    return this.request("GET", url, headers ?? "", "");
+  get(url: string, headers?: HeaderMap): Promise<HttpResponse> {
+    return this.request("GET", url, headers ?? {}, "");
   }
 
   /**
@@ -239,42 +224,41 @@ export class HttpClient {
    * Without `headers`, the request has
    * `content-type: application/x-www-form-urlencoded`, as in pollnet.
    */
-  post(url: string, headers?: Headers, body?: string): Promise<HttpResponse> {
+  post(
+    url: string,
+    headers?: HeaderMap,
+    body?: string,
+  ): Promise<HttpResponse> {
     return this.request(
       "POST",
       url,
-      headers ?? { ["content-type"]: "application/x-www-form-urlencoded" },
+      headers ?? { "content-type": "application/x-www-form-urlencoded" },
       body ?? "",
     );
   }
 
   /**
-   * Does now what closing the Lua state does: closes the WinINet handles of
-   * the client and frees its memory. A request that runs is abandoned: its
-   * promise rejects, and its thread frees the memory of its call when the call
-   * ends. The client takes no requests after that.
-   *
-   * Only for tests.
-   *
-   * @internal
+   * Closes the WinINet handles of the client and frees its memory, as closing
+   * the Lua state does. A request that runs is abandoned: its promise
+   * rejects, and its thread frees the memory of its call when the call ends.
+   * The client takes no requests after that.
    */
-  _release() {
-    if (this.released) {
+  close() {
+    if (this.closed) {
       return;
     }
-    this.released = true;
+    this.closed = true;
     this.unregister();
 
     // on Windows, closing a handle that a thread uses also cancels its call;
-    // Wine lets the call run until it ends or times out
-    for (const kind of [REQUEST, CONNECT]) {
-      for (const [handle, k] of this.handles) {
-        if (k === kind) {
-          wininet.InternetCloseHandle(handle);
-        }
+    // Wine lets the call run until it ends or times out; children first
+    for (const handles of [this.requests, this.connects]) {
+      for (const handle of handles) {
+        wininet.InternetCloseHandle(handle);
       }
     }
-    this.handles = new LuaTable();
+    this.requests = new LuaSet();
+    this.connects = new LuaSet();
     if (this.internet !== undefined) {
       wininet.InternetCloseHandle(this.internet);
       this.internet = undefined;
@@ -283,30 +267,22 @@ export class HttpClient {
     this.pool.release();
   }
 
-  /** Remembers `handle` until `close`, or until the client is released. */
-  private track(handle: object, kind: number) {
-    if (handle != null) {
-      this.handles.set(handle, kind);
-    }
-    return handle;
-  }
-
-  /** Closes a handle of `track`, unless the release closed it already. */
-  private close(handle: object) {
-    if (this.handles.has(handle)) {
-      this.handles.delete(handle);
+  /** Closes a handle of `handles`, unless {@link close} closed it already. */
+  private closeHandle(handles: LuaSet<object>, handle: object) {
+    if (handles.has(handle)) {
+      handles.delete(handle);
       wininet.InternetCloseHandle(handle);
     }
   }
 
   /**
    * The WinINet session of this client, made on first use. It stays open
-   * until the client is released, so that WinINet can keep the connections
+   * until the client is closed, so that WinINet can keep the connections
    * alive.
    */
   private open() {
-    if (this.released) {
-      throw new Error("the client is released");
+    if (this.closed) {
+      throw new Error("the client is closed");
     }
     if (this.internet === undefined) {
       const internet = wininet.InternetOpenA(
@@ -317,7 +293,7 @@ export class HttpClient {
         0,
       );
       if (internet == null) {
-        throw new Error(`cannot open WinINet: ${describe(ffi.C.GetLastError())}`);
+        fail("cannot open WinINet", lastError());
       }
       this.setTimeouts(internet);
       this.internet = internet;
@@ -331,93 +307,109 @@ export class HttpClient {
    * connection gets them too.
    */
   private setTimeouts(handle: unknown) {
-    const timeout = ffi.new("uint32_t[1]", this.timeoutMs);
     for (const option of [
       INTERNET_OPTION_CONNECT_TIMEOUT,
       INTERNET_OPTION_SEND_TIMEOUT,
       INTERNET_OPTION_RECEIVE_TIMEOUT,
     ]) {
-      wininet.InternetSetOptionA(handle, option, timeout, 4);
+      wininet.InternetSetOptionA(handle, option, this.timeout, 4);
     }
   }
 
+  /**
+   * Performs a request in a coroutine. All of its errors start with the
+   * method and the URL. A request that the close of the client abandons, or
+   * that comes after it, fails with `the client is closed`.
+   */
   private request(
     method: string,
     url: string,
-    headers: Headers,
+    headers: HeaderMap,
     body: string,
   ): Promise<HttpResponse> {
     return this.scheduler.spawn(() => {
-      const { secure, host, port, path } = parseUrl(url);
-      const fail = (what: string, error: number): never => {
-        throw new Error(`${method} ${url}: ${what}: ${describe(error)}`);
-      };
-
-      // no network yet, so these run on the main thread
-      const connect = this.track(
-        wininet.InternetConnectA(
-          this.open(),
-          host,
-          port,
-          null,
-          null,
-          INTERNET_SERVICE_HTTP,
-          0,
-          0,
-        ),
-        CONNECT,
-      );
-      if (connect == null) {
-        fail("cannot connect", ffi.C.GetLastError());
-      }
       try {
-        this.setTimeouts(connect);
-        let flags =
-          INTERNET_FLAG_RELOAD |
-          INTERNET_FLAG_NO_CACHE_WRITE |
-          INTERNET_FLAG_NO_COOKIES |
-          INTERNET_FLAG_NO_UI |
-          // follow redirects between http and https too, as pollnet does
-          INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP |
-          INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS;
-        if (secure) {
-          flags |= INTERNET_FLAG_SECURE;
-        }
-        const request = this.track(
-          wininet.HttpOpenRequestA(
-            connect,
-            method,
-            path,
-            null,
-            null,
-            null,
-            flags,
-            0,
-          ),
-          REQUEST,
-        );
-        if (request == null) {
-          fail("cannot open the request", ffi.C.GetLastError());
-        }
-        try {
-          return this.exchange(request, headers, body, fail);
-        } finally {
-          this.close(request);
-        }
-      } finally {
-        this.close(connect);
+        return this.perform(method, url, headers, body);
+      } catch (e) {
+        // after the close, every error comes from the close
+        const message = this.closed
+          ? "the client is closed"
+          : e instanceof Error
+            ? e.message
+            : tostring(e);
+        throw new Error(`${method} ${url}: ${message}`);
       }
     });
   }
 
-  /** Sends the request and reads the response. */
-  private exchange(
-    request: object,
-    headers: Headers,
+  /** Performs a request. */
+  private perform(
+    method: string,
+    url: string,
+    headers: HeaderMap,
     body: string,
-    fail: (what: string, error: number) => never,
   ) {
+    // parse the URL before a handle is open
+    const { secure, host, port, path } = parseUrl(url);
     const formatted = formatHeaders(headers);
+
+    // no network yet, so these run on the main thread
+    const connect = wininet.InternetConnectA(
+      this.open(),
+      host,
+      port,
+      null,
+      null,
+      INTERNET_SERVICE_HTTP,
+      0,
+      0,
+    );
+    if (connect == null) {
+      fail("cannot open the connection", lastError());
+    }
+    this.connects.add(connect);
+    try {
+      this.setTimeouts(connect);
+      let flags =
+        INTERNET_FLAG_RELOAD |
+        INTERNET_FLAG_NO_CACHE_WRITE |
+        INTERNET_FLAG_NO_COOKIES |
+        INTERNET_FLAG_NO_UI |
+        // follow redirects between http and https too, as pollnet does
+        INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP |
+        INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS;
+      if (secure) {
+        flags |= INTERNET_FLAG_SECURE;
+      }
+      const request = wininet.HttpOpenRequestA(
+        connect,
+        method,
+        path,
+        null,
+        null,
+        null,
+        flags,
+        0,
+      );
+      if (request == null) {
+        fail("cannot open the request", lastError());
+      }
+      this.requests.add(request);
+      try {
+        return this.exchange(request, formatted, body);
+      } finally {
+        this.closeHandle(this.requests, request);
+      }
+    } finally {
+      this.closeHandle(this.connects, connect);
+    }
+  }
+
+  /**
+   * Sends the request, with the headers that {@link formatHeaders} gives, and
+   * reads the response.
+   */
+  private exchange(request: object, formatted: string, body: string) {
     // arguments on a thread are never `undefined`, see `Arg` of `thread.ts`
     const [sent, sendError] = this.pool.run(
       wininet.HttpSendRequestA,
@@ -442,27 +434,46 @@ export class HttpClient {
         null,
       ) === 0
     ) {
-      fail("no status in the response", ffi.C.GetLastError());
+      fail("no status in the response", lastError());
+    }
+    // Wine takes a connection that closes before the status line as a
+    // response with status 0, where Windows fails with 12152
+    if (status[0] === 0) {
+      fail("no response", ERROR_HTTP_INVALID_SERVER_RESPONSE);
     }
 
     // the first call fails and gives the size that the headers need
     length[0] = 0;
-    wininet.HttpQueryInfoA(request, HTTP_QUERY_RAW_HEADERS_CRLF, null, length, null);
+    if (
+      wininet.HttpQueryInfoA(
+        request,
+        HTTP_QUERY_RAW_HEADERS_CRLF,
+        null,
+        length,
+        null,
+      ) === 0
+    ) {
+      const error = lastError();
+      if (error !== ERROR_INSUFFICIENT_BUFFER) {
+        fail("cannot read the response headers", error);
+      }
+    }
     let raw = "";
     if (length[0] > 0) {
-      const buffer = ffi.new("char[?]", length[0] + 1);
+      // the size includes the terminating null
+      const headerBuffer = ffi.new("char[?]", length[0]);
       if (
         wininet.HttpQueryInfoA(
           request,
           HTTP_QUERY_RAW_HEADERS_CRLF,
-          buffer,
+          headerBuffer,
           length,
           null,
         ) === 0
       ) {
-        fail("cannot read the response headers", ffi.C.GetLastError());
+        fail("cannot read the response headers", lastError());
       }
-      raw = ffi.string(buffer, length[0]);
+      raw = ffi.string(headerBuffer, length[0]);
     }
 
     // the thread writes into these, so they come from the pool

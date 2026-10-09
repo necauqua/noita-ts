@@ -99,8 +99,8 @@ async function main() {
           hint: "a networking library, wrapper around pollnet",
         },
         {
-          value: "@noita-ts/wininet",
-          hint: "an HTTP client on WinINet, without a DLL to ship",
+          value: "@noita-ts/http",
+          hint: "an HTTP client (WinINet) and server (Winsock), without a DLL to ship",
         },
         {
           value: "@noita-ts/ffi",

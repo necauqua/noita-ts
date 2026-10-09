@@ -448,7 +448,8 @@ declare const ffi: {
    * 32766 bytes.
    *
    * As with `ffi.once`, all mods share one set of names: put the name of your
-   * mod or package in the name.
+   * mod or package in the name. The packages of noita-ts use names that start
+   * with the name of the package and a dot, for example `http.`.
    */
   store: Store;
 

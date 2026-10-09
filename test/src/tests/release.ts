@@ -7,9 +7,10 @@ import { assert, assertEq, test } from "@noita-ts/base/test";
 ///
 /// `ffi._release` affects the whole Lua state of the test mod: it undoes every
 /// scoped cave and hook, calls every function of `ffi.onRelease` (for example
-/// the release of an HTTP client of wininet), and frees all of the scoped
+/// the release of an HTTP client of @noita-ts/http), and frees all of the scoped
 /// memory. Thus the other tests make such things in their tests, never when
-/// their files load.
+/// their files load, and `src/test.ts` registers this test first, so that it
+/// is done before the other tests start.
 
 // see https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-memory_basic_information
 const MemoryBasicInformation = c.declare("TestMemoryBasicInformation", [

@@ -1,19 +1,21 @@
 {
-  "name": "@noita-ts/wininet",
+  "name": "@noita-ts/http",
   "version": "0.1.0",
-  "description": "An HTTP client for unsafe Noita mods that uses WinINet on native threads, so the game does not stop.",
+  "description": "HTTP for unsafe Noita mods without a DLL: a client on WinINet and native threads, and a server on non-blocking Winsock sockets, so the game does not stop.",
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "license": "MIT",
   "files": [
     "dist/**/*.{lua,d.ts}"
   ],
   "type": "module",
-  "main": "dist/index",
-  "types": "dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index"
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "default": "./dist/client/index"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index"
     }
   },
   "scripts": {

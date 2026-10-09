@@ -17,6 +17,7 @@
 
 import ffi, { type Ptr } from "@noita-ts/ffi";
 import c from "@noita-ts/ffi/schema";
+import { describeError } from "../common";
 
 const MAX_ARGS = 8;
 
@@ -30,6 +31,9 @@ ffi.cdef(`
 `);
 
 const C = ffi.C;
+
+/** The `GetLastError` of this thread. */
+export const lastError = (): number => C.GetLastError();
 
 /** The thread runs the call. */
 const RUNNING = 0;
@@ -103,7 +107,7 @@ swap_state:
     ret
 `);
 
-/** A 32-bit FNV-1a hash of `bytes`, as an unsigned decimal number. */
+/** A 32-bit FNV-1a hash of `bytes`, as a signed decimal number. */
 const hash = (bytes: readonly number[]) => {
   let h = 0x811c9dc5 | 0;
   for (const b of bytes) {
@@ -112,11 +116,11 @@ const hash = (bytes: readonly number[]) => {
     // multiply by the FNV prime (0x01000193) in two parts
     h = (h * 0x193 + (h << 24)) | 0;
   }
-  return tostring(h < 0 ? h + 0x100000000 : h);
+  return tostring(h);
 };
 
 /** A call on a thread. The thread procedure has the offsets of its fields. */
-const Call = c.declare("NoitaTsWininetCall", [
+const Call = c.declare("NoitaTsHttpCall", [
   // the function to call
   c.field("fn", c.voidptr),
   // the number of arguments, at most MAX_ARGS
@@ -143,12 +147,15 @@ type Call = typeof Call.type;
 let code: number | undefined;
 
 /**
- * The address of the code. The name in the store comes from the bytes of the
- * code, which also fix the layout of the call, so another version of this
- * package that changes either one makes its own.
+ * The address of the code, made once per process. The store is shared by all
+ * the mods, and two mods can bundle different versions of this package, so
+ * the name in the store comes from the bytes of the code. The bytes also fix
+ * the offsets of the fields of the call, so a version that changes the code
+ * or the layout of the call makes its own code, and never runs the code of
+ * another version.
  */
 const getCode = () => {
-  code ??= ffi.store.shared(`wininet.proc.${hash(CODE.raw)}`, () => {
+  code ??= ffi.store.shared(`http.proc.${hash(CODE.raw)}`, () => {
     const mem = ffi.allocExec(CODE.raw.length, { persistent: true });
     CODE.raw.forEach((b, i) => {
       mem[i] = b;
@@ -185,21 +192,13 @@ const address = (ptr: unknown) => tonumber(ffi.cast("uintptr_t", ptr))!;
  * pointer to a copy of it on the process heap) or an FFI pointer. Memory that
  * the call uses after the state is closed must come from the `alloc` of the
  * pool; the thread frees such memory if the call is abandoned, so give it to
- * one call at a time.
+ * one call at a time, and only once in its arguments.
  *
  * Never `undefined` or `null`: in Lua, they make a hole in the arguments, so
  * the call pushes too few of them, the stdcall callee pops more, and the
  * thread jumps into its own stack.
  */
 export type Arg = number | string | object;
-
-/** A call that runs on a thread. */
-interface Pending {
-  /** Set when the pool is released: the call is no longer ours to touch. */
-  abandoned: boolean;
-  /** The addresses of the blocks that the thread frees if abandoned. */
-  owned: number[];
-}
 
 /**
  * Memory on the process heap and the calls on threads that use it, released
@@ -208,7 +207,11 @@ interface Pending {
 export class Pool {
   /** The blocks of the pool, by address. */
   private blocks = new LuaTable<number, unknown>();
-  private calls = new LuaTable<Call, Pending>();
+  /**
+   * The calls that run on threads, and the addresses of the blocks that
+   * their threads free if the pool is released first.
+   */
+  private calls = new LuaTable<Call, number[]>();
   private released = false;
 
   /**
@@ -247,9 +250,6 @@ export class Pool {
    * Throws if the pool is released before the call is done.
    */
   run(fn: unknown, ...args: Arg[]): [result: number, error: number] {
-    if (args.length > MAX_ARGS) {
-      throw new Error(`a call on a thread takes at most ${MAX_ARGS} arguments`);
-    }
     const call = this.alloc<Call>(Call.ptr().name, Call.size);
     call.fn = ffi.cast("void*", fn);
     call.argc = args.length;
@@ -280,10 +280,6 @@ export class Pool {
     });
     call.owned_count = owned.length;
 
-    const pending: Pending = {
-      abandoned: false,
-      owned: owned.map((mem) => address(mem)),
-    };
     const done = () => {
       for (const copy of copies) {
         this.free(copy);
@@ -300,19 +296,24 @@ export class Pool {
       null,
     );
     if (thread == null) {
-      const error = C.GetLastError();
+      const error = lastError();
       done();
-      throw new Error(`cannot create a thread: error ${error}`);
+      throw new Error(
+        `cannot create a thread: ${describeError("Windows", error)}`,
+      );
     }
     C.CloseHandle(thread);
-    this.calls.set(call, pending);
+    this.calls.set(
+      call,
+      owned.map((mem) => address(mem)),
+    );
 
     while (true) {
-      // after a release, the call may be freed already
-      if (pending.abandoned) {
-        throw new Error("the call was cancelled");
+      // the release abandons all the calls, and the call may be freed already
+      if (this.released) {
+        throw new Error("the pool is released");
       }
-      if (call.state !== RUNNING) {
+      if (call.state === DONE) {
         break;
       }
       coroutine.yield();
@@ -334,13 +335,12 @@ export class Pool {
     }
     this.released = true;
 
-    for (const [call, pending] of this.calls) {
-      pending.abandoned = true;
+    for (const [call, owned] of this.calls) {
       // the thread can free the call right after the swap, so what it owns
-      // comes from `pending`, not from the call
+      // comes from `calls`, not from the call
       if (swap(call, ABANDONED) === RUNNING) {
         this.blocks.delete(address(call));
-        for (const mem of pending.owned) {
+        for (const mem of owned) {
           this.blocks.delete(mem);
         }
       }

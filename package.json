@@ -8,7 +8,7 @@
     "nasm",
     "nxml",
     "pollnet",
-    "wininet",
+    "http",
     "create-mod",
     "test"
   ]

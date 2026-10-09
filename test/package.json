@@ -16,6 +16,6 @@
     "@noita-ts/base": "*",
     "@noita-ts/ffi": "*",
     "@noita-ts/pollnet": "*",
-    "@noita-ts/wininet": "*"
+    "@noita-ts/http": "*"
   }
 }
