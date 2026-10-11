@@ -30,7 +30,7 @@ mod.on("PlayerSpawned", () => {
 npx nts run             # launch an isolated Noita instance with the mod installed
 npx nts build           # build a distributable mod zip into dist/
 npx nts build --no-emit # build nothing, just report the files the mod would contain
-npx nts test            # run src/test.ts in a headless Noita container
+npx nts test            # run src/tests/ in a headless Noita container
 npx nts publish "notes" # publish/update the mod on the Steam Workshop
 npx nts unpak           # unpack the vanilla files of data.wak into noita/data/
 ```
@@ -97,6 +97,17 @@ what you need when nothing is there to answer with.
 - [`@noita-ts/noita-dear-imgui-types`](noita-dear-imgui-types) - type
   definitions for [Noita-Dear-ImGui](https://github.com/dextercd/Noita-Dear-ImGui)
   (ImGui 1.26.0).
+
+## Coding agents
+
+`@noita-ts/base` ships a skill (in the [Agent Skills](https://agentskills.io/)
+format) for agents that work on a noita-ts mod: how the build works, where to
+look things up, the traps, and how to test in a headless Noita. A mod made with
+`npm create @noita-ts/mod` has an `AGENTS.md` that points to
+`node_modules/@noita-ts/base/skills/noita-ts-mod-dev/SKILL.md`. For another
+mod, add that pointer to its `AGENTS.md`, or link the
+`skills/noita-ts-mod-dev` folder into the skill folder of your agent (for
+example `.agents/skills/`).
 
 ## Licence
 Just MIT, see the LICENSE file.

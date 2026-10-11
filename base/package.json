@@ -6,7 +6,8 @@
     "dist/**/*.{js,lua,d.ts}",
     "types/*.d.ts",
     "types/generated/*.d.ts",
-    "mod-tsconfig.json"
+    "mod-tsconfig.json",
+    "skills/**/*.md"
   ],
   "type": "module",
   "main": "dist/index",

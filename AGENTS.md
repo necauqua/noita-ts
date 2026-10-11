@@ -18,6 +18,14 @@ At minimum, run the suite as a smoke test after finishing any work.
 Note: `npm test` needs Docker (or Podman), a `noita-headless` image, and a Noita
 install. See `test/readme.md` for the full requirements.
 
+## The mod developer skill
+
+`base/skills/noita-ts-mod-dev/` is the skill for agents that write mods with
+noita-ts; it ships in `@noita-ts/base`. When a change alters what a mod author
+sees (a command, an option, an API, a package, a trap that is gone or new),
+update the skill in the same change. Keep it to facts that you verified, for
+example with a test mod and `nts test`.
+
 ## Facts about the game
 
 - The game loads `wininet.dll` itself and never unloads it. Thus
