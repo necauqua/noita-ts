@@ -15,6 +15,7 @@ import { findNoita, findSteamApp } from "./steam.js";
 import { followGameLog } from "./game-log.js";
 import { askGameToQuit, killGameTree, QUIT_TOOL } from "./shutdown.js";
 import runTests from "./test.js";
+import { unpackWak } from "./wak.js";
 import {
   publish as publishToWorkshop,
   validate as validateWorkshop,
@@ -111,7 +112,9 @@ async function run(
   { devMods = false }: { devMods?: boolean } = {},
 ) {
   const localNoita = path.resolve("noita");
-  const firstRun = !fs.existsSync(localNoita);
+  // `nts unpak` can make the folder without the rest of the instance, so it is
+  // the executable that tells whether the instance is set up
+  const firstRun = !fs.existsSync(path.resolve(localNoita, "noita.exe"));
   if (firstRun) {
     console.log("A local Noita instance not found, setting up...");
     setupNoitaInstance(localNoita);
@@ -599,8 +602,30 @@ program
 
 program
   .command("unpak")
-  .description("Unpack the data.wak file")
-  .action(() => run(null, "noita.exe", ["-wizard_unpak"]));
+  .option(
+    "--noita <path>",
+    "the Noita installation to take data.wak from (default: the one installed through Steam).",
+  )
+  .option(
+    "--via-game",
+    "unpack by running `noita.exe -wizard_unpak` in the local instance instead (requires Noita to be installed through Steam).",
+  )
+  .description(
+    "Unpack the vanilla files of data.wak into noita/data/ (e.g. noita/data/scripts/gun/gun_actions.lua).",
+  )
+  .action(async (opts: { noita?: string; viaGame?: boolean }) => {
+    if (opts.viaGame) {
+      await run(null, "noita.exe", ["-wizard_unpak"]);
+      return;
+    }
+    const wak = path.resolve(opts.noita ?? findNoita(), "data", "data.wak");
+    // the paths in the archive start with `data/`
+    const localNoita = path.resolve("noita");
+    const count = unpackWak(wak, localNoita);
+    console.log(
+      `Unpacked ${count} files of ${wak} into ${path.join(localNoita, "data")}`,
+    );
+  });
 
 program.parseAsync(process.argv).catch((error) => {
   // most of what goes wrong here is something the user has to fix - a mod Steam

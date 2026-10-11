@@ -32,7 +32,7 @@ npx nts build           # build a distributable mod zip into dist/
 npx nts build --no-emit # build nothing, just report the files the mod would contain
 npx nts test            # run src/test.ts in a headless Noita container
 npx nts publish "notes" # publish/update the mod on the Steam Workshop
-npx nts unpak           # unpack data.wak
+npx nts unpak           # unpack the vanilla files of data.wak into noita/data/
 ```
 
 `nts run` prints the game log (`noita/logger.txt`) into the console while the
