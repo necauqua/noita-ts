@@ -47,7 +47,7 @@ file in there is picked up on its own, no index to maintain:
 import { assert, test } from "@noita-ts/base/test";
 
 test("the player is there", () => {
-  assert(GameGetPlayerStatsEntity() != 0, "no player");
+  assert(GameGetPlayerStatsEntity(0) != 0, "no player stats");
 });
 ```
 

@@ -14,9 +14,30 @@ type Component<Name extends ComponentName> = ComponentID & {
   readonly [tags.ComponentName]: Name;
 };
 
+/**
+ * The TypeScript types of component field types, by the name that the component
+ * documentation gives them.
+ *
+ * A tuple stands for a field that `ComponentGetValue2` gives as several values
+ * and `ComponentSetValue2` takes as several arguments; `EntityAddComponent2`
+ * cannot set such fields.
+ */
 interface ComponentTypeMap {
   EntityID: EntityID;
-  vec2: [number, number];
+  vec2: [x: number, y: number];
+  ivec2: [x: number, y: number];
+  ValueRange: [min: number, max: number];
+  ValueRangeInt: [min: number, max: number];
+  ["types::aabb"]: [min_x: number, min_y: number, max_x: number, max_y: number];
+  ["types::iaabb"]: [min_x: number, min_y: number, max_x: number, max_y: number];
+  ["types::fcolor"]: [r: number, g: number, b: number, a: number];
+  ["types::xform"]: [
+    x: number,
+    y: number,
+    scale_x: number,
+    scale_y: number,
+    rotation: number,
+  ];
   ["LensValue<float>"]: number;
   ["std::vector<int>"]: number[];
   ["std::vector<float>"]: number[];

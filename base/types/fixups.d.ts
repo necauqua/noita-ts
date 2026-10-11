@@ -32,11 +32,29 @@ declare function EntityAddComponent<N extends ComponentName>(
   values?: (keyof ComponentShapes[N] | (string & {}))[],
 ): ComponentID;
 
+/**
+ * A component field type that the API gives and takes as several values, see
+ * `ComponentTypeMap`.
+ */
+type MultiValue = [number, ...number[]];
+
+/** The fields of a component that `EntityAddComponent2` can set. */
+type ComponentAddValues<N extends ComponentName> = {
+  [K in keyof ComponentShapes[N] as ComponentShapes[N][K] extends MultiValue
+    ? never
+    : K]?: ComponentShapes[N][K];
+};
+
+/**
+ * Creates a component and adds it to the entity, setting the given fields.
+ * Fields that hold several values (vec2, ivec2, ValueRange, aabb, fcolor and
+ * xform) cannot be set here: set them with `ComponentSetValue2` afterwards.
+ */
 declare function EntityAddComponent2<N extends ComponentName>(
   entity_id: EntityID,
   component_type_name: N,
-  values: Partial<ComponentShapes[N]> & { _enabled?: boolean; _tags?: string },
-): ComponentID;
+  values?: ComponentAddValues<N> & { _enabled?: boolean; _tags?: string },
+): Component<N>;
 
 /** @deprecated Use ComponentGetValue2 instead */
 declare function ComponentGetValue<
@@ -71,11 +89,29 @@ declare function ComponentGetValueVector2<
   variable_name: ComponentField<C, [number, number]>,
 ): LuaMultiReturn<[number, number]> | LuaMultiReturn<[undefined | undefined]>;
 
+/**
+ * What `ComponentGetValue2` gives for a field: several values for a field that
+ * holds several (`const [x, y] = ComponentGetValue2(c, "mVelocity")`).
+ */
+type ComponentGetResult<C extends ComponentID, V> =
+  ComponentValue<C, V> extends MultiValue
+    ? LuaMultiReturn<ComponentValue<C, V>>
+    : ComponentValue<C, V>;
+
+/**
+ * What `ComponentSetValue2` takes for a field: several arguments for a field
+ * that holds several values (`ComponentSetValue2(c, "mVelocity", x, y)`).
+ */
+type ComponentSetArgs<C extends ComponentID, V> =
+  ComponentValue<C, V> extends MultiValue
+    ? ComponentValue<C, V>
+    : [value: ComponentValue<C, V>];
+
 declare function ComponentGetValue2<
   N extends ComponentName,
   C extends ComponentID | Component<N>,
   V extends ComponentField<C>,
->(component: C, variable_name: V): ComponentValue<C, V>;
+>(component: C, variable_name: V): ComponentGetResult<C, V>;
 
 /** @deprecated Use ComponentSetValue2 instead */
 declare function ComponentSetValue<
@@ -87,7 +123,7 @@ declare function ComponentSetValue2<
   N extends ComponentName,
   C extends ComponentID | Component<N>,
   V extends ComponentField<C>,
->(component: C, field_name: V, value: ComponentValue<C, V>): void;
+>(component: C, field_name: V, ...value: ComponentSetArgs<C, V>): void;
 
 declare function ComponentGetTypeName(component_id: ComponentID): ComponentName;
 
@@ -161,6 +197,17 @@ declare function GlobalsGetValue(key: string, default_value?: string): string;
  * They can be set by xml files via `ModMagicNumbersFileAdd`.
  */
 declare function MagicNumbersGetValue(key: Suggest<MagicNumbers>): string;
+
+/**
+ * The entity that holds the stats of a player: a child of the world state
+ * entity that is named `player_stats`, or 0 when there is none.
+ * `player_index` picks one of several such entities, starting at 0; a normal
+ * game has one.
+ *
+ * Nolla's documentation leaves the parameter out, but the engine requires it:
+ * without it, the call logs a Lua error and returns nothing.
+ */
+declare function GameGetPlayerStatsEntity(player_index: number): EntityID | 0;
 
 /**
  * A faster(?) shorthand for `EntityGetFirstComponent(entity_id, "GameEffectComponent")`, used by vanilla code.
