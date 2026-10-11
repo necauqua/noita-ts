@@ -6,5 +6,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "strict": true
-  }
+  },
+  "files": ["./types/index.d.ts"],
+  "include": ["${configDir}/src"]
 }

@@ -185,7 +185,12 @@ function transpile(
     config.options.luaBundle = "settings.lua";
     config.options.luaBundleEntry = settings;
 
-    const settingsProgram = ts.createProgram([settingsFull], config.options);
+    // the declaration files of the project come along, as they are what
+    // gives settings.ts the Noita globals (see mod-tsconfig.json)
+    const settingsProgram = ts.createProgram(
+      [settingsFull, ...config.fileNames.filter((f) => f.endsWith(".d.ts"))],
+      config.options,
+    );
     diagnostics.push(...ts.getPreEmitDiagnostics(settingsProgram));
 
     const res = new tstl.Transpiler().emit({
