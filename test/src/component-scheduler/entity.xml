@@ -1,0 +1,10 @@
+<Entity>
+  <LuaComponent
+    _tags="scheduler"
+    script_source_file="mods/noita-ts-test/component-scheduler/script.lua"
+    script_enabled_changed="mods/noita-ts-test/component-scheduler/script.lua"
+    enable_coroutines="1"
+    execute_on_added="1"
+    execute_every_n_frame="-1"
+    execute_times="1" />
+</Entity>

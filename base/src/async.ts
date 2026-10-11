@@ -9,8 +9,8 @@ import mod from ".";
  * Basic example:
  * ```typescript
  *
- * // On first call, Scheduler.get() creates and registers a scheduler to be
- * // polled on "WorldPreUpdate" and "PausePreUpdate" events, and stores itself.
+ * // On first call, Scheduler.get() creates a scheduler that polls itself each
+ * // frame (see Scheduler.register()), and stores it.
  * const scheduler = Scheduler.get();
  *
  * (async() => {
@@ -55,9 +55,12 @@ export default class Scheduler {
   private static _instance: Scheduler | undefined;
 
   /**
-    * A convenience lazy singleton storage for return of `Scheduler.register()`.
+    * A convenience lazy singleton storage for return of `Scheduler.register()`,
+    * one for each Lua state.
     *
     * This is the most convenient way to use the scheduler, applicable to 99% of use cases.
+    * It works in the Lua state of the mod (init.lua and its hooks) and in the
+    * script of a LuaComponent, see `register()`.
     *
     * Example, in any file run in the init context:
     * ```typescript
@@ -76,12 +79,25 @@ export default class Scheduler {
     * A shortcut for creating a scheduler and registering it to poll on every
     * frame.
     *
-    * Do *not* poll the scheduler manually if you use this method, it will
-    * register itself to be polled on "WorldPreUpdate" and "PausePreUpdate"
-    * events.
-    * This means such a scheduler will be automatically polled in the init
-    * context - for anything more exotic you can create and poll a scheduler
-    * manually.
+    * Do *not* poll the scheduler manually if you use this method, it polls
+    * itself:
+    *
+    * - In the Lua state of the mod, on the "WorldPreUpdate" and
+    *   "PausePreUpdate" hooks.
+    * - In the script of a LuaComponent, through the global
+    *   `wake_up_waiting_threads`, which the engine calls each frame when the
+    *   component has `enable_coroutines="1"` and a `script_source_file`. The
+    *   engine calls it once for each component that shares the Lua state, so
+    *   the scheduler polls only on the first call of a frame. A callback of
+    *   the component (`script_wand_fired` and so on) runs in the same Lua
+    *   state only when it is the same file as `script_source_file` and the
+    *   component has the default `vm_type`. A `wake_up_waiting_threads` that
+    *   is already there (the one of vanilla `coroutines.lua`) is still called;
+    *   load `coroutines.lua` before this, as it replaces the function.
+    *
+    * Both are set up in either state, as nothing tells the two apart
+    * reliably; the ones that the engine does not call cost nothing. For
+    * anything more exotic you can create and poll a scheduler manually.
     *
     * Also while you technically can create multiple schedulers, it is highly
     * not recomended, so do not call this method more than once in your mod.
@@ -101,6 +117,21 @@ export default class Scheduler {
     const scheduler = new Scheduler();
     mod.on("WorldPreUpdate", () => scheduler.poll());
     mod.on("PausePreUpdate", () => scheduler.poll());
+
+    const g = globalThis as {
+      wake_up_waiting_threads?: (this: void, frames: number) => void;
+    };
+    const previous = g.wake_up_waiting_threads;
+    let polled: number | undefined;
+    g.wake_up_waiting_threads = (frames) => {
+      previous?.(frames);
+      const frame = GameGetFrameNum();
+      if (frame !== polled) {
+        polled = frame;
+        scheduler.poll();
+      }
+    };
+
     return scheduler;
   }
 
