@@ -42,6 +42,9 @@ ffi.cdef [[
 
     uint32_t GetEnvironmentVariableW(const uint16_t* name, uint16_t* buffer, uint32_t size);
     bool SetEnvironmentVariableW(const uint16_t* name, const uint16_t* value);
+    uint16_t* GetEnvironmentStringsW();
+    bool FreeEnvironmentStringsW(uint16_t* block);
+    uint32_t GetCurrentProcessId();
 ]]
 
 -- dont hardcode 0x00400000 because of ASLR
@@ -198,6 +201,13 @@ end
 local STORE_PREFIX = 'NOITA_TS_STORE_'
 local ONCE_PREFIX = 'NOITA_TS_ONCE_'
 
+-- the id of the process that the values of the store and the once flags
+-- belong to. A process that the game starts gets a copy of the environment:
+-- the restart of the game after a change of the mods starts a new
+-- `noita.exe`, and the values of the old process (e.g. addresses of its
+-- memory) are wrong in the new one
+local OWNER_KEY = 'NOITA_TS_PROCESS'
+
 -- the first character of a stored value tells its type
 local STRING_TAG = 's'
 local NUMBER_TAG = 'n'
@@ -275,12 +285,72 @@ local function envSet(key, value)
     end
 end
 
+--- The names of the environment variables of the store and the once flags, as
+--- NUL-terminated wide strings.
+--- @return ffi.cdata*[]
+local function ownedNames()
+    local prefixes = { STORE_PREFIX, ONCE_PREFIX }
+    local names = {}
+    local block = ffi.C.GetEnvironmentStringsW()
+    if block == nil then
+        return names
+    end
+    -- `Name=value` strings, each ended by a NUL, and an empty string at the end
+    local start = 0
+    while block[start] ~= 0 do
+        local stop = start
+        while block[stop] ~= 0 do
+            stop = stop + 1
+        end
+        for _, prefix in ipairs(prefixes) do
+            local match = stop - start > #prefix
+            for i = 1, #prefix do
+                if not match then
+                    break
+                end
+                -- the names of environment variables are not case sensitive
+                local unit = block[start + i - 1]
+                match = unit < 0x80 and string.upper(string.char(unit)) == prefix:sub(i, i)
+            end
+            if match then
+                -- the name ends at the first `=`, which a name cannot have
+                local len = #prefix
+                while start + len < stop and block[start + len] ~= 61 do
+                    len = len + 1
+                end
+                local name = ffi.new('uint16_t[?]', len + 1)
+                ffi.copy(name, block + start, len * 2)
+                names[#names + 1] = name
+                break
+            end
+        end
+        start = stop + 1
+    end
+    ffi.C.FreeEnvironmentStringsW(block)
+    return names
+end
+
+--- Removes the values of the store and the once flags that came from another
+--- process, so that each process starts without them. Each public function
+--- calls it before it reads or writes a value.
+local function claim()
+    local pid = tostring(ffi.C.GetCurrentProcessId())
+    if envGet(OWNER_KEY) == pid then
+        return
+    end
+    for _, name in ipairs(ownedNames()) do
+        ffi.C.SetEnvironmentVariableW(name, nil)
+    end
+    envSet(OWNER_KEY, pid)
+end
+
 --- Returns true the first time it is called with a given name, and false after
 --- that, for as long as the process lives.
 ---
 --- @param name string
 --- @return boolean
 function M.once(name)
+    claim()
     local key = envKey(ONCE_PREFIX, name)
     if envGet(key) ~= nil then
         return false
@@ -296,6 +366,7 @@ local store = {}
 --- @param name string
 --- @return string|nil
 function store.get(name)
+    claim()
     local raw = envGet(envKey(STORE_PREFIX, name))
     return raw and raw:sub(2)
 end
@@ -303,6 +374,7 @@ end
 --- @param name string
 --- @param value string|nil
 function store.set(name, value)
+    claim()
     local key = envKey(STORE_PREFIX, name)
     if value ~= nil and type(value) ~= 'string' then
         error(string.format('the store keeps strings, not %s', type(value)), 2)
@@ -314,6 +386,7 @@ end
 --- @param init fun(): string|number
 --- @return string|number
 function store.shared(name, init)
+    claim()
     local key = envKey(STORE_PREFIX, name)
     local raw = envGet(key)
     if raw ~= nil then

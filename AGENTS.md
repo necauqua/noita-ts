@@ -36,6 +36,11 @@ example with a test mod and `nts test`.
   tables of one mod never clash with those of another mod. Only process-wide
   things are shared between mods: native memory, patched game code, the
   environment variables of `ffi.store` and `ffi.once`, loaded DLLs.
+- The game restarts itself (after a change of the mods, or each new game with
+  the force-full-restart mod) with `CreateProcessW` of `noita.exe`, which
+  gets a copy of the environment of the old process. Thus `ffi.store` and
+  `ffi.once` keep the id of their process in `NOITA_TS_PROCESS` and remove
+  the values of another process.
 
 ## Conventions
 

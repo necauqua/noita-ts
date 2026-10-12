@@ -403,7 +403,8 @@ declare const ffi: {
    *
    * The flags are environment variables of the process, with the names
    * prefixed by `NOITA_TS_ONCE_`, so names are not case sensitive. A name may
-   * not be empty or contain `=`.
+   * not be empty or contain `=`. A process that the game starts does not get
+   * the flags of the process that started it (see `store`).
    *
    * A mod runs in more than one Lua state, and every state loads its modules
    * again, so top-level code that scans and patches can run many times - while
@@ -437,9 +438,12 @@ declare const ffi: {
    * Lua state and every mod.
    *
    * The values are environment variables of the process, with the names
-   * prefixed by `NOITA_TS_STORE_`, so names are not case sensitive, and
-   * processes that the game starts get a copy. A name may not be empty or
-   * contain `=`.
+   * prefixed by `NOITA_TS_STORE_`, so names are not case sensitive. A name
+   * may not be empty or contain `=`. A process that the game starts (the
+   * restart after a change of the mods starts a new `noita.exe`) gets a copy
+   * of the environment, but the values (and the flags of `ffi.once`) belong
+   * to the process that set them: `NOITA_TS_PROCESS` keeps its id, and the
+   * first use of the store or of `ffi.once` in another process removes them.
    *
    * Names and values can hold any bytes, NUL too: each byte is one UTF-16
    * character of the variable, so the code page of the system does not

@@ -41,7 +41,8 @@ helpers to find and patch code in `noita.exe`. Read
   when the state that made them closes, unless `{ persistent: true }`. Guard a
   patch that must happen once per game process with `ffi.once("<mod id>.name")`
   and make it persistent. `ffi.store` keeps strings for the whole process,
-  shared by all mods. `ffi.onRelease(fn)` runs `fn` when the state closes.
+  shared by all mods. A restart of the game (a new `noita.exe`) starts
+  without the `once` flags and the `store` values of the old process. `ffi.onRelease(fn)` runs `fn` when the state closes.
   Put the mod id into every `once` and `store` name.
 - **Structs.** Describe engine structs with `@noita-ts/ffi/schema`
   (`c.declare("Name", [c.field("x", c.i32), c.unknown(4), ...])`, then
