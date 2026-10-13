@@ -26,6 +26,10 @@
     "./json": {
       "default": "./dist/json"
     },
+    "./base64": {
+      "types": "./dist/base64.d.ts",
+      "default": "./dist/base64"
+    },
     "./async": {
       "types": "./dist/async.d.ts",
       "default": "./dist/async"

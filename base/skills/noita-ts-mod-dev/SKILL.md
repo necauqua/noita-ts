@@ -342,6 +342,13 @@ The script file runs again for each component that is added, but
 vanilla `data/scripts/lib/coroutines.lua`, load it before the first
 `Scheduler.get()`.
 
+**Base64.** `encode(bytes, options?)` and `decode(text, options?)` from
+`@noita-ts/base/base64` convert a Lua string (bytes) to and from base64
+(RFC 4648). The options are `STANDARD` (the default: `+`, `/`, `=` padding),
+`STANDARD_NO_PAD`, `URL` (`-`, `_`) and `URL_NO_PAD`, or your own
+`{ alphabet, padding }`. `decode` ignores any number of `=` at the end, and
+gives `undefined` for other text that is not base64, white space included.
+
 ## TypeScriptToLua traps
 
 - Arrays: TSTL adds 1 to the index only when the value has an array type.
