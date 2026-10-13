@@ -94,6 +94,19 @@ HTTP) with a 3.5 MB DLL that the build ships in the mod. `@noita-ts/pollnet`
 exports `HttpClient`, `WebSocket` and `runServer` (they take a `Scheduler`);
 `@noita-ts/pollnet/api` is the raw API.
 
+## `@noita-ts/crypto`
+
+Hashes and secure random bytes from the CNG of Windows (`bcrypt.dll`), with
+no DLL to ship: `md5`, `sha1`, `sha256`, `sha384` and `sha512` give raw
+bytes, and the HMAC with a second argument (`sha256(data, key)`); `md5` and
+`sha1` are only for compatibility, not for security; `toHex`/`fromHex`
+convert; `new Hasher("sha256", key?).update(a).update(b).digest()` hashes
+data in parts; `randomBytes(n)` is for keys and tokens (not `math.random`).
+Nothing throws: a function that fails (bad input, a CNG error, a second
+`digest()`) gives `undefined`. A string literal is UTF-8 in Lua, so give
+bytes above 0x7f with `string.char` or `fromHex`. Read
+`node_modules/@noita-ts/crypto/readme.md`.
+
 ## `@noita-ts/noita-dear-imgui-types`
 
 Types for [Noita-Dear-ImGui](https://github.com/dextercd/Noita-Dear-ImGui)

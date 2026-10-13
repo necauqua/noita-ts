@@ -9,6 +9,7 @@
     "nxml",
     "pollnet",
     "http",
+    "crypto",
     "create-mod",
     "test"
   ]
