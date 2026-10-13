@@ -2,16 +2,18 @@
 
 Hashes, HMAC and secure random bytes for unsafe
 [noita-ts](https://github.com/necauqua/noita-ts) mods through the LuaJIT FFI,
-from CNG (`bcrypt.dll`). CNG is part of Windows (and of Wine), so there is no
-DLL to ship.
+from CNG (`bcrypt.dll`), and Ed25519 signature verification in plain Lua.
+CNG is part of Windows (and of Wine), so there is no DLL to ship.
 
 The package exports one function for each hash (`md5`, `sha1`, `sha256`,
 `sha384`, `sha512`), `Hasher` for data in parts, `toHex`, `fromHex` and
-`randomBytes`.
+`randomBytes`. The entry point
+`@noita-ts/crypto/ed25519` has `verify` and `verifySsh`; a mod that does not
+import it does not get its code.
 
 Nothing in the package throws. A function that fails (bad input, an error
 of CNG, a second `digest()`) gives `undefined`, so its type is
-`string | undefined`.
+`string | undefined`; a verification that fails gives `false`.
 
 ```ts
 import { Hasher, randomBytes, sha256, toHex } from "@noita-ts/crypto";
@@ -65,6 +67,44 @@ const state = randomBytes(16);
 - `fromHex(hex)` gives the bytes of a hex string (in any case), or
   `undefined` when the string has other characters, or an odd number of
   digits.
+
+For base64, use `encode` and `decode` of `@noita-ts/base/base64`.
+
+## Ed25519 signatures
+
+```ts
+import { verify, verifySsh } from "@noita-ts/crypto/ed25519";
+
+// raw bytes: a public key of 32 bytes and a signature of 64 bytes
+if (verify(publicKey, message, signature)) { /* ... */ }
+
+// a signature from `ssh-keygen -Y sign -f key -n file data.txt`
+const trusted = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... me@host";
+if (verifySsh(trusted, "file", data, signatureText)) { /* ... */ }
+```
+
+- `verify(publicKey, message, signature)` is the verification of RFC 8032.
+  It gives `false` for a bad signature, and also for a key or a signature
+  with a wrong length.
+- `verifySsh(publicKey, namespace, message, signature)` verifies the
+  signature of `ssh-keygen -Y sign` (the SSHSIG format of OpenSSH):
+  - `publicKey` is a line of a `.pub` file: `ssh-ed25519`, or
+    `sk-ssh-ed25519@openssh.com` for a FIDO key (for example a YubiKey).
+  - `namespace` must be the `-n` of the signature, for example `file`.
+  - `signature` is the text of the `.sig` file, with its `BEGIN` and `END`
+    lines.
+  - The signature must be by `publicKey`, with SHA-512 or SHA-256. A FIDO
+    signature must also show that the user touched the key.
+  - Anything else gives `false`: also another type of key, a key line that
+    is not correct, and an empty namespace (which the SSHSIG format does not
+    permit).
+- It is only verification: there is no signing and no key generation.
+- It needs no DLL. The curve math is a port of TweetNaCl in plain Lua: one
+  verification takes about 8 ms in the game, and the same time for a
+  message of any length (only its SHA-512 depends on the length).
+- The checks are lean: `S >= L` and keys that are not points of the curve
+  are rejected, but encodings that are not canonical are accepted, as
+  TweetNaCl does. This changes nothing for the signatures of real keys.
 
 ## Random bytes
 

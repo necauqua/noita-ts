@@ -104,7 +104,12 @@ convert; `new Hasher("sha256", key?).update(a).update(b).digest()` hashes
 data in parts; `randomBytes(n)` is for keys and tokens (not `math.random`).
 Nothing throws: a function that fails (bad input, a CNG error, a second
 `digest()`) gives `undefined`. A string literal is UTF-8 in Lua, so give
-bytes above 0x7f with `string.char` or `fromHex`. Read
+bytes above 0x7f with `string.char` or `fromHex`. The separate entry point
+`@noita-ts/crypto/ed25519` verifies Ed25519 signatures in plain Lua (about
+8 ms each): `verify(publicKey, message, signature)` with raw bytes, and
+`verifySsh(pubLine, namespace, message, sigText)` for `ssh-keygen -Y sign`
+(also FIDO keys, for example a YubiKey); anything that is not a valid
+signature by that key gives `false`. Read
 `node_modules/@noita-ts/crypto/readme.md`.
 
 ## `@noita-ts/noita-dear-imgui-types`

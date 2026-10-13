@@ -92,7 +92,8 @@ what you need when nothing is there to answer with.
   HTTP/1.1 server with server-sent events on non-blocking Winsock sockets.
 - [`@noita-ts/crypto`](crypto) - MD5, SHA-1/256/384/512, their HMAC, hex and
   secure random bytes for unsafe mods, from the CNG of Windows (`bcrypt.dll`),
-  without a DLL to ship.
+  and Ed25519 verification (SSH signatures too) in plain Lua, without a DLL
+  to ship.
 - [`@noita-ts/ffi`](ffi) - LuaJIT FFI helpers/types for unsafe mods.
 - [`@noita-ts/nasm`](nasm) - the NASM assembler as a platform-gated package,
   plus the TSTL plugin that assembles inline `asm()` x86 patches at build time.

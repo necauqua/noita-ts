@@ -1,7 +1,7 @@
 {
   "name": "@noita-ts/crypto",
   "version": "0.1.0",
-  "description": "Hashes (MD5, SHA-1, SHA-256, SHA-384, SHA-512, and their HMAC) and secure random bytes for unsafe Noita mods, from the CNG of Windows (bcrypt.dll), without a DLL to ship.",
+  "description": "Hashes (MD5, SHA-1, SHA-256, SHA-384, SHA-512, and their HMAC) and secure random bytes for unsafe Noita mods, from the CNG of Windows (bcrypt.dll), and Ed25519 signature verification (SSH signatures too) in plain Lua, without a DLL to ship.",
   "author": "Anton Bulakh <him@necauq.ua> (https://necauq.ua/)",
   "license": "MIT",
   "files": [
@@ -14,6 +14,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index"
+    },
+    "./ed25519": {
+      "types": "./dist/ed25519.d.ts",
+      "default": "./dist/ed25519"
     }
   },
   "scripts": {
@@ -21,6 +25,7 @@
     "prepublishOnly": "rm -rf dist && npm run build"
   },
   "dependencies": {
+    "@noita-ts/base": "^0.12.0",
     "@noita-ts/ffi": "^0.7.0",
     "@typescript-to-lua/language-extensions": "^1.19.0",
     "lua-types": "^2.13.1"
